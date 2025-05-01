@@ -1,0 +1,89 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}ARUTOURISM - Cadastro{% endblock %}
+
+{% block content %}
+<div class="container d-flex justify-content-center align-items-center custom-container">
+    <div class="card shadow-lg p-4 animated-card custom-card">
+        <h2 class="text-center mb-4">ARUTOURISM</h2>
+        <h4 class="text-center mb-4">Cadastro</h4>
+        <p class="text-center mb-4">Cadastre suas credenciais para criar sua conta</p>
+
+        <form method="POST">
+            {% csrf_token %}
+
+            <div class="mb-3">
+                <label for="username" class="form-label">Usuário</label>
+                {{ form.username }}
+            </div>
+
+            <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                {{ form.email }}
+            </div>
+
+            <div class="mb-3">
+                <label for="password" class="form-label">Senha</label>
+                {{ form.password }}
+            </div>
+
+            <div class="mb-3">
+                <label for="confirm_password" class="form-label">Confirmar Senha</label>
+                <input type="password" name="confirm_password" class="form-control" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="cpf_cnpj" class="form-label">CPF ou CNPJ</label>
+                <div class="d-flex">
+                    <input type="text" id="cpf_cnpj" name="cpf_cnpj" class="form-control"
+                        placeholder="Digite o CPF ou CNPJ" maxlength="18" required>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Tipo de Documento</label><br>
+                <input type="radio" id="cpf" name="document_type" value="cpf" checked> CPF
+                <input type="radio" id="cnpj" name="document_type" value="cnpj"> CNPJ
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">Cadastrar</button>
+        </form>
+        <a href="{% url 'login' %}">Já tem uma conta? Faça login</a>
+    </div>
+</div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function () {
+        // Máscara para CPF ou CNPJ com base no tipo selecionado
+        function formatCpfCnpj(value) {
+            // Se for CPF
+            if ($("#cpf").prop('checked')) {
+                return value.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, "$1.$2.$3-$4");
+            }
+            // Se for CNPJ
+            if ($("#cnpj").prop('checked')) {
+                return value.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5");
+            }
+            return value;
+        }
+
+        // Quando o campo for alterado
+        $("#cpf_cnpj").on('input', function () {
+            var value = $(this).val().replace(/\D/g, '');  // Remove tudo o que não for número
+            $(this).val(formatCpfCnpj(value));
+        });
+
+        // Validação do campo CPF/CNPJ
+        $("form").submit(function (event) {
+            var cpfCnpjValue = $("#cpf_cnpj").val();
+            if (cpfCnpjValue === "") {
+                event.preventDefault();  // Bloqueia o envio do formulário
+                alert("O campo CPF ou CNPJ é obrigatório!");
+            }
+        });
+    });
+</script>
+
+{% endblock %}

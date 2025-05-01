@@ -1,0 +1,18 @@
+<h1>Lista de Usuários</h1>
+{% if usuarios %}
+    <ul>
+        {% for usuario in usuarios %}
+            <li>
+                {{ usuario.username }} - {{ usuario.email }}
+                {% if user.is_superuser %}
+                    <a href="{% url 'editar_usuario' usuario.id %}">Editar</a>
+                    <a href="{% url 'excluir_usuario' usuario.id %}">Excluir</a>
+                {% elif usuario == user %}
+                    <a href="{% url 'editar_usuario' usuario.id %}">Editar</a>
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p>Você não tem usuários para exibir.</p>
+{% endif %}

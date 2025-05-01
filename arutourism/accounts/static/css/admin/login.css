@@ -1,0 +1,121 @@
+/* Aplicando o fundo com um gradiente azul */
+body {
+    font-family: 'Poppins', sans-serif;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    /* Centraliza horizontalmente */
+    align-items: center;
+    /* Centraliza verticalmente */
+    background: linear-gradient(to right, #1e3c72, #2a5298);
+    /* Degradê do azul escuro para o azul claro */
+    margin: 0;
+    /* Remove margens para garantir que o conteúdo ocupe toda a tela */
+}
+
+/* Card de login */
+.card {
+    border-radius: 15px;
+    /* Bordas arredondadas */
+    background-color: #fff;
+    box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+    width: 30rem;
+    /* Ajuste a largura do card conforme necessário */
+    padding: 20px;
+}
+
+/* Animação de aparição suave */
+.animated-card {
+    animation: fadeIn 0.8s cubic-bezier(0, 0, 0, 1.09);
+}
+
+/* Animação para o fundo da página */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Estilos do botão */
+button {
+    font-size: 16px;
+    padding: 12px;
+    background-color: #007bff;
+    border: none;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #0056b3;
+    /* Cor mais escura no hover */
+}
+
+/* Estilo dos campos de input */
+input {
+    border-radius: 5px;
+    border: 1px solid #ddd;
+    padding: 10px;
+    width: 100%;
+}
+
+/* Espaçamento entre os elementos */
+.mb-3 {
+    margin-bottom: 20px;
+}
+
+/* Títulos */
+h2 {
+    font-weight: bold;
+    font-size: 30px;
+}
+
+h4 {
+    font-size: 18px;
+    font-weight: normal;
+}
+
+p {
+    font-size: 14px;
+}
+
+/* Link "Cadastre-se" */
+a {
+    color: #007bff;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+a:hover {
+    color: #0056b3;
+}
+
+/* Ajuste do estilo para o campo CPF ou CNPJ */
+#cpf_cnpj {
+    width: 100%;
+    /* Ocupa toda a largura disponível */
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+}
+
+.d-flex {
+    display: flex;
+    align-items: center;
+}
+
+/* Customizando o espaço entre os radio buttons */
+input[type="radio"] {
+    margin-right: 10px;
+}
+
+/* Mensagem de erro para CPF/CNPJ vazio */
+.invalid-feedback {
+    display: block;
+    color: red;
+    font-size: 12px;
+}

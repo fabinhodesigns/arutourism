@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Página Inicial</title>
+</head>
+
+<body>
+    <h1>Bem-vindo à página inicial!</h1>
+
+    {% if user.is_authenticated %}
+        <p>Olá, {{ user.username }}! </p>  <!-- Exibe o nome do usuário logado -->
+        <a href="{% url 'logout' %}">Logout</a>  <!-- Link para logout -->
+    {% else %}
+        <a href="{% url 'login' %}">Login</a>  <!-- Link para login -->
+        <a href="{% url 'register' %}">Registrar</a>  <!-- Link para cadastro -->
+    {% endif %}
+
+    <h2>Conteúdo da Página Inicial</h2>
+    <p>Esta é a página inicial do seu site.</p>
+
+    <h3>Outras informações</h3>
+    <p>Aqui você pode adicionar mais informações ou links relevantes.</p>
+    <ul>
+        <li><a href="">Sobre</a></li>
+        <li><a href="">Contato</a></li>
+        <li><a href="">Serviços</a></li>
+        <li><a href="">Blog</a></li>
+        <li><a href="">Portfólio</a></li>
+        <li><a href="">Depoimentos</a></li>
+    </ul>
+</body>
+
+</html>
