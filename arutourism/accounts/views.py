@@ -1,13 +1,19 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
 from django.http import Http404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import AuthenticationForm
 from .forms import UserRegistrationForm
+from .forms import EmpresaForm
 
 # Home
 def home(request):
     return render(request, 'home.html') 
+
+#Sobre
+def sobre(request):
+    return render(request, 'sobre.html') 
 
 # Página de cadastro
 def register(request):
@@ -38,6 +44,20 @@ def login_view(request):
         form = AuthenticationForm()
     return render(request, 'accounts/login.html', {'form': form})
 
+@login_required
+def cadastrar_empresa(request):
+    if request.method == 'POST':
+        form = EmpresaForm(request.POST, request.FILES)  # Passando request.FILES para lidar com o upload de imagem
+        if form.is_valid():  # Agora verificamos o formulário, e não o modelo diretamente
+            empresa = form.save(commit=False)
+            empresa.usuario = request.user  # Associando a empresa ao usuário logado
+            empresa.save()  # Salva a empresa no banco de dados
+            return redirect('home')  # Redireciona para a página inicial após o cadastro
+    else:
+        form = EmpresaForm()
+    return render(request, 'cadastrar_empresa.html', {'form': form})
+
+
 def logout_view(request):
     logout(request)
     return redirect('login') 
@@ -49,7 +69,7 @@ def listar_usuarios(request):
         usuarios = User.objects.all() 
     else:
         usuarios = User.objects.filter(id=request.user.id) 
-    return render(request, 'accounts/listar_usuarios.html', {'usuarios': usuarios})
+    return render(request, '/listar_usuarios.html', {'usuarios': usuarios})
 
 def editar_usuario(request, id):
     usuario = get_object_or_404(User, id=id)
@@ -62,7 +82,7 @@ def editar_usuario(request, id):
             return redirect('listar_usuarios')
     else:
         form = UserRegistrationForm(instance=usuario)
-    return render(request, 'accounts/editar_usuario.html', {'form': form})
+    return render(request, '/editar_usuario.html', {'form': form})
 
 # Excluir usuário
 def excluir_usuario(request, id):
@@ -72,7 +92,7 @@ def excluir_usuario(request, id):
     if request.method == 'POST':
         usuario.delete()
         return redirect('listar_usuarios')
-    return render(request, 'accounts/excluir_usuario.html', {'usuario': usuario})
+    return render(request, '/excluir_usuario.html', {'usuario': usuario})
 
 def logout_view(request):
     logout(request)

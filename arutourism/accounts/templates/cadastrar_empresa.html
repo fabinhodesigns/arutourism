@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block title %}Cadastrar Empresa{% endblock %}
+
+{% block content %}
+    {% if not user.is_authenticated %}
+        <div class="alert alert-warning" role="alert">
+            Você precisa estar logado para cadastrar sua empresa!
+        </div>
+    {% else %}
+      <div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-md-10 col-12">
+            <div class="card shadow-lg p-4">
+                <h4 class="text-center mb-4">Cadastro de Nova Empresa</h4>
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="nome" class="form-label">Nome da Empresa</label>
+                        {{ form.nome }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="categoria" class="form-label">Categoria</label>
+                        {{ form.categoria }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="descricao" class="form-label">Descrição</label>
+                        {{ form.descricao }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="endereco" class="form-label">Endereço</label>
+                        {{ form.endereco }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="telefone" class="form-label">Telefone</label>
+                        {{ form.telefone }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email de Contato</label>
+                        {{ form.email }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="site" class="form-label">Site (opcional)</label>
+                        {{ form.site }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="imagem" class="form-label">Imagem da Empresa</label>
+                        {{ form.imagem }}
+                        <small class="form-text text-muted">Você pode enviar uma imagem da empresa.</small>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">Cadastrar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+    {% endif %}
+
+{% endblock %}

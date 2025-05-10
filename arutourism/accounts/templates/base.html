@@ -6,17 +6,21 @@
     <title>{% block title %}ARUTOURISM{% endblock %}</title>
     
     {% load static %}
+
+    <link rel="icon" href="{% static 'images/at-transparent-blue.png' %}" type="image/x-icon">
     
     <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
     <link rel="stylesheet" href="{% static 'css/site/default.css' %}"> 
+    <link rel="stylesheet" href="{% static 'css/essentials.css' %}"> 
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
 </head>
 <body>
 
     {% include 'components/header.html' %}
 
-    <div class="container">
-        {% block content %}{% endblock %} 
-    </div>
+    {% block content %}{% endblock %} 
 
     {% include 'components/footer.html' %}
     

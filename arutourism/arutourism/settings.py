@@ -124,7 +124,14 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
+STATICFILES_DIRS = [
+    BASE_DIR / "static",  # Garante que o diretório 'static' existe
+]
+
 AUTH_USER_MODEL = 'auth.User'
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # Se estiver usando o Django para produção, adicione a seguinte linha:
 STATICFILES_DIRS = [

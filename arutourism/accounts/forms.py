@@ -1,6 +1,8 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
+from .models import Empresa
+
 import re
 
 class UserRegistrationForm(forms.ModelForm):
@@ -43,7 +45,12 @@ class UserRegistrationForm(forms.ModelForm):
 
         return cleaned_data
 
-
 class LoginForm(forms.Form):
     username = forms.CharField(max_length=150)
     password = forms.CharField(widget=forms.PasswordInput())
+    
+    
+class EmpresaForm(forms.ModelForm):
+    class Meta:
+        model = Empresa
+        fields = ['nome', 'categoria', 'descricao', 'endereco', 'telefone', 'email', 'site', 'imagem']

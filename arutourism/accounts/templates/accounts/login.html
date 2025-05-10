@@ -1,11 +1,16 @@
-{% extends 'accounts/base.html' %}  <!-- Estendendo o template base -->
+{% extends 'accounts/base.html' %} 
 
-{% block title %}ARUTOURISM - Login{% endblock %}  <!-- Título específico para o login -->
+{% block title %}ARUTOURISM - Login{% endblock %}
+
+{% load static %}
 
 {% block content %}
     <div class="container d-flex justify-content-center align-items-center custom-container">
         <div class="card shadow-lg p-4 animated-card custom-card">
-            <h2 class="text-center mb-4">ARUTOURISM</h2>
+            <div class="d-flex justify-content-center align-items-center">
+                <img src="{% static 'images/logo-blk.png' %}" alt="Logo ARUTOURISM" class="img-fluid w-50 mb-4">
+            </div>
+
             <h4 class="text-center mb-4">Administração</h4>
             <p class="text-center mb-4">Entre com suas credenciais para acessar sua conta</p>
 

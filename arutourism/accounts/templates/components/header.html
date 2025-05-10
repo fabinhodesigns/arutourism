@@ -1,41 +1,48 @@
-<header>
-    <nav class="navbar navbar-expand-lg m-4">
-        <div class="container-fluid">
+{% load static %}
 
+<header>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
             <a class="navbar-brand" href="/">
-                <span style="font-family: 'Roboto', sans-serif; font-weight: bold; font-size: 32px; color: white;">ARUTOURISM</span>
+                <img src="{% static 'images/Logo.png' %}" alt="Logo ARUTOURISM" class="img-fluid" style="max-width: 250px;">
             </a>
 
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
+                <ul class="navbar-nav ms-auto text-start">
                     <li class="nav-item">
-                        <a class="nav-link text-light" href="/">Home</a>
+                        <a class="nav-link text-light" href="/home">Home</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link text-light" href="#sobre">Sobre</a>
+                        <a class="nav-link text-light" href="/sobre">Sobre</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link text-light" href="#pontos-turisticos">Pontos Turísticos</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link text-light" href="#admin">Administração</a>
-                    </li>
 
                     {% if user.is_authenticated %}
                         <li class="nav-item">
-                            <p class="nav-link text-light">Olá, {{ user.username }}!</p>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-light" href="{% url 'logout' %}">Logout</a>
-                        </li>
-                    {% else %}
-                        <li class="nav-item">
-                            <a class="nav-link text-light" href="{% url 'login' %}">Login</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-light" href="{% url 'register' %}">Registrar</a>
+                            <a class="nav-link text-light" href="#perfil"><b>Bem vindo {{ user.username }}</b></a>
                         </li>
                     {% endif %}
+
+
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle text-light" id="navbarDropdownAcessar" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Acessar
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownAcessar">
+                            {% if user.is_authenticated %}
+                                <li><a class="dropdown-item" href="{% url 'logout' %}">Logout</a></li>
+                            {% else %}
+                            <li><a class="dropdown-item" href="{% url 'login' %}">Login</a></li>
+                            <li><a class="dropdown-item" href="{% url 'register' %}">Registrar</a></li>
+                            {% endif %}
+                        </ul>
+                    </li>
                 </ul>
             </div>
         </div>
