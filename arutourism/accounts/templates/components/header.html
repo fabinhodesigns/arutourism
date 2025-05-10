@@ -1,0 +1,43 @@
+<header>
+    <nav class="navbar navbar-expand-lg m-4">
+        <div class="container-fluid">
+
+            <a class="navbar-brand" href="/">
+                <span style="font-family: 'Roboto', sans-serif; font-weight: bold; font-size: 32px; color: white;">ARUTOURISM</span>
+            </a>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link text-light" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-light" href="#sobre">Sobre</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-light" href="#pontos-turisticos">Pontos Turísticos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-light" href="#admin">Administração</a>
+                    </li>
+
+                    {% if user.is_authenticated %}
+                        <li class="nav-item">
+                            <p class="nav-link text-light">Olá, {{ user.username }}!</p>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-light" href="{% url 'logout' %}">Logout</a>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link text-light" href="{% url 'login' %}">Login</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-light" href="{% url 'register' %}">Registrar</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+</header>

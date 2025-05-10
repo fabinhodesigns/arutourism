@@ -1,26 +1,36 @@
-/* Aplicando o fundo com um gradiente azul */
+/* Estilo básico do corpo da página */
 body {
     font-family: 'Poppins', sans-serif;
     height: 100vh;
     display: flex;
     justify-content: center;
-    /* Centraliza horizontalmente */
     align-items: center;
-    /* Centraliza verticalmente */
-    background: linear-gradient(to right, #1e3c72, #2a5298);
-    /* Degradê do azul escuro para o azul claro */
     margin: 0;
-    /* Remove margens para garantir que o conteúdo ocupe toda a tela */
+    overflow: hidden; /* Evita rolagem extra */
+    background: linear-gradient(-45deg, #2E3192, #1b8dff);
+    background-size: 400% 400%;
+    animation: gradient-animation 5s ease infinite; /* Aplica a animação do gradiente */
+}
+
+/* Definindo a animação do gradiente */
+@keyframes gradient-animation {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
 }
 
 /* Card de login */
 .card {
     border-radius: 15px;
-    /* Bordas arredondadas */
     background-color: #fff;
     box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
-    width: 30rem;
-    /* Ajuste a largura do card conforme necessário */
+    width: 40rem;
     padding: 20px;
 }
 
@@ -97,12 +107,12 @@ a:hover {
 /* Ajuste do estilo para o campo CPF ou CNPJ */
 #cpf_cnpj {
     width: 100%;
-    /* Ocupa toda a largura disponível */
     padding: 10px;
     border-radius: 5px;
     border: 1px solid #ddd;
 }
 
+/* Espaçamento entre os radio buttons */
 .d-flex {
     display: flex;
     align-items: center;
