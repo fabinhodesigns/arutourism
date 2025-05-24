@@ -2,17 +2,17 @@
 body {
     font-family: 'Poppins', sans-serif;
     height: 100vh;
+    margin: 0;
+    overflow-x: hidden;
+    background: linear-gradient(-45deg, #2E3192, #1b8dff);
+    background-size: 400% 400%;
+    animation: gradient-animation 5s ease infinite;
     display: flex;
     justify-content: center;
     align-items: center;
-    margin: 0;
-    overflow: hidden; /* Evita rolagem extra */
-    background: linear-gradient(-45deg, #2E3192, #1b8dff);
-    background-size: 400% 400%;
-    animation: gradient-animation 5s ease infinite; /* Aplica a animação do gradiente */
 }
 
-/* Definindo a animação do gradiente */
+/* Animação do gradiente */
 @keyframes gradient-animation {
     0% {
         background-position: 0% 50%;
@@ -25,72 +25,99 @@ body {
     }
 }
 
-/* Card de login */
-.card {
-    border-radius: 15px;
+/* Container centralizado e compacto */
+.custom-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem; /* Espaço ao redor reduzido */
+    background: transparent; /* Já está no body */
+}
+
+/* Card compacto do formulário */
+.custom-card {
+    width: 100%;
+    max-width: 560px; /* Mais estreito que antes */
+    border-radius: 12px;
     background-color: #fff;
-    box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
-    width: 40rem;
-    padding: 20px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+    padding: 15px 20px; /* Padding reduzido */
+    box-sizing: border-box;
 }
 
-/* Animação de aparição suave */
-.animated-card {
-    animation: fadeIn 0.8s cubic-bezier(0, 0, 0, 1.09);
+/* Títulos mais compactos */
+h2 {
+    font-weight: 700;
+    font-size: 26px;
+    margin-bottom: 12px;
+    text-align: center;
 }
 
-/* Animação para o fundo da página */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-
-    to {
-        opacity: 1;
-    }
-}
-
-/* Estilos do botão */
-button {
+h4 {
     font-size: 16px;
-    padding: 12px;
+    font-weight: 400;
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+p {
+    font-size: 13px;
+    margin-bottom: 16px;
+    text-align: center;
+}
+
+/* Inputs com padding menor */
+input, .form-check-input {
+    border-radius: 5px;
+    border: 1px solid #ddd;
+    padding: 8px 10px;
+    width: 100%;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+/* Espaçamento mais reduzido entre elementos */
+.mb-3 {
+    margin-bottom: 12px;
+}
+
+/* Radio buttons alinhados e espaçados */
+.d-flex {
+    display: flex;
+    align-items: center;
+    /* gap: 12px; */
+}
+
+/* Radio buttons com margem menor */
+.form-check-input {
+    width: 1em !important;
+    height: 1.5em !important;
+}
+
+.form-check-inline {
+  margin-right: 1rem; /* ou o valor que achar ideal */
+}
+
+.d-flex > .form-check-inline {
+  display: flex;
+  align-items: center;
+}
+
+/* Botão estilizado e compacto */
+button {
+    width: 100%;
+    padding: 10px;
+    font-size: 15px;
     background-color: #007bff;
     border: none;
     border-radius: 5px;
-    transition: background-color 0.3s ease;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.25s ease;
 }
 
 button:hover {
     background-color: #0056b3;
-    /* Cor mais escura no hover */
-}
-
-/* Estilo dos campos de input */
-input {
-    border-radius: 5px;
-    border: 1px solid #ddd;
-    padding: 10px;
-    width: 100%;
-}
-
-/* Espaçamento entre os elementos */
-.mb-3 {
-    margin-bottom: 20px;
-}
-
-/* Títulos */
-h2 {
-    font-weight: bold;
-    font-size: 30px;
-}
-
-h4 {
-    font-size: 18px;
-    font-weight: normal;
-}
-
-p {
-    font-size: 14px;
 }
 
 /* Link "Cadastre-se" */
@@ -98,34 +125,134 @@ a {
     color: #007bff;
     text-decoration: none;
     transition: color 0.3s ease;
+    font-size: 14px;
 }
 
 a:hover {
     color: #0056b3;
 }
 
-/* Ajuste do estilo para o campo CPF ou CNPJ */
-#cpf_cnpj {
-    width: 100%;
-    padding: 10px;
-    border-radius: 5px;
-    border: 1px solid #ddd;
-}
+/* NOTIFICAÇÕES */
 
-/* Espaçamento entre os radio buttons */
-.d-flex {
+/* Fundo escuro transparente cobrindo a tela inteira */
+.message-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.7); /* escurece e desfoca levemente */
+    backdrop-filter: blur(4px);
     display: flex;
-    align-items: center;
+    justify-content: center;
+    align-items: flex-start; /* topo da tela */
+    padding-top: 20px;
+    z-index: 1050; /* acima de tudo */
 }
 
-/* Customizando o espaço entre os radio buttons */
-input[type="radio"] {
-    margin-right: 10px;
+/* Caixa das mensagens, centralizada e com tamanho máximo */
+.message-box {
+    border-radius: 8px;
+    padding: 1rem 1.5rem;
+    width: 90%;
+    max-width: 420px;
+    position: relative;
 }
 
-/* Mensagem de erro para CPF/CNPJ vazio */
-.invalid-feedback {
-    display: block;
-    color: red;
-    font-size: 12px;
+/* Lista sem estilo e espaçamento entre as mensagens */
+.message-box ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.message-box ul li {
+    margin-bottom: 0.75rem;
+    padding-right: 2.5rem; /* espaço para o X */
+    position: relative;
+}
+
+/* Botão fechar (X) posicionado no canto direito de cada mensagem */
+.message-box ul li .btn-close {
+    position: absolute;
+    top: 40%;
+    color: red; 
+    right: 0.75rem;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+.message-box ul li .btn-close:hover {
+    color: #333;
+}
+
+/* NOTIFICAÇÕES */
+
+/* RESPONSIVIDADE */
+
+/* Mobile: background branco no container, removendo gradiente */
+@media (max-width: 575.98px) {
+    body, .custom-container {
+        overflow-y: auto;
+    }
+
+    .container {
+        padding: 0 !important;
+    }
+
+    .mobile-container {
+        width: 100% !important;
+    }
+    h4 {
+        font-size: 18px;
+    }
+    input, button {
+        font-size: 14px;
+    }
+    .custom-container {
+        background: #fff;
+        padding: 1.5rem 1rem;
+        min-height: auto;
+    }
+    .custom-card {
+        max-width: 100%;
+        padding: 15px;
+        border-radius: 0;
+        box-shadow: none;
+    }
+    .message-box {
+        max-width: 95%;
+        padding: 0.75rem 1rem;
+    }
+    button {
+        font-size: 14px;
+        padding: 8px;
+    }
+    input, .form-check-input {
+        font-size: 13px;
+        padding: 6px 8px;
+    }
+    a {
+        font-size: 13px;
+    }
+}
+
+/* Tablet: background gradiente e padding médio */
+@media (min-width: 576px) and (max-width: 991.98px) {
+    body {
+        background: linear-gradient(-45deg, #2E3192, #1b8dff);
+    }
+    .custom-container {
+        padding: 1.5rem 3rem;
+        background: transparent;
+    }
+    .custom-card {
+        max-width: 360px;
+        border-radius: 12px;
+        padding: 15px 25px;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+    }
 }

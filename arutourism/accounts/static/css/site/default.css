@@ -74,7 +74,7 @@ p {
 
 .navbar-nav .nav-link:hover {
     color: #ff9f00;
-    transform: scale(1.1);
+    transform: scale(.5);
 }
 
 @media (max-width: 768px) {

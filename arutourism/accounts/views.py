@@ -1,45 +1,50 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
 from django.http import Http404
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import AuthenticationForm
-from .forms import UserRegistrationForm
-from .forms import EmpresaForm
+from django.contrib.auth import login as auth_login, logout
+from .forms import UserRegistrationForm, EmpresaForm
+from django.contrib import messages
+from django.shortcuts import render, redirect
 
-# Home
 def home(request):
-    return render(request, 'home.html') 
+    return render(request, 'home.html')
 
-#Sobre
 def sobre(request):
     return render(request, 'sobre.html') 
 
-# Página de cadastro
 def register(request):
-    if request.user.is_authenticated: 
+    if request.user.is_authenticated:
         return redirect('home')
-    
-    if request.method == "POST":
+
+    if request.method == 'POST':
         form = UserRegistrationForm(request.POST)
         if form.is_valid():
             form.save()
             return redirect('login')
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"Atenção: {error}")
     else:
         form = UserRegistrationForm()
     return render(request, 'accounts/register.html', {'form': form})
 
-# Página de login
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('home')
-    
-    if request.method == "POST":
+
+    if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
             user = form.get_user()
-            login(request, user)
-            return redirect('home') 
+            auth_login(request, user)
+            return redirect('home')
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"Atenção: {error}")
     else:
         form = AuthenticationForm()
     return render(request, 'accounts/login.html', {'form': form})
@@ -57,10 +62,6 @@ def cadastrar_empresa(request):
         form = EmpresaForm()
     return render(request, 'cadastrar_empresa.html', {'form': form})
 
-
-def logout_view(request):
-    logout(request)
-    return redirect('login') 
 
 def listar_usuarios(request):
     if not request.user.is_authenticated:
