@@ -52,12 +52,12 @@ def login_view(request):
 @login_required
 def cadastrar_empresa(request):
     if request.method == 'POST':
-        form = EmpresaForm(request.POST, request.FILES)  # Passando request.FILES para lidar com o upload de imagem
-        if form.is_valid():  # Agora verificamos o formulário, e não o modelo diretamente
+        form = EmpresaForm(request.POST, request.FILES)
+        if form.is_valid():
             empresa = form.save(commit=False)
-            empresa.usuario = request.user  # Associando a empresa ao usuário logado
-            empresa.save()  # Salva a empresa no banco de dados
-            return redirect('home')  # Redireciona para a página inicial após o cadastro
+            empresa.usuario = request.user  # vincula o usuário logado
+            empresa.save()
+            return redirect('home')  # ou a página que desejar
     else:
         form = EmpresaForm()
     return render(request, 'cadastrar_empresa.html', {'form': form})
