@@ -1,0 +1,25 @@
+{% for empresa in page_obj.object_list %}
+<div class="col-12 col-sm-6 col-md-4 mb-4">
+    <div class="card h-100 shadow-sm rounded-4 p-3">
+        {% if empresa.imagem %}
+            <img src="{{ empresa.imagem.url }}" alt="{{ empresa.nome }}" class="card-img-top img-fluid rounded-3" style="max-height: 180px; object-fit: cover;">
+        {% else %}
+            <div class="d-flex justify-content-center align-items-center bg-secondary rounded-3" style="height: 180px;">
+                <i class="bi bi-building" style="font-size: 4rem; color: white;"></i>
+            </div>
+        {% endif %}
+        <div class="card-body">
+            <div class="badge bg-primary rounded-pill mb-2">{{ empresa.categoria.nome }}</div>
+            <h5 class="card-title">{{ empresa.nome }}</h5>
+            <p class="card-text text-truncate" style="max-width: 100%;">
+                {{ empresa.descricao|slice:":70" }}{% if empresa.descricao|length > 70 %}...{% endif %}
+            </p>
+        </div>
+        <div class="card-footer bg-transparent border-top-0 d-flex justify-content-between align-items-center">
+            <small class="text-muted">Cadastrado em {{ empresa.created_at|date:"d/m/Y" }}</small>
+        </div>
+    </div>
+</div>
+{% empty %}
+<p class="text-center">Sem pontos turísticos cadastrados.</p>
+{% endfor %}

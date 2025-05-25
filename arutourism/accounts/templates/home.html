@@ -15,65 +15,83 @@
                     <div class="col-lg-8 col-xl-7 col-xxl-6">
                         <div class="my-5 text-center text-xl-start">
                             <h1 class="display-5 fw-bolder text-dark mb-2">Bem-vindo ao <b>ARUTOURISM</b>!</h1>
-                            <p class="lead fw-normal text-dark text-dark-50 mb-4">Explore os pontos turísticos de Araranguá.</p>
+                            <p class="lead fw-normal text-dark text-dark-50 mb-4">Explore os pontos turísticos de
+                                Araranguá.</p>
                             <div class="d-grid gap-3 d-sm-flex justify-content-sm-center justify-content-xl-start">
-                            <a class="btn btn-primary btn-lg px-4 me-sm-3" href="/cadastrar_empresa">Cadastre sua empresa agora!</a>
+                                <a class="btn btn-primary btn-lg px-4 me-sm-3" href="/cadastrar_empresa">Cadastre sua
+                                    empresa agora!</a>
                                 <a class="btn btn-outline-dark btn-lg px-4" href="#features">Entenda mais</a>
                             </div>
                         </div>
                     </div>
                     <div class="col-xl-5 col-xxl-6 d-none d-xl-block text-center animated-zoom">
-                        <img class="img-fluid rounded-3 my-5" src="{% static 'images/wallpaper-default-ararangua.webp' %}" alt="..." />
+                        <img class="img-fluid rounded-3 my-5"
+                            src="{% static 'images/wallpaper-default-ararangua.webp' %}" alt="..." />
                     </div>
                 </div>
             </div>
         </header>
 
         <section class="py-5" id="features">
-            <div class="container px-5 my-5">
-                <div class="row gx-5">
-                    <div class="col-lg-4 mb-5 mb-lg-0">
-                        <h2 class="fw-bolder mb-0">Como funciona o ARUTOURISM?</h2>
+            <div class="container px-4 px-lg-5">
+                <div class="text-center mb-5">
+                    <h2 class="fw-bold display-6">Como funciona o <b>ARUTOURISM?</b></h2>
+                    <p class="lead text-muted mt-3">
+                        O <strong>ARUTOURISM</strong> é um sistema intuitivo para gerenciar pontos turísticos e conectar
+                        visitantes com as melhores opções da cidade.
+                        Cadastre, edite e promova seu negócio turístico com facilidade.
+                    </p>
+                </div>
+
+                <div class="row g-4">
+                    <div class="col-md-6 col-lg-6">
+                        <div class="d-flex align-items-start p-4 border rounded-4 h-100 shadow-sm bg-white animated-zoom">
+                            <div class="me-3 fs-1 text-primary">
+                                <i class="bi bi-clipboard-check"></i>
+                            </div>
+                            <div>
+                                <h5 class="fw-semibold">Cadastro Simples</h5>
+                                <p class="mb-0 text-muted">Cadastre seus pontos turísticos de forma rápida e prática. Em
+                                    poucos cliques, você estará visível para os visitantes.</p>
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-lg-8">
-                        <p class="lead fw-normal text-muted mb-5">
-                            O <b>ARUTOURISM</b> é um sistema inovador criado para gerenciar pontos turísticos e ajudar empresas a
-                            divulgar seus estabelecimentos. Nosso sistema oferece uma plataforma intuitiva para cadastrar
-                            pontos turísticos, consultar informações detalhadas, e conectar visitantes com as melhores opções
-                            de lazer da cidade.
-                        </p>
-                        <div class="row gx-5 row-cols-1 row-cols-md-2">
-                            <div class="col mb-5 h-100">
-                                <div class="feature bg-primary bg-gradient text-white rounded-3 mb-3">
-                                    <i class="bi bi-collection"></i>
-                                </div>
-                                <h2 class="h5">Cadastro Simples</h2>
-                                <p class="mb-0">Cadastre facilmente seus pontos turísticos no sistema. Em poucos cliques, você
-                                    estará pronto para ser encontrado pelos visitantes.</p>
+
+                    <div class="col-md-6 col-lg-6">
+                        <div class="d-flex align-items-start p-4 border rounded-4 h-100 shadow-sm bg-white animated-zoom">
+                            <div class="me-3 fs-1 text-primary">
+                                <i class="bi bi-gear-fill"></i>
                             </div>
-                            <div class="col mb-5 h-100">
-                                <div class="feature bg-primary bg-gradient text-white rounded-3 mb-3">
-                                    <i class="bi bi-building"></i>
-                                </div>
-                                <h2 class="h5">Gerenciamento de Informações</h2>
-                                <p class="mb-0">Gerencie os dados dos seus pontos turísticos, como descrição, fotos e horários de
-                                    funcionamento, diretamente na plataforma.</p>
+                            <div>
+                                <h5 class="fw-semibold">Gerenciamento de Informações</h5>
+                                <p class="mb-0 text-muted">Edite descrições, imagens e horários de funcionamento de
+                                    forma centralizada e atualizada.</p>
                             </div>
-                            <div class="col mb-5 mb-md-0 h-100">
-                                <div class="feature bg-primary bg-gradient text-white rounded-3 mb-3">
-                                    <i class="bi bi-toggles2"></i>
-                                </div>
-                                <h2 class="h5">Acessibilidade para Visitantes</h2>
-                                <p class="mb-0">Facilite a busca dos visitantes e permita que eles encontrem seu ponto turístico com
-                                    rapidez e praticidade.</p>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 col-lg-6">
+                        <div class="d-flex align-items-start p-4 border rounded-4 h-100 shadow-sm bg-white animated-zoom">
+                            <div class="me-3 fs-1 text-primary">
+                                <i class="bi bi-search"></i>
                             </div>
-                            <div class="col h-100">
-                                <div class="feature bg-primary bg-gradient text-white rounded-3 mb-3">
-                                    <i class="bi bi-toggles2"></i>
-                                </div>
-                                <h2 class="h5">Conecte-se com Novos Clientes</h2>
-                                <p class="mb-0">Atraia novos clientes com uma plataforma fácil de usar, que conecta turistas a
-                                    empresas locais.</p>
+                            <div>
+                                <h5 class="fw-semibold">Acessibilidade para Visitantes</h5>
+                                <p class="mb-0 text-muted">Ofereça uma experiência de busca eficiente para visitantes
+                                    que desejam encontrar atrativos de forma prática.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 col-lg-6">
+                        <div class="d-flex align-items-start p-4 border rounded-4 h-100 shadow-sm bg-white animated-zoom">
+                            <div class="me-3 fs-1 text-primary">
+                                <i class="bi bi-people-fill"></i>
+                            </div>
+                            <div>
+                                <h5 class="fw-semibold">Conecte-se com Novos Clientes</h5>
+                                <p class="mb-0 text-muted">Aumente sua visibilidade com uma plataforma moderna que
+                                    conecta turistas a empresas locais.</p>
                             </div>
                         </div>
                     </div>
@@ -107,7 +125,7 @@
         <section class="py-5">
             <div class="container px-5 my-5">
                 <div class="row gx-5 justify-content-center">
-                    <div class="col-lg-10 col-xl-6">
+                    <div class="">
                         <div class="text-center">
                             <h2 class="fw-bolder">Veja os últimos pontos turísticos cadastrados!</h2>
                             <p class="lead fw-normal text-muted mb-5">Explore aqui todos os pontos turísticos de nosso
@@ -117,110 +135,44 @@
                     </div>
                 </div>
                 <div class="row gx-5 d-flex justify-content-center align-items-center">
-
-                    <div class="col-lg-4 mb-5">
+                    {% for empresa in empresas %}
+                    <div class="col-12 col-sm-6 col-md-4 mb-5"> 
                         <div class="card h-100 shadow border-0 animated-zoom">
-                            <img class="card-img-top img-card" src="{% static 'images/empresa-exemplo/foto-empresa-1.jpg' %}" alt="..." />
+                            {% if empresa.imagem %}
+                                <img class="card-img-top img-card" src="{{ empresa.imagem.url }}" alt="{{ empresa.nome }}" style="max-height:200px; object-fit:cover;" />
+                            {% else %}
+                                <div class="text-center py-5"><i class="bi bi-building fs-1 text-muted"></i></div>
+                            {% endif %}
                             <div class="card-body p-4">
-                                <div class="badge bg-primary bg-gradient rounded-pill mb-2">Shopping Lojas</div>
-                                <a class="text-decoration-none link-dark stretched-link" href="#!">
-                                    <h5 class="card-title mb-3">Nome Empresa - Center Shopping</h5>
-                                </a>
-                                <p class="card-text mb-0">Apresentação empresa. Apresentação empresa. 
-                                    Apresentação empresa. Apresentação empresa. Apresentação empresa. Apresentação empresa. 
-                                </p>
+                                <div class="badge bg-primary bg-gradient rounded-pill mb-2">{{ empresa.categoria.nome }}</div>
+                                <h5 class="card-title mb-3">{{ empresa.nome }}</h5>
+                                <p class="card-text mb-0">{{ empresa.descricao|truncatechars:80 }}</p>
                             </div>
                             <div class="card-footer p-4 pt-0 bg-transparent border-top-0">
                                 <div class="d-flex align-items-end justify-content-between">
                                     <div class="d-flex align-items-center">
-                                        <img class="rounded-circle me-3 img-logo" src="{% static 'images/empresa-exemplo/logo.png' %}" alt="..." />
+                                        <i class="bi bi-building me-2 fs-4 text-muted"></i>
                                         <div class="small">
-                                            <div class="fw-bold">Center Shopping</div>
-                                            <div class="text-muted">Shoopings e Lojas &middot; Entrou em 10/05/2025</div>
+                                            <div class="fw-bold">{{ empresa.usuario.username }}</div>
+                                            <div class="text-muted">{{ empresa.categoria.nome }} · Entrou em {{ empresa.data_cadastro|date:"d/m/Y" }}</div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-
-
-                    <div class="col-lg-4 mb-5">
-                        <div class="card h-100 shadow border-0 animated-zoom">
-                            <img class="card-img-top img-card" src="{% static 'images/empresa-exemplo/foto-empresa-1.jpg' %}" alt="..." />
-                            <div class="card-body p-4">
-                                <div class="badge bg-primary bg-gradient rounded-pill mb-2">Shopping Lojas</div>
-                                <a class="text-decoration-none link-dark stretched-link" href="#!">
-                                    <h5 class="card-title mb-3">Nome Empresa - Center Shopping</h5>
-                                </a>
-                                <p class="card-text mb-0">Apresentação empresa. Apresentação empresa. 
-                                    Apresentação empresa. Apresentação empresa. Apresentação empresa. Apresentação empresa. 
-                                </p>
-                            </div>
-                            <div class="card-footer p-4 pt-0 bg-transparent border-top-0">
-                                <div class="d-flex align-items-end justify-content-between">
-                                    <div class="d-flex align-items-center">
-                                        <img class="rounded-circle me-3 img-logo" src="{% static 'images/empresa-exemplo/logo.png' %}" alt="..." />
-                                        <div class="small">
-                                            <div class="fw-bold">Center Shopping</div>
-                                            <div class="text-muted">Shoopings e Lojas &middot; Entrou em 10/05/2025</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                    {% empty %}
+                    <div class="col text-center">
+                        <p class="text-muted">Nenhum ponto turístico cadastrado ainda.</p>
                     </div>
-
-                    <div class="col-lg-4 mb-5">
-                        <div class="card h-100 shadow border-0 animated-zoom">
-                            <img class="card-img-top img-card" src="{% static 'images/empresa-exemplo/foto-empresa-1.jpg' %}" alt="..." />
-                            <div class="card-body p-4">
-                                <div class="badge bg-primary bg-gradient rounded-pill mb-2">Shopping Lojas</div>
-                                <a class="text-decoration-none link-dark stretched-link" href="#!">
-                                    <h5 class="card-title mb-3">Nome Empresa - Center Shopping</h5>
-                                </a>
-                                <p class="card-text mb-0">Apresentação empresa. Apresentação empresa. 
-                                    Apresentação empresa. Apresentação empresa. Apresentação empresa. Apresentação empresa. 
-                                </p>
-                            </div>
-                            <div class="card-footer p-4 pt-0 bg-transparent border-top-0">
-                                <div class="d-flex align-items-end justify-content-between">
-                                    <div class="d-flex align-items-center">
-                                        <img class="rounded-circle me-3 img-logo" src="{% static 'images/empresa-exemplo/logo.png' %}" alt="..." />
-                                        <div class="small">
-                                            <div class="fw-bold">Center Shopping</div>
-                                            <div class="text-muted">Shoopings e Lojas &middot; Entrou em 10/05/2025</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
+                    {% endfor %}
+                </div>
                     <div class="col-lg-4 mb-5 text-center">
-                        <a href="#" class=""> Veja todos os pontos turísticos (50)</a>
+                        <a href="{% url 'listar_empresas' %}" class="fw-semibold text-decoration-none">
+                            Veja todos os pontos turísticos ({{ total_empresas }})
+                        </a>
                     </div>
                 </div>
-
-                <!-- <aside class="bg-primary bg-gradient rounded-3 p-4 p-sm-5 mt-5">
-                    <div
-                        class="d-flex align-items-center justify-content-between flex-column flex-xl-row text-center text-xl-start">
-                        <div class="mb-4 mb-xl-0">
-                            <div class="fs-3 fw-bold text-white">New products, delivered to you.</div>
-                            <div class="text-white-50">Sign up for our newsletter for the latest updates.</div>
-                        </div>
-                        <div class="ms-xl-4">
-                            <div class="input-group mb-2">
-                                <input class="form-control" type="text" placeholder="Email address..."
-                                    aria-label="Email address..." aria-describedby="button-newsletter" />
-                                <button class="btn btn-outline-light" id="button-newsletter" type="button">Sign
-                                    up</button>
-                            </div>
-                            <div class="small text-white-50">We care about privacy, and will never share your data.
-                            </div>
-                        </div>
-                    </div>
-                </aside> -->
             </div>
         </section>
     </main>

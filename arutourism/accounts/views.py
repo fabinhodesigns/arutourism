@@ -7,9 +7,19 @@ from django.contrib.auth import login as auth_login, logout
 from .forms import UserRegistrationForm, EmpresaForm
 from django.contrib import messages
 from django.shortcuts import render, redirect
+from accounts.models import Empresa
+from django.core.paginator import Paginator
+from django.http import JsonResponse
+from django.template.loader import render_to_string
+
 
 def home(request):
-    return render(request, 'home.html')
+    empresas = Empresa.objects.all().order_by('-data_cadastro')[:6]  # pega só 6
+    total_empresas = Empresa.objects.count()
+    return render(request, 'home.html', {
+        'empresas': empresas,
+        'total_empresas': total_empresas,
+    })
 
 def sobre(request):
     return render(request, 'sobre.html') 
@@ -98,3 +108,19 @@ def excluir_usuario(request, id):
 def logout_view(request):
     logout(request)
     return redirect('login') 
+
+def listar_empresas(request):
+    empresas = Empresa.objects.all().order_by('-id')
+    paginator = Paginator(empresas, 9)
+    page_number = request.GET.get('page') or 1
+    page_obj = paginator.get_page(page_number)
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        html = render_to_string('accounts/partials/empresas_cards.html', {'page_obj': page_obj})
+        return JsonResponse({
+            'html': html,
+            'has_next': page_obj.has_next(),
+            'next_page_number': page_obj.next_page_number() if page_obj.has_next() else None,
+        })
+
+    return render(request, 'accounts/listar_empresas.html', {'page_obj': page_obj})

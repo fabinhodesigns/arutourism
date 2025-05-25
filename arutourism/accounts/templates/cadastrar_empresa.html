@@ -2,67 +2,64 @@
 
 {% block title %}Cadastrar Empresa{% endblock %}
 
+{% load widget_tweaks %}
+
 {% block content %}
-    {% if not user.is_authenticated %}
-        <div class="alert alert-warning" role="alert">
-            Você precisa estar logado para cadastrar sua empresa!
-        </div>
-    {% else %}
-      <div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-8 col-md-10 col-12">
-            <div class="card shadow-lg p-4">
-                <h4 class="text-center mb-4">Cadastro de Nova Empresa</h4>
-                <form method="POST" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    
-                    <div class="mb-3">
-                        <label for="nome" class="form-label">Nome da Empresa</label>
-                        {{ form.nome }}
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-10 col-md-11 col-12">
+            <div class="card shadow-sm rounded-4 p-4 bg-white">
+                <h4 class="text-center mb-4 fw-bold">Cadastro de Nova Empresa</h4>
+                <form method="POST" enctype="multipart/form-data" novalidate>
+                {% csrf_token %}
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                    <label for="nome" class="form-label fw-semibold">Nome da Empresa</label>
+                    {{ form.nome|add_class:"form-control form-control-lg" }}
                     </div>
 
-                    <div class="mb-3">
-                        <label for="categoria" class="form-label">Categoria</label>
-                        {{ form.categoria }}
+                    <div class="col-md-6">
+                    <label for="categoria" class="form-label fw-semibold">Categoria</label>
+                    {{ form.categoria|add_class:"form-select form-select-lg" }}
                     </div>
 
-                    <div class="mb-3">
-                        <label for="descricao" class="form-label">Descrição</label>
-                        {{ form.descricao }}
+                    <div class="col-12">
+                    <label for="descricao" class="form-label fw-semibold">Descrição</label>
+                    {{ form.descricao|add_class:"form-control form-control-lg" }}
                     </div>
 
-                    <div class="mb-3">
-                        <label for="endereco" class="form-label">Endereço</label>
-                        {{ form.endereco }}
+                    <div class="col-md-6">
+                    <label for="endereco" class="form-label fw-semibold">Endereço</label>
+                    {{ form.endereco|add_class:"form-control form-control-lg" }}
                     </div>
 
-                    <div class="mb-3">
-                        <label for="telefone" class="form-label">Telefone</label>
-                        {{ form.telefone }}
+                    <div class="col-md-6">
+                    <label for="telefone" class="form-label fw-semibold">Telefone</label>
+                    {{ form.telefone|add_class:"form-control form-control-lg" }}
                     </div>
 
-                    <div class="mb-3">
-                        <label for="email" class="form-label">Email de Contato</label>
-                        {{ form.email }}
+                    <div class="col-md-6">
+                    <label for="email" class="form-label fw-semibold">Email de Contato</label>
+                    {{ form.email|add_class:"form-control form-control-lg" }}
                     </div>
 
-                    <div class="mb-3">
-                        <label for="site" class="form-label">Site (opcional)</label>
-                        {{ form.site }}
+                    <div class="col-md-6">
+                    <label for="site" class="form-label fw-semibold">Site (opcional)</label>
+                    {{ form.site|add_class:"form-control form-control-lg" }}
                     </div>
 
-                    <div class="mb-3">
-                        <label for="imagem" class="form-label">Imagem da Empresa</label>
-                        {{ form.imagem }}
-                        <small class="form-text text-muted">Você pode enviar uma imagem da empresa.</small>
+                    <div class="col-12">
+                    <label for="imagem" class="form-label fw-semibold">Imagem da Empresa</label>
+                    {{ form.imagem|add_class:"form-control form-control-sm" }}
+                    <small class="form-text text-muted fst-italic mt-1">Você pode enviar uma imagem da empresa.</small>
                     </div>
+                </div>
 
-                    <button type="submit" class="btn btn-primary w-100">Cadastrar</button>
+                <button type="submit" class="btn btn-primary btn-lg w-100 rounded-pill fw-semibold mt-4">Cadastrar</button>
                 </form>
+            </div>
             </div>
         </div>
     </div>
-</div>
-    {% endif %}
-
 {% endblock %}

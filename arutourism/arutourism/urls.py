@@ -12,6 +12,7 @@ urlpatterns = [
     path('', views.home, name='home_redirect'),
     path('accounts/', include('accounts.urls')),    
     path('cadastrar_empresa/', views.cadastrar_empresa, name='cadastrar_empresa'),
+    path('empresas/', views.listar_empresas, name='listar_empresas'),
 ]
 
 # Para servir arquivos de mídia durante o desenvolvimento

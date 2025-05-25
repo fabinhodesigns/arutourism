@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.conf import settings
+from django.utils import timezone
 
 class PerfilUsuario(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='perfil')
@@ -28,6 +29,7 @@ class Empresa(models.Model):
     site = models.URLField(blank=True, null=True)
     imagem = models.ImageField(upload_to='empresa_imagens/', blank=True, null=True)
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='empresas', null=True, blank=True)
+    data_cadastro = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
         return self.nome

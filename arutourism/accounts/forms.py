@@ -64,3 +64,13 @@ class EmpresaForm(forms.ModelForm):
     class Meta:
         model = Empresa
         fields = ['nome', 'categoria', 'descricao', 'endereco', 'telefone', 'email', 'site', 'imagem']
+        widgets = {
+            'nome': forms.TextInput(attrs={'class': 'form-control form-control-lg'}),
+            'categoria': forms.Select(attrs={'class': 'form-select form-select-lg'}),
+            'descricao': forms.Textarea(attrs={'class': 'form-control form-control-lg'}),
+            'endereco': forms.TextInput(attrs={'class': 'form-control form-control-lg'}),
+            'telefone': forms.TextInput(attrs={'class': 'form-control form-control-lg'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control form-control-lg'}),
+            'site': forms.URLInput(attrs={'class': 'form-control form-control-lg'}),
+            'imagem': forms.ClearableFileInput(attrs={'class': 'form-control form-control-sm'}),
+        }

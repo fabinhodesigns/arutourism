@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Todas as Empresas{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h2 class="text-center fw-bold mb-5">Todas as Empresas Cadastradas</h2>
+    <div class="row gx-4 gy-4 justify-content-center" id="empresas-container">
+        {% include 'accounts/partials/empresas_cards.html' %}
+    </div>
+
+    {% if page_obj.has_next %}
+    <div class="d-flex justify-content-center mt-4">
+        <button id="load-more-btn" class="btn btn-primary btn-lg">Carregar mais</button>
+    </div>
+    {% endif %}
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function(){
+        let nextPage = {% if page_obj.has_next %}{{ page_obj.next_page_number }}{% else %}null{% endif %};
+
+        $('#load-more-btn').click(function(){
+            if(!nextPage) return;
+
+            $.ajax({
+                url: "{% url 'listar_empresas' %}",
+                data: { page: nextPage },
+                dataType: 'json',
+                success: function(data){
+                    $('#empresas-container').append(data.html);
+                    if(data.has_next){
+                        nextPage = data.next_page_number;
+                    } else {
+                        nextPage = null;
+                        $('#load-more-btn').hide();
+                    }
+                },
+                error: function(){
+                    alert('Erro ao carregar mais empresas.');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
