@@ -46,7 +46,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'accounts',
-    'widget_tweaks',0
+    'widget_tweaks',
 ]
 
 AUTHENTICATION_BACKENDS = [
