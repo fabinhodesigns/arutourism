@@ -133,11 +133,6 @@ STATICFILES_DIRS = [
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# Se estiver usando o Django para produção, adicione a seguinte linha:
-STATICFILES_DIRS = [
-    BASE_DIR / "static",  # Isso deve garantir que o Django encontre a pasta 'static'
-]
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 MESSAGE_TAGS = {
