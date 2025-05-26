@@ -8,6 +8,9 @@ https://docs.djangoproject.com/en/4.2/topics/settings/
 
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
+
+# wa6gg2t0xt@i1wn%+#teo3via&+0lt26eolpwkvg3))gk4^jy(
+
 """
 
 import os
@@ -27,9 +30,9 @@ SECRET_KEY = 'django-insecure-pazbq%yw)bkt8jq=wmwt%lgu5q(id(#q#paio0v)(d#k5z%r#w
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # DEBUG = True
-DEBUG = os.environ.get('DJANGO_DEBUG', '') != 'False'
+DEBUG = os.getenv('DJANGO_DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['arutourism-app.herokuapp.com', 'localhost', '127.0.0.1']
 
 
 # Application definition
@@ -86,9 +89,7 @@ WSGI_APPLICATION = 'arutourism.wsgi.application'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 DATABASES = {
-    'default': dj_database_url.config(
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}"
-    )
+    'default': dj_database_url.config(default='sqlite:///db.sqlite3')
 }
 
 
