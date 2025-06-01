@@ -9,7 +9,7 @@
             </div>
         {% endif %}
         <div class="card-body">
-            <div class="badge bg-primary rounded-pill mb-2">{{ empresa.categoria.nome }}</div>
+            <div class="badge bg-primary rounded-pill mb-2">{{ empresa.categoria.nome_limpo }}</div>
             <h5 class="card-title">{{ empresa.nome }}</h5>
             <p class="card-text text-truncate" style="max-width: 100%;">
                 {{ empresa.descricao|slice:":70" }}{% if empresa.descricao|length > 70 %}...{% endif %}

@@ -65,9 +65,9 @@ def cadastrar_empresa(request):
         form = EmpresaForm(request.POST, request.FILES)
         if form.is_valid():
             empresa = form.save(commit=False)
-            empresa.usuario = request.user  # vincula o usuário logado
+            empresa.user = request.user  # Aqui usa 'user', conforme o model
             empresa.save()
-            return redirect('home')  # ou a página que desejar
+            return redirect('home')  # ou outra página
     else:
         form = EmpresaForm()
     return render(request, 'cadastrar_empresa.html', {'form': form})
@@ -124,3 +124,7 @@ def listar_empresas(request):
         })
 
     return render(request, 'accounts/listar_empresas.html', {'page_obj': page_obj})
+
+def empresa_detalhe(request, empresa_id):
+    empresa = get_object_or_404(Empresa, id=empresa_id)
+    return render(request, 'accounts/empresa_detalhe.html', {'empresa': empresa})

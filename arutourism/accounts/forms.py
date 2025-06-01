@@ -1,3 +1,4 @@
+import re
 from django import forms
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
@@ -63,14 +64,26 @@ class UserRegistrationForm(forms.ModelForm):
 class EmpresaForm(forms.ModelForm):
     class Meta:
         model = Empresa
-        fields = ['nome', 'categoria', 'descricao', 'endereco', 'telefone', 'email', 'site', 'imagem']
+        fields = ['nome', 'categoria', 'descricao', 'rua', 'bairro', 'cidade', 'numero', 'cep', 'telefone', 'email', 'site', 'imagem', 'latitude', 'longitude']
         widgets = {
             'nome': forms.TextInput(attrs={'class': 'form-control form-control-lg'}),
             'categoria': forms.Select(attrs={'class': 'form-select form-select-lg'}),
             'descricao': forms.Textarea(attrs={'class': 'form-control form-control-lg'}),
-            'endereco': forms.TextInput(attrs={'class': 'form-control form-control-lg'}),
+            'rua': forms.TextInput(attrs={'class': 'form-control form-control-lg'}),
+            'bairro': forms.TextInput(attrs={'class': 'form-control form-control-lg'}),
+            'cidade': forms.TextInput(attrs={'class': 'form-control form-control-lg'}),
+            'numero': forms.TextInput(attrs={'class': 'form-control form-control-lg'}),
+            'cep': forms.TextInput(attrs={'class': 'form-control form-control-lg', 'maxlength': 8}),
             'telefone': forms.TextInput(attrs={'class': 'form-control form-control-lg'}),
             'email': forms.EmailInput(attrs={'class': 'form-control form-control-lg'}),
             'site': forms.URLInput(attrs={'class': 'form-control form-control-lg'}),
             'imagem': forms.ClearableFileInput(attrs={'class': 'form-control form-control-sm'}),
+            'latitude': forms.HiddenInput(),
+            'longitude': forms.HiddenInput(),
         }
+
+    def clean_cep(self):
+        cep = self.cleaned_data.get('cep')
+        if not re.match(r'^\d{8}$', cep):
+            raise forms.ValidationError("CEP deve conter exatamente 8 números.")
+        return cep

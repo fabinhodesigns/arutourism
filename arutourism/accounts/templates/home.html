@@ -45,7 +45,8 @@
 
                 <div class="row g-4">
                     <div class="col-md-6 col-lg-6">
-                        <div class="d-flex align-items-start p-4 border rounded-4 h-100 shadow-sm bg-white animated-zoom">
+                        <div
+                            class="d-flex align-items-start p-4 border rounded-4 h-100 shadow-sm bg-white animated-zoom">
                             <div class="me-3 fs-1 text-primary">
                                 <i class="bi bi-clipboard-check"></i>
                             </div>
@@ -58,7 +59,8 @@
                     </div>
 
                     <div class="col-md-6 col-lg-6">
-                        <div class="d-flex align-items-start p-4 border rounded-4 h-100 shadow-sm bg-white animated-zoom">
+                        <div
+                            class="d-flex align-items-start p-4 border rounded-4 h-100 shadow-sm bg-white animated-zoom">
                             <div class="me-3 fs-1 text-primary">
                                 <i class="bi bi-gear-fill"></i>
                             </div>
@@ -71,7 +73,8 @@
                     </div>
 
                     <div class="col-md-6 col-lg-6">
-                        <div class="d-flex align-items-start p-4 border rounded-4 h-100 shadow-sm bg-white animated-zoom">
+                        <div
+                            class="d-flex align-items-start p-4 border rounded-4 h-100 shadow-sm bg-white animated-zoom">
                             <div class="me-3 fs-1 text-primary">
                                 <i class="bi bi-search"></i>
                             </div>
@@ -84,7 +87,8 @@
                     </div>
 
                     <div class="col-md-6 col-lg-6">
-                        <div class="d-flex align-items-start p-4 border rounded-4 h-100 shadow-sm bg-white animated-zoom">
+                        <div
+                            class="d-flex align-items-start p-4 border rounded-4 h-100 shadow-sm bg-white animated-zoom">
                             <div class="me-3 fs-1 text-primary">
                                 <i class="bi bi-people-fill"></i>
                             </div>
@@ -136,43 +140,48 @@
                 </div>
                 <div class="row gx-5 d-flex justify-content-center align-items-center">
                     {% for empresa in empresas %}
-                    <div class="col-12 col-sm-6 col-md-4 mb-5"> 
-                        <div class="card h-100 shadow border-0 animated-zoom">
-                            {% if empresa.imagem %}
-                                <img class="card-img-top img-card" src="{{ empresa.imagem.url }}" alt="{{ empresa.nome }}" style="max-height:200px; object-fit:cover;" />
-                            {% else %}
-                                <div class="text-center py-5"><i class="bi bi-building fs-1 text-muted"></i></div>
-                            {% endif %}
-                            <div class="card-body p-4">
-                                <div class="badge bg-primary bg-gradient rounded-pill mb-2">{{ empresa.categoria.nome }}</div>
-                                <h5 class="card-title mb-3">{{ empresa.nome }}</h5>
-                                <p class="card-text mb-0">{{ empresa.descricao|truncatechars:80 }}</p>
-                            </div>
-                            <div class="card-footer p-4 pt-0 bg-transparent border-top-0">
-                                <div class="d-flex align-items-end justify-content-between">
-                                    <div class="d-flex align-items-center">
-                                        <i class="bi bi-building me-2 fs-4 text-muted"></i>
-                                        <div class="small">
-                                            <div class="fw-bold">{{ empresa.usuario.username }}</div>
-                                            <div class="text-muted">{{ empresa.categoria.nome }} · Entrou em {{ empresa.data_cadastro|date:"d/m/Y" }}</div>
+                        <div class="col-12 col-sm-6 col-md-4 mb-5">
+                            <a href="{% url 'empresa_detalhe' empresa.id %}"
+                                class="text-decoration-none link-dark stretched-link">
+                                <div class="card h-100 shadow border-0 animated-zoom">
+                                    {% if empresa.imagem %}
+                                    <img class="card-img-top img-card" src="{{ empresa.imagem.url }}"
+                                        alt="{{ empresa.nome }}" style="max-height:200px; object-fit:cover;" />
+                                    {% else %}
+                                    <div class="text-center py-5"><i class="bi bi-building fs-1 text-muted"></i></div>
+                                    {% endif %}
+                                    <div class="card-body p-4">
+                                        <div class="badge bg-primary bg-gradient rounded-pill mb-2">{{ empresa.categoria.nome_limpo }}</div>
+                                        <h5 class="card-title mb-3">{{ empresa.nome }}</h5>
+                                        <p class="card-text mb-0">{{ empresa.descricao|truncatechars:80 }}</p>
+                                    </div>
+                                    <div class="card-footer p-4 pt-0 bg-transparent border-top-0">
+                                        <div class="d-flex align-items-end justify-content-between">
+                                            <div class="d-flex align-items-center">
+                                                <i class="bi bi-building me-2 fs-4 text-muted"></i>
+                                                <div class="small">
+                                                    <div class="fw-bold">{{ empresa.usuario.username }}</div>
+                                                    <div class="text-muted">{{ empresa.categoria.nome_limpo }} · Entrou em
+                                                        {{ empresa.data_cadastro|date:"d/m/Y" }}</div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                            </a>
                         </div>
-                    </div>
                     {% empty %}
-                    <div class="col text-center">
-                        <p class="text-muted">Nenhum ponto turístico cadastrado ainda.</p>
-                    </div>
+                        <div class="col text-center">
+                            <p class="text-muted">Nenhum ponto turístico cadastrado ainda.</p>
+                        </div>
                     {% endfor %}
                 </div>
-                    <div class="col-lg-4 mb-5 text-center">
-                        <a href="{% url 'listar_empresas' %}" class="fw-semibold text-decoration-none">
-                            Veja todos os pontos turísticos ({{ total_empresas }})
-                        </a>
-                    </div>
+                <div class="col-lg-4 mb-5 text-center">
+                    <a href="{% url 'listar_empresas' %}" class="fw-semibold text-decoration-none">
+                        Veja todos os pontos turísticos ({{ total_empresas }})
+                    </a>
                 </div>
+            </div>
             </div>
         </section>
     </main>

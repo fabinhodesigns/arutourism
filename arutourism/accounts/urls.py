@@ -11,6 +11,7 @@ urlpatterns = [
     path('logout/', views.logout_view, name='logout'),
     path('editar_usuario/<int:id>/', views.editar_usuario, name='editar_usuario'),
     path('excluir_usuario/<int:id>/', views.excluir_usuario, name='excluir_usuario'),
+    path('empresa/<int:empresa_id>/', views.empresa_detalhe, name='empresa_detalhe'),
 ]
 
 # Para servir arquivos de mídia durante o desenvolvimento
