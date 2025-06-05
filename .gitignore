@@ -9,3 +9,5 @@ venv/
 *.sqlite3
 /staticfiles/
 .DS_Store
+node_modules/
+staticfiles/
