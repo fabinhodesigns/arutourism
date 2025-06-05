@@ -32,7 +32,7 @@ SECRET_KEY = 'django-insecure-pazbq%yw)bkt8jq=wmwt%lgu5q(id(#q#paio0v)(d#k5z%r#w
 DEBUG = False
 # DEBUG = os.getenv('DJANGO_DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = ['arutourism-app.herokuapp.com', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['arutourism.herokuapp.com', 'localhost', '127.0.0.1']
 
 # Application definition
 
