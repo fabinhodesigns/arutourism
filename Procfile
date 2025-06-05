@@ -1,1 +1,1 @@
-web: gunicorn arutourism.arutourism.wsgi --log-file -
+web: gunicorn arutourism.wsgi --log-file -
