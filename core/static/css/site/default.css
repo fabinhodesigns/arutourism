@@ -3,6 +3,7 @@ body {
     background-color: #f4f5f7;
     margin: 0;
     padding-top: 35px !important;
+    min-height: 100vh;
 }
 
 header,
