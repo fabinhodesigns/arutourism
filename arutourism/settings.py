@@ -6,10 +6,6 @@ import dj_database_url
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
-
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-8jy1*9-$brc$f!b@%8bt6hqepqj(367@$&c$xxv@y6ax5luzgm'
 
@@ -65,12 +61,41 @@ WSGI_APPLICATION = 'arutourism.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
+
+
+
+
+
+##################################################################################
+##################################################################################
+
+# CONFIGURACAO BANCO DE DADOS
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Banco de dados: Usar SQLite no desenvolvimento local e garantir que no Heroku seja configurado corretamente
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',  # Garante que o SQLite será usado localmente
     }
 }
+
+# Certifique-se de usar o banco de dados do Heroku em produção
+if 'DATABASE_URL' in os.environ:
+    DATABASES['default'] = dj_database_url.config(conn_max_age=600, ssl_require=True)
+
+##################################################################################
+##################################################################################
+
+
+
 
 
 # Password validation
