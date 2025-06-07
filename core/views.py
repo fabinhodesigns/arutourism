@@ -21,13 +21,11 @@ def home(request):
         'total_empresas': total_empresas,
     })
 
-def test_view(request):
-    print("Acessando a rota /test/")
-    return HttpResponse("Página de Teste - Veja o console.")
-
 def sobre(request):
-    print("Renderizando a página sobre")
     return render(request, 'core/sobre.html/')
+
+def termo_de_servico(request):
+    return render(request, 'core/termo_de_servico.html/')
 
 def register(request):
     if request.user.is_authenticated:
