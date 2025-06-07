@@ -14,6 +14,10 @@ footer {
     text-align: center;
 }
 
+.responsive-card {
+    min-width: 15rem !important;
+}
+
 .container {
     display: flex;
     justify-content: center;

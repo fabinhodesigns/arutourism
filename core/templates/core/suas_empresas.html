@@ -10,7 +10,7 @@
     <div class="row gx-4 gy-4 justify-content-center" id="empresas-container">
         {% for empresa in empresas %}
         <div class="col-md-4">
-            <div class="card h-100">
+            <div class="card responsive-card h-100">
                 <img src="{{ empresa.imagem.url }}" class="card-img-top" alt="{{ empresa.nome }}">
                 <div class="card-body">
                     <h5 class="card-title">{{ empresa.nome }}</h5>
