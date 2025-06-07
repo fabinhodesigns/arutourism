@@ -63,7 +63,7 @@ WSGI_APPLICATION = 'arutourism.wsgi.application'
 
 # COMENTAR QUANDO FOR USAR LOCAL SQLITE - DESCOMENTAR PRA USAR NA PRODUCAO
 DATABASES = {
-    'default': dj_database_url.config(default=os.environ['DATABASE_URL'], conn_max_age=600, ssl_require=True)
+    'default': dj_database_url.config(default=os.environ['DATABASE_URL'], conn_max_age=600, ssl_require=False)
 }   
 
 # COMENTAR QUANDO FOR SUBIR PRO HEROKU - DESCOMENTAR PRA USAR LOCAL
