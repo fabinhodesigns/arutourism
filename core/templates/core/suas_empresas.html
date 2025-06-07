@@ -1,0 +1,27 @@
+{% extends 'base2.html' %}
+{% block title %}Suas Empresas Cadastradas{% endblock %}
+
+{% block content %}
+<div class="container py-5 mt-5">
+    <h2 class="text-center fw-bold mb-5">Suas Empresas Cadastradas</h2>
+
+    {% if empresas %}
+    <div class="row gx-4 gy-4 justify-content-center" id="empresas-container">
+        {% for empresa in empresas %}
+        <div class="col-md-4">
+            <div class="card h-100">
+                <img src="{{ empresa.imagem.url }}" class="card-img-top" alt="{{ empresa.nome }}">
+                <div class="card-body">
+                    <h5 class="card-title">{{ empresa.nome }}</h5>
+                    <p class="card-text">{{ empresa.descricao|truncatewords:20 }}</p>
+                    <a href="{% url 'empresa_detalhe' empresa.id %}" class="btn btn-primary">Ver Detalhes</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-center">Você ainda não cadastrou nenhuma empresa.</p>
+    {% endif %}
+</div>
+{% endblock %}

@@ -66,6 +66,12 @@ def login_view(request):
     return render(request, 'core/login.html', {'form': form})
 
 @login_required(login_url='/login/')
+def suas_empresas(request):
+    empresas = Empresa.objects.filter(user=request.user)
+
+    return render(request, 'core/suas_empresas.html', {'empresas': empresas})
+
+@login_required(login_url='/login/')
 def cadastrar_empresa(request):
     if request.method == 'POST':
         form = EmpresaForm(request.POST, request.FILES)
