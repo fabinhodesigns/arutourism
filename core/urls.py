@@ -22,7 +22,6 @@ urlpatterns = [
     path('sobre/', views.sobre, name='sobre'),
     path('politica-privacidade/', views.politica_privacidade, name='politica_privacidade'),
     path('termos-servico/', views.termos_servico, name='termos_servico'),
-    path('test/', views.test_view, name='test'),
 ]
 
 handler404 = 'django.views.defaults.page_not_found'
