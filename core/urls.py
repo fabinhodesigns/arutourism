@@ -20,8 +20,6 @@ urlpatterns = [
     path('cadastrar_empresa/', views.cadastrar_empresa, name='cadastrar_empresa'),
     path('empresas/', views.listar_empresas, name='listar_empresas'),
     path('sobre/', views.sobre, name='sobre'),
-    path('politica-privacidade/', views.politica_privacidade, name='politica_privacidade'),
-    path('termos-servico/', views.termos_servico, name='termos_servico'),
 ]
 
 handler404 = 'django.views.defaults.page_not_found'

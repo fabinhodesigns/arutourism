@@ -21,7 +21,12 @@ def home(request):
         'total_empresas': total_empresas,
     })
 
+def test_view(request):
+    print("Acessando a rota /test/")
+    return HttpResponse("Página de Teste - Veja o console.")
+
 def sobre(request):
+    print("Renderizando a página sobre")
     return render(request, 'core/sobre.html/')
 
 def register(request):
@@ -128,9 +133,3 @@ def listar_empresas(request):
 def empresa_detalhe(request, empresa_id):
     empresa = get_object_or_404(Empresa, id=empresa_id)
     return render(request, 'core/empresa_detalhe.html', {'empresa': empresa})
-
-# def politica_privacidade(request):
-#     return render(request, 'core/politica_privacidade.html')
-
-# def termos_servico(request):
-#     return render(request, 'core/termos_servico.html')
