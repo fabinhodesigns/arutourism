@@ -37,7 +37,7 @@
                         <a class="nav-link text-light" href="/sobre/">Sobre</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link text-light" href="#pontos-turisticos">Pontos Turísticos</a>
+                        <a class="nav-link text-light" href="{% url 'listar_empresas' %}">Pontos Turísticos</a>
                     </li>
                     <li class="nav-item dropdown">
                         {% if user.is_authenticated %}
