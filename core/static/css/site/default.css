@@ -80,7 +80,7 @@ p {
 
 @media (max-width: 768px) {
     .navbar-collapse {
-        background-color: #1e3c72;
+        /* background-color: #1e3c72; */
     }
 
     .navbar-nav .nav-link {

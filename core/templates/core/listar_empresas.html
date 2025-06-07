@@ -37,6 +37,13 @@
                         nextPage = null;
                         $('#load-more-btn').hide();
                     }
+
+                    // Agora, ao adicionar o HTML via AJAX, vamos garantir que a data de cadastro seja clicável
+                    // Adicionar link de detalhes na data de cadastro
+                    $('div[data-cadastro]').each(function(){
+                        var cadastroLink = $(this).data('cadastro');
+                        $(this).html('Entrou em <a href="' + cadastroLink + '" class="text-decoration-none">' + $(this).text() + '</a>');
+                    });
                 },
                 error: function(){
                     alert('Erro ao carregar mais empresas.');
