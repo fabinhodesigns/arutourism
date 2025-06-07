@@ -1,0 +1,129 @@
+{% extends 'base2.html' %}
+{% block title %}Cadastrar Empresa{% endblock %}
+{% load widget_tweaks %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10 col-md-11 col-12">
+            <div class="card shadow-sm rounded-4 p-4 bg-white">
+                <h4 class="text-center mb-4 fw-bold">Cadastro de Nova Empresa</h4>
+                <form method="POST" enctype="multipart/form-data" novalidate>
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="nome" class="form-label fw-semibold">Nome da Empresa</label>
+                            {{ form.nome|add_class:"form-control form-control-lg" }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="categoria" class="form-label fw-semibold">Categoria</label>
+                            {{ form.categoria|add_class:"form-select form-select-lg" }}
+                        </div>
+
+                        <div class="col-12">
+                            <label for="descricao" class="form-label fw-semibold">Descrição</label>
+                            {{ form.descricao|add_class:"form-control form-control-lg" }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="rua" class="form-label fw-semibold">Rua</label>
+                            {{ form.rua|add_class:"form-control form-control-lg" }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="bairro" class="form-label fw-semibold">Bairro</label>
+                            {{ form.bairro|add_class:"form-control form-control-lg" }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="cidade" class="form-label fw-semibold">Cidade</label>
+                            {{ form.cidade|add_class:"form-control form-control-lg" }}
+                        </div>
+
+                        <div class="col-md-3">
+                            <label for="numero" class="form-label fw-semibold">Número</label>
+                            {{ form.numero|add_class:"form-control form-control-lg" }}
+                        </div>
+
+                        <div class="col-md-3">
+                            <label for="cep" class="form-label fw-semibold">CEP</label>
+                            {{ form.cep|add_class:"form-control form-control-lg" }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="telefone" class="form-label fw-semibold">Telefone</label>
+                            {{ form.telefone|add_class:"form-control form-control-lg" }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="email" class="form-label fw-semibold">Email de Contato</label>
+                            {{ form.email|add_class:"form-control form-control-lg" }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="site" class="form-label fw-semibold">Site (opcional)</label>
+                            {{ form.site|add_class:"form-control form-control-lg" }}
+                        </div>
+
+                        <div class="col-12">
+                            <label for="imagem" class="form-label fw-semibold">Imagem da Empresa</label>
+                            {{ form.imagem|add_class:"form-control form-control-sm" }}
+                            <small class="form-text text-muted fst-italic mt-1">Você pode enviar uma imagem da empresa.</small>
+                        </div>
+
+                        {{ form.latitude }}
+                        {{ form.longitude }}
+
+                        <div class="col-12 mt-3">
+                            <label class="form-label fw-semibold">Selecione a localização no mapa</label>
+                            <div id="map" style="height: 400px; border-radius: 8px;"></div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-center mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg rounded-2 fw-semibold w-50">
+                            Cadastrar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Leaflet CSS e JS sem integrity para evitar bloqueio -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var map = L.map('map').setView([-28.9371, -49.4840], 13);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    var marker;
+
+    var latInput = document.getElementById("id_latitude");
+    var lonInput = document.getElementById("id_longitude");
+
+    if (latInput.value && lonInput.value) {
+        marker = L.marker([latInput.value, lonInput.value]).addTo(map);
+        map.setView([latInput.value, lonInput.value], 15);
+    }
+
+    map.on('click', function(e) {
+        if (marker) {
+            map.removeLayer(marker);
+        }
+        marker = L.marker(e.latlng).addTo(map);
+
+        latInput.value = e.latlng.lat.toFixed(6);
+        lonInput.value = e.latlng.lng.toFixed(6);
+    });
+});
+</script>
+{% endblock %}
