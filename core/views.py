@@ -27,6 +27,9 @@ def sobre(request):
 def termo_de_servico(request):
     return render(request, 'core/termo_de_servico.html/')
 
+def politica_de_privacidade(request):
+    return render(request, 'core/politica_de_privacidade.html/')
+
 def register(request):
     if request.user.is_authenticated:
         return redirect('home')
