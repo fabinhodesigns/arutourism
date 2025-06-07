@@ -4,6 +4,7 @@ from django.conf.urls.static import static
 from django.urls import path
 from . import views
 from django.contrib import admin
+from django.conf.urls import handler404
 
 
 urlpatterns = [
@@ -22,6 +23,8 @@ urlpatterns = [
 
     path('test/', views.test_view, name='test'),
 ]
+
+handler404 = 'django.views.defaults.page_not_found'
 
 # Para servir arquivos de mídia durante o desenvolvimento
 if settings.DEBUG:
