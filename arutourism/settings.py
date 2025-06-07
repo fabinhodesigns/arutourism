@@ -10,7 +10,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-8jy1*9-$brc$f!b@%8bt6hqepqj(367@$&c$xxv@y6ax5luzgm'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
@@ -64,7 +64,7 @@ WSGI_APPLICATION = 'arutourism.wsgi.application'
 # COMENTAR QUANDO FOR USAR LOCAL SQLITE - DESCOMENTAR PRA USAR NA PRODUCAO
 DATABASES = {
     'default': dj_database_url.config(default=os.environ['DATABASE_URL'], conn_max_age=600, ssl_require=True)
-}
+}   
 
 # COMENTAR QUANDO FOR SUBIR PRO HEROKU - DESCOMENTAR PRA USAR LOCAL
 # DATABASES = {
