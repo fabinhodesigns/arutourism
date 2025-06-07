@@ -1,25 +1,39 @@
-{% for empresa in page_obj.object_list %}
-<div class="col-12 col-sm-6 col-md-4 mb-4">
-    <div class="card h-100 shadow-sm rounded-4 p-3">
-        {% if empresa.imagem %}
-            <img src="{{ empresa.imagem.url }}" alt="{{ empresa.nome }}" class="card-img-top img-fluid rounded-3" style="max-height: 180px; object-fit: cover;">
-        {% else %}
-            <div class="d-flex justify-content-center align-items-center bg-secondary rounded-3" style="height: 180px;">
-                <i class="bi bi-building" style="font-size: 4rem; color: white;"></i>
+{% for empresa in empresas %}
+<div class="col-12 col-sm-6 col-md-4 mb-5">
+    <a href="{% url 'empresa_detalhe' empresa.id %}" class="text-decoration-none link-dark">
+        <div class="card h-100 shadow border-0 animated-zoom d-flex flex-column">
+            {% if empresa.imagem %}
+            <img class="card-img-top img-card" src="{{ empresa.imagem.url }}"
+                alt="{{ empresa.nome }}" style="max-height:200px; object-fit:cover;" />
+            {% else %}
+            <div class="text-center py-5"><i class="bi bi-building fs-1 text-muted"></i></div>
+            {% endif %}
+            <div class="card-body p-4 d-flex flex-column">
+                <div class="badge bg-primary bg-gradient rounded-pill mb-2">{{ empresa.categoria.nome_limpo }}</div>
+                <h5 class="card-title mb-3">{{ empresa.nome }}</h5>
+                <p class="card-text mb-0 flex-grow-1">{{ empresa.descricao|truncatechars:80 }}</p>
             </div>
-        {% endif %}
-        <div class="card-body">
-            <div class="badge bg-primary rounded-pill mb-2">{{ empresa.categoria.nome_limpo }}</div>
-            <h5 class="card-title">{{ empresa.nome }}</h5>
-            <p class="card-text text-truncate" style="max-width: 100%;">
-                {{ empresa.descricao|slice:":70" }}{% if empresa.descricao|length > 70 %}...{% endif %}
-            </p>
+            <div class="card-footer p-4 pt-0 bg-transparent border-top-0">
+                <div class="d-flex align-items-end justify-content-between">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-building me-2 fs-4 text-muted"></i>
+                        <div class="small">
+                            <div class="fw-bold">{{ empresa.usuario.username }}</div>
+                            <div class="text-muted">
+                                {{ empresa.categoria.nome_limpo }} ·
+                                <div data-id="{{ empresa.id }}" data-cadastro="{{ empresa.id }}">
+                                    Entrou em {{ empresa.data_cadastro|date:"d/m/Y" }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="card-footer bg-transparent border-top-0 d-flex justify-content-between align-items-center">
-            <small class="text-muted">Cadastrado em {{ empresa.created_at|date:"d/m/Y" }}</small>
-        </div>
-    </div>
+    </a>
 </div>
 {% empty %}
-<p class="text-center">Sem pontos turísticos cadastrados.</p>
+<div class="col text-center">
+    <p class="text-muted">Nenhum ponto turístico cadastrado ainda.</p>
+</div>
 {% endfor %}
