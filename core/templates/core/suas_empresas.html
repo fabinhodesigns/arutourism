@@ -4,7 +4,9 @@
 {% block content %}
 <div class="container py-5 mt-5">
     {% if empresas %}
-    <h2 class="text-center fw-bold mb-5">Suas Empresas Cadastradas</h2>
+    <div class="col-md-12">
+        <h2 class="text-center fw-bold mb-5">Suas Empresas Cadastradas</h2>
+    </div>
     <div class="row gx-4 gy-4 justify-content-center" id="empresas-container">
         {% for empresa in empresas %}
         <div class="col-md-4">
