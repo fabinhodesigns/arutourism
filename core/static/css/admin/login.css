@@ -12,7 +12,7 @@ body {
     align-items: center;
 }
 
-#login-container {
+#login-container, #register-container {
     max-width: 90%;
     border-radius: .5rem;
 }
