@@ -79,6 +79,11 @@ p {
 }
 
 @media (max-width: 768px) {
+
+    .navbar-brand img {
+        max-width: 15px !important;
+    }
+
     .navbar-collapse {
         /* background-color: #1e3c72; */
     }
