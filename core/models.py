@@ -37,8 +37,8 @@ class Empresa(models.Model):
     numero = models.CharField(max_length=10)
     cep = models.CharField(max_length=8)
 
-    latitude = models.DecimalField(max_digits=30, decimal_places=15, null=True, blank=True)
-    longitude = models.DecimalField(max_digits=30, decimal_places=15, null=True, blank=True)
+    latitude = models.CharField(max_length=50, null=True, blank=True)
+    longitude = models.CharField(max_length=50, null=True, blank=True)
 
     telefone = models.CharField(max_length=20)
     email = models.EmailField()
