@@ -79,11 +79,6 @@ p {
 }
 
 @media (max-width: 768px) {
-
-    .navbar-brand img {
-        max-width: 15px !important;
-    }
-
     .navbar-collapse {
         /* background-color: #1e3c72; */
     }
@@ -119,4 +114,22 @@ p {
 
 .banner p {
     font-size: 1.5rem;
+}
+
+@media (max-width: 560px) {
+    .navbar-brand img {
+        max-width: 15rem !important;
+    }
+}
+
+@media (max-width: 400px) {
+    .navbar-brand img {
+        max-width: 10rem !important;
+    }
+}
+
+@media (max-width: 300px) {
+    .navbar-brand img {
+        max-width: 8rem !important;
+    }
 }
