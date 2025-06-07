@@ -81,7 +81,7 @@ def suas_empresas(request):
             'next_page_number': page_obj.next_page_number() if page_obj.has_next() else None,
         })
 
-    return render(request, 'core/suas_empresas.html/', {'page_obj': page_obj})
+    return render(request, 'core/suas_empresas.html', {'page_obj': page_obj})
 
 @login_required(login_url='/login/')
 def cadastrar_empresa(request):
