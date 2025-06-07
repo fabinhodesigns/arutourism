@@ -9,7 +9,8 @@
     </div>
     <div class="row gx-4 gy-4 justify-content-center" id="empresas-container">
         {% for empresa in empresas %}
-        <div class="col-md-4">
+        <!-- Aqui vamos ajustar as colunas para serem responsivas -->
+        <div class="col-12 col-sm-6 col-md-4"> 
             <div class="card responsive-card h-100">
                 <img src="{{ empresa.imagem.url }}" class="card-img-top" alt="{{ empresa.nome }}">
                 <div class="card-body">
