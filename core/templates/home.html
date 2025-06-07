@@ -160,8 +160,7 @@
                                             <i class="bi bi-building me-2 fs-4 text-muted"></i>
                                             <div class="small">
                                                 <div class="fw-bold">{{ empresa.usuario.username }}</div>
-                                                <div class="text-muted">{{ empresa.categoria.nome_limpo }} · Entrou em
-                                                    {{ empresa.data_cadastro|date:"d/m/Y" }}</div>
+                                                <div class="text-muted">{{ empresa.categoria.nome_limpo }} · {{ empresa.data_cadastro|date:"d/m/Y" }}</div>
                                             </div>
                                         </div>
                                     </div>

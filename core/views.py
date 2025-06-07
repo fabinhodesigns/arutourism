@@ -67,9 +67,21 @@ def login_view(request):
 
 @login_required(login_url='/login/')
 def suas_empresas(request):
-    empresas = Empresa.objects.filter(user=request.user)
+    empresas = Empresa.objects.filter(user=request.user).order_by('-data_cadastro')
 
-    return render(request, 'core/suas_empresas.html', {'empresas': empresas})
+    paginator = Paginator(empresas, 6) 
+    page_number = request.GET.get('page') or 1
+    page_obj = paginator.get_page(page_number)
+
+    if request.is_ajax():
+        html = render_to_string('core/partials/empresas_cards.html', {'page_obj': page_obj})
+        return JsonResponse({
+            'html': html,
+            'has_next': page_obj.has_next(),
+            'next_page_number': page_obj.next_page_number() if page_obj.has_next() else None,
+        })
+
+    return render(request, 'core/suas_empresas.html', {'page_obj': page_obj})
 
 @login_required(login_url='/login/')
 def cadastrar_empresa(request):

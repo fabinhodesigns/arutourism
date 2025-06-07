@@ -3,27 +3,50 @@
 
 {% block content %}
 <div class="container py-5 mt-5">
-    {% if empresas %}
-    <div class="col-md-12">
-        <h2 class="text-center fw-bold mb-5">Suas Empresas Cadastradas</h2>
-    </div>
+    <h2 class="text-center fw-bold mb-5">Suas Empresas Cadastradas</h2>
+
+    {% if page_obj %}
     <div class="row gx-4 gy-4 justify-content-center" id="empresas-container">
-        {% for empresa in empresas %}
-        <!-- Aqui vamos ajustar as colunas para serem responsivas -->
-        <div class="col-12 col-sm-6 col-md-4"> 
-            <div class="card responsive-card h-100">
-                <img src="{{ empresa.imagem.url }}" class="card-img-top" alt="{{ empresa.nome }}">
-                <div class="card-body">
-                    <h5 class="card-title">{{ empresa.nome }}</h5>
-                    <p class="card-text">{{ empresa.descricao|truncatewords:20 }}</p>
-                    <a href="{% url 'empresa_detalhe' empresa.id %}" class="btn btn-primary">Ver Detalhes</a>
-                </div>
-            </div>
-        </div>
-        {% endfor %}
+        {% include 'core/partials/empresas_cards.html' %}
     </div>
+
+    {% if page_obj.has_next %}
+    <div class="d-flex justify-content-center mt-4">
+        <button id="load-more-btn" class="btn btn-primary btn-lg">Carregar mais</button>
+    </div>
+    {% endif %}
+
     {% else %}
     <p class="text-center">Você ainda não cadastrou nenhuma empresa.</p>
     {% endif %}
 </div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function(){
+        var nextPage = {% if page_obj.has_next %}{{ page_obj.next_page_number }}{% else %}null{% endif %};
+
+        $('#load-more-btn').click(function(){
+            if (!nextPage) return;
+
+            $.ajax({
+                url: "{% url 'suas_empresas' %}",
+                data: { page: nextPage },
+                dataType: 'json',
+                success: function(data){
+                    $('#empresas-container').append(data.html);
+                    if (data.has_next) {
+                        nextPage = data.next_page_number;
+                    } else {
+                        nextPage = null;
+                        $('#load-more-btn').hide();
+                    }
+                },
+                error: function(){
+                    alert('Erro ao carregar mais empresas.');
+                }
+            });
+        });
+    });
+</script>
 {% endblock %}
