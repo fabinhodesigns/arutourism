@@ -32,16 +32,16 @@
                 success: function(data){
                     $('#empresas-container').append(data.html);
                     if(data.has_next){
-                        nextPage = data.next_page_number;}
+                        nextPage = data.next_page_number;
                     } else {
                         nextPage = null;
                         $('#load-more-btn').hide();
                     }
 
-                    // Agora, ao adicionar o HTML via AJAX, vamos garantir que a data de cadastro seja clicável
-                    // Adicionar link de detalhes na data de cadastro
+                    // Garantir que a data de cadastro seja clicável com o link correto
                     $('div[data-cadastro]').each(function(){
-                        var cadastroLink = $(this).data('cadastro');
+                        var empresaId = $(this).data('id');  // Obter o ID da empresa
+                        var cadastroLink = '/empresa/' + empresaId + '/'; // URL de detalhes da empresa
                         $(this).html('Entrou em <a href="' + cadastroLink + '" class="text-decoration-none">' + $(this).text() + '</a>');
                     });
                 },
