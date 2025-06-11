@@ -4,6 +4,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.conf import settings
 from django.utils import timezone
+from cloudinary.models import CloudinaryField
 
 
 class PerfilUsuario(models.Model):
@@ -43,7 +44,7 @@ class Empresa(models.Model):
     telefone = models.CharField(max_length=20)
     email = models.EmailField()
     site = models.URLField(blank=True, null=True)
-    imagem = models.ImageField(upload_to='empresas/', blank=True, null=True)
+    imagem = CloudinaryField('image', blank=True, null=True)
 
     data_cadastro = models.DateTimeField(auto_now_add=True)
 

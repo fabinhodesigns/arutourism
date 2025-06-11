@@ -2,6 +2,9 @@ import os
 import django_heroku
 from pathlib import Path
 import dj_database_url
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -113,3 +116,16 @@ STATIC_ROOT = os.path.join(BASE_DIR / 'staticfiles')
 django_heroku.settings(locals())
 
 LOGIN_URL = '/login/'
+
+# Configurações do Cloudinary
+cloudinary.config(
+  cloud_name = "Root",  
+  api_key = "685433241393387",       
+  api_secret = "T6EHnnhcGvslU40YKlAqy7DQ9NQ"   
+)
+
+# Configuração do Django para usar Cloudinary para armazenamento de arquivos de mídia
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+# URL das mídias
+MEDIA_URL = 'https://res.cloudinary.com/Root/image/upload/'
