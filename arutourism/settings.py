@@ -128,4 +128,4 @@ cloudinary.config(
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 # URL das mídias
-MEDIA_URL = 'https://res.cloudinary.com/Root/image/upload/'
+MEDIA_URL = 'https://res.cloudinary.com/diqrjhtod/image/upload/'
