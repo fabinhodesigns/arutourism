@@ -119,7 +119,7 @@ LOGIN_URL = '/login/'
 
 # Configurações do Cloudinary
 cloudinary.config(
-  cloud_name = "Root",  
+  cloud_name = "diqrjhtod",  
   api_key = "685433241393387",       
   api_secret = "T6EHnnhcGvslU40YKlAqy7DQ9NQ"   
 )
