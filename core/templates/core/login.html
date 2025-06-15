@@ -49,6 +49,7 @@
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
+        console.log("entrou")
         function getCookie(name) {
             let cookieValue = null;
             if (document.cookie && document.cookie !== '') {
@@ -66,23 +67,14 @@
 
         $(function () {
                 $(".message-box .btn-close").on("click", function () {
+                    console.log("cliclou")
                     $(this).closest("li").fadeOut(function () {
                         $(this).remove();
+                        console.log("removey")
                         if ($(".message-box ul li").length === 0) {
                             $("#message-overlay").fadeOut();
                         }
                     });
-                });
-
-                $("#id_username").on("input", function () {
-                    let value = $(this).val();
-                    if (/\s/.test(value)) {
-                        $(this).val(value.replace(/\s/g, '')); // remove espaços
-                        $(this).attr("placeholder", "Usuário não pode conter espaços");
-                        // Opcional: mostra um alerta, ou efeito visual
-                    } else {
-                        $(this).attr("placeholder", "Digite seu usuário");
-                    }
                 });
             });
 
