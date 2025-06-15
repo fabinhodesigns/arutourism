@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth import login as auth_login, logout
-from .forms import UserRegistrationForm, EmpresaForm
+from .forms import UserRegistrationForm, EmpresaForm, CustomLoginForm
 from django.contrib import messages
 from django.shortcuts import render, redirect
 from core.models import Empresa
@@ -52,17 +52,15 @@ def login_view(request):
         return redirect('home')
 
     if request.method == 'POST':
-        form = AuthenticationForm(request, data=request.POST)
+        form = CustomLoginForm(request.POST)
         if form.is_valid():
-            user = form.get_user()
-            auth_login(request, user)
+            auth_login(request, form.user)
             return redirect('home')
         else:
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, f"Atenção: {error}")
+            messages.error(request, "Usuário ou senha inválidos.")
+            return render(request, 'core/login.html', {'form': form})
     else:
-        form = AuthenticationForm()
+        form = CustomLoginForm()
     return render(request, 'core/login.html', {'form': form})
 
 @login_required(login_url='/login/')

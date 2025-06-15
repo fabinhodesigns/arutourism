@@ -173,8 +173,12 @@ a:hover {
 
 .message-box ul li {
     margin-bottom: 0.75rem;
-    padding-right: 2.5rem; /* espaço para o X */
+    padding-right: 2.5rem;
     position: relative;
+    background-color: white;
+    border-radius: 6px;
+    padding: 1.75rem 2rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 /* Botão fechar (X) posicionado no canto direito de cada mensagem */

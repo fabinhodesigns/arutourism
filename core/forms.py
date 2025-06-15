@@ -3,6 +3,7 @@ from django import forms
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from .models import PerfilUsuario, Empresa
+from django.contrib.auth import authenticate
 
 class UserRegistrationForm(forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput())
@@ -87,3 +88,37 @@ class EmpresaForm(forms.ModelForm):
         if not re.match(r'^\d{8}$', cep):
             raise forms.ValidationError("CEP deve conter exatamente 8 números.")
         return cep
+     
+class CustomLoginForm(forms.Form):
+    identificador = forms.CharField(label="Usuário ou CPF", max_length=100)
+    password = forms.CharField(widget=forms.PasswordInput())
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['identificador'].widget.attrs.update({
+            'placeholder': 'Digite seu CPF ou Email',
+            'class': 'form-control'
+        })
+        self.fields['password'].widget.attrs.update({
+            'placeholder': 'Digite sua senha',
+            'class': 'form-control'
+        })
+
+    def clean(self):
+        identificador = self.cleaned_data.get('identificador')
+        password = self.cleaned_data.get('password')
+
+        user = None
+        if User.objects.filter(username=identificador).exists():
+            user = authenticate(username=identificador, password=password)
+        elif User.objects.filter(email=identificador).exists():
+            user = authenticate(username=User.objects.get(email=identificador).username, password=password)
+        elif PerfilUsuario.objects.filter(cpf_cnpj=identificador).exists():
+            user_cpf = PerfilUsuario.objects.get(cpf_cnpj=identificador).user
+            user = authenticate(username=user_cpf.username, password=password)
+
+        if user is None:
+            raise forms.ValidationError("Usuário ou senha inválidos.")
+        
+        self.user = user
+        return self.cleaned_data
