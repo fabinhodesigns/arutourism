@@ -47,101 +47,79 @@
         </div>
     </div>
 
-
-        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-        <script>
-            function getCookie(name) {
-                let cookieValue = null;
-                if (document.cookie && document.cookie !== '') {
-                    const cookies = document.cookie.split(';');
-                    for (let cookie of cookies) {
-                        cookie = cookie.trim();
-                        if (cookie.startsWith(name + '=')) {
-                            cookieValue = decodeURIComponent(cookie.slice(name.length + 1));
-                            break;
-                        }
-                    }
-                }
-                return cookieValue;
-            }
-
-            $(function () {
-                    $(".message-box .btn-close").on("click", function () {
-                        $(this).closest("li").fadeOut(function () {
-                            $(this).remove();
-                            if ($(".message-box ul li").length === 0) {
-                                $("#message-overlay").fadeOut();
-                            }
-                        });
-                    });
-
-                    $("#id_username").on("input", function () {
-                        let value = $(this).val();
-                        if (/\s/.test(value)) {
-                            $(this).val(value.replace(/\s/g, '')); // remove espaços
-                            $(this).attr("placeholder", "Usuário não pode conter espaços");
-                            // Opcional: mostra um alerta, ou efeito visual
-                        } else {
-                            $(this).attr("placeholder", "Digite seu usuário");
-                        }
-                    });
-                });
-
-            const loginForm = document.getElementById('login-form');
-            if (loginForm) {
-                loginForm.addEventListener('submit', async function(e) {
-                    e.preventDefault();
-
-                    const form = e.target;
-                    const formData = new FormData(form);
-                    const csrfToken = getCookie('csrftoken');
-
-                    const response = await fetch("{% url 'login' %}", {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRFToken': csrfToken,
-                            'X-Requested-With': 'XMLHttpRequest' // Informa ao backend que é uma requisição AJAX
-                        },
-                        body: formData,
-                    });
-
-                    // Se o login for bem-sucedido, Django redireciona
-                    if (response.redirected) {
-                        window.location.href = response.url;
-                        return;
-                    }
-
-                    // Se o login falhar...
-                    if (!response.ok) {
-                        const html = await response.text();
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(html, 'text/html');
-
-                        // Encontra a mensagem de erro completa no HTML recebido
-                        const errorLi = doc.querySelector('.alert-danger'); // A mensagem de erro do Django geralmente tem a classe alert-danger
-
-                        if (errorLi) {
-                            // Pega ou cria os containers necessários para a mensagem
-                            let overlay = document.getElementById("message-overlay");
-                            if (!overlay) {
-                                overlay = document.createElement('div');
-                                overlay.id = 'message-overlay';
-                                overlay.className = 'message-overlay';
-                                overlay.innerHTML = `
-                                    <div class="message-box">
-                                        <ul id="message-list"></ul>
-                                    </div>`;
-                                // Insere o overlay no início do container principal do login
-                                document.getElementById('login-container').prepend(overlay);
-                            }
-                            
-                            const messageList = overlay.querySelector("#message-list");
-                            
-                            // Limpa mensagens antigas e injeta a nova
-                            messageList.innerHTML = errorLi.outerHTML;
-                        }
-                    }
-                });
-            }
-        </script>
 {% endblock %}
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                cookie = cookie.trim();
+                if (cookie.startsWith(name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.slice(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    const loginForm = document.getElementById('login-form');
+    if (loginForm) {
+        loginForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const form = e.target;
+            const formData = new FormData(form);
+            const csrfToken = getCookie('csrftoken');
+
+            const response = await fetch("{% url 'login' %}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest' // Informa ao backend que é uma requisição AJAX
+                },
+                body: formData,
+            });
+
+            // Se o login for bem-sucedido, Django redireciona
+            if (response.redirected) {
+                window.location.href = response.url;
+                return;
+            }
+
+            // Se o login falhar...
+            if (!response.ok) {
+                const html = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+
+                // Encontra a mensagem de erro completa no HTML recebido
+                const errorLi = doc.querySelector('.alert-danger'); // A mensagem de erro do Django geralmente tem a classe alert-danger
+
+                if (errorLi) {
+                    // Pega ou cria os containers necessários para a mensagem
+                    let overlay = document.getElementById("message-overlay");
+                    if (!overlay) {
+                        overlay = document.createElement('div');
+                        overlay.id = 'message-overlay';
+                        overlay.className = 'message-overlay';
+                        overlay.innerHTML = `
+                            <div class="message-box">
+                                <ul id="message-list"></ul>
+                            </div>`;
+                        // Insere o overlay no início do container principal do login
+                        document.getElementById('login-container').prepend(overlay);
+                    }
+                    
+                    const messageList = overlay.querySelector("#message-list");
+                    
+                    // Limpa mensagens antigas e injeta a nova
+                    messageList.innerHTML = errorLi.outerHTML;
+                }
+            }
+        });
+    }
+</script>
