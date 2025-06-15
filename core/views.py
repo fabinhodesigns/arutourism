@@ -74,7 +74,7 @@ def suas_empresas(request):
     page_number = request.GET.get('page') or 1
     page_obj = paginator.get_page(page_number)
 
-    if request.is_ajax():
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         # Retorna mais empresas via AJAX
         html = render_to_string('core/partials/empresas_cards.html', {'page_obj': page_obj})
         return JsonResponse({
