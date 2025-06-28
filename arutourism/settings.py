@@ -1,5 +1,5 @@
-import os
 import django_heroku
+import os
 from pathlib import Path
 import dj_database_url
 import cloudinary
@@ -118,3 +118,5 @@ DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 # URL das mídias
 MEDIA_URL = 'https://res.cloudinary.com/diqrjhtod/image/upload/'
+
+django_heroku.settings(locals())
