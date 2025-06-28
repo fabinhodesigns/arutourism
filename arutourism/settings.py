@@ -1,33 +1,29 @@
-import os
-import django_heroku
-from pathlib import Path
-import dj_database_url
-import cloudinary
-import cloudinary.uploader
-import cloudinary.api
+# arutourism/settings.py
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+import django_heroku
+
+# Carrega as variáveis do arquivo .env (útil para desenvolvimento, ignorado pelo Heroku)
+load_dotenv()
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-8jy1*9-$brc$f!b@%8bt6hqepqj(367@$&c$xxv@y6ax5luzgm'
+# --- Configurações Lidas do Ambiente ---
+SECRET_KEY = os.environ.get('SECRET_KEY')
+DEBUG = (os.environ.get('DEBUG') == 'True') # Será False no Heroku
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+# O django_heroku vai cuidar do ALLOWED_HOSTS
+ALLOWED_HOSTS = []
 
-ALLOWED_HOSTS = ['*']
-
-# Application definition
-
+# --- Aplicações Instaladas ---
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'widget_tweaks',
-    'core',
+    'django.contrib.admin', 'django.contrib.auth', 'django.contrib.contenttypes',
+    'django.contrib.sessions', 'django.contrib.messages',
+    'whitenoise.middleware.CompressedManifestStaticFilesStorage', # Para arquivos estáticos
+    'django.contrib.staticfiles', 'widget_tweaks', 'core', 'cloudinary',
+    'cloudinary_storage',
 ]
 
 MIDDLEWARE = [
@@ -42,11 +38,10 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'arutourism.urls'
-
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'core/templates')],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -58,74 +53,24 @@ TEMPLATES = [
         },
     },
 ]
-
 WSGI_APPLICATION = 'arutourism.wsgi.application'
 
-# Configuração do banco de dados (para uso local ou Heroku)
-DATABASES = {
-    'default': dj_database_url.config(default=os.environ['DATABASE_URL'], conn_max_age=600, ssl_require=False)
-}   
+# O DATABASES pode ser um dicionário vazio. O django-heroku vai preenchê-lo.
+DATABASES = {}
 
-# COMENTAR QUANDO FOR SUBIR PRO HEROKU - DESCOMENTAR PRA USAR LOCAL
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',  # Caminho do banco de dados local
-#     }
-# }
+# ... (seu AUTH_PASSWORD_VALIDATORS e Internationalization) ...
 
-##################################################################################
-##################################################################################
-
-
-# Password validation
-
-
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
-]
-
-
-# Internationalization
-LANGUAGE_CODE = 'pt-BR'
-
-TIME_ZONE = 'America/Sao_Paulo'
-
-USE_I18N = True
-
-USE_TZ = True
-
-
-# Static files (CSS, JavaScript, Images)
-
-
+# --- Configurações de Arquivos ---
 STATIC_URL = 'static/'
-STATIC_ROOT = os.path.join(BASE_DIR / 'staticfiles')
-
-django_heroku.settings(locals())
-
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
+    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
+}
 LOGIN_URL = '/login/'
 
-# Configurações do Cloudinary
-cloudinary.config(
-  cloud_name = "diqrjhtod",  
-  api_key = "685433241393387",       
-  api_secret = "T6EHnnhcGvslU40YKlAqy7DQ9NQ"   
-)
-
-# Configuração do Django para usar Cloudinary para armazenamento de arquivos de mídia
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-
-# URL das mídias
-MEDIA_URL = 'https://res.cloudinary.com/diqrjhtod/image/upload/'
+# --- ATIVAÇÃO FINAL DO DJANGO-HEROKU ---
+# Deixe esta linha no final. Ela configura TUDO: banco de dados, hosts, estáticos, etc.
+django_heroku.settings(locals())
