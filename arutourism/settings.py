@@ -2,11 +2,7 @@
 
 import os
 from pathlib import Path
-from dotenv import load_dotenv
 import django_heroku
-
-# Carrega as variáveis do arquivo .env (útil para desenvolvimento, ignorado pelo Heroku)
-load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
