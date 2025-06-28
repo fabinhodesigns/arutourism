@@ -63,23 +63,18 @@ class UserRegistrationForm(forms.ModelForm):
             )
         return user
 
-
 class EmpresaForm(forms.ModelForm):
-    # 1. Declaramos os campos dos checkboxes que existem no seu HTML
-    # O 'required=False' permite que eles não precisem ser marcados.
     sem_telefone = forms.BooleanField(required=False, label="Sem Telefone")
     sem_email = forms.BooleanField(required=False, label="Sem Email")
 
     class Meta:
         model = Empresa
-        # 2. Adicionamos os novos campos à lista de fields do formulário
         fields = [
             'nome', 'categoria', 'descricao', 'rua', 'bairro', 'cidade', 
             'numero', 'cep', 'telefone', 'email', 'site', 'imagem', 
             'latitude', 'longitude', 'facebook', 'instagram',
             'sem_telefone', 'sem_email'
         ]
-        # Seus widgets continuam os mesmos
         widgets = {
             'nome': forms.TextInput(attrs={'placeholder': 'Digite o nome da empresa'}),
             'categoria': forms.Select(),
