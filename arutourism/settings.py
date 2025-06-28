@@ -1,27 +1,36 @@
+# arutourism/settings.py
+
 import os
 from pathlib import Path
 import django_heroku
-import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Use os.environ.get para pegar as variáveis, com um valor padrão para segurança
-SECRET_KEY = os.environ.get('SECRET_KEY', 'chave-padrao-para-evitar-crash')
-DEBUG = os.environ.get('DEBUG') == 'True'
+# Use os.environ.get para ler as variáveis de ambiente do Heroku
+SECRET_KEY = os.environ.get('SECRET_KEY')
+DEBUG = (os.environ.get('DEBUG') == 'True')
 
-ALLOWED_HOSTS = [] # O django_heroku vai cuidar disso
+# O django_heroku cuidará do ALLOWED_HOSTS
+ALLOWED_HOSTS = []
 
+# --- Aplicações Instaladas ---
 INSTALLED_APPS = [
-    'django.contrib.admin', 'django.contrib.auth', 'django.contrib.contenttypes',
-    'django.contrib.sessions', 'django.contrib.messages',
-    'whitenoise.middleware.CompressedManifestStaticFilesStorage',
-    'django.contrib.staticfiles', 'widget_tweaks', 'core', 'cloudinary',
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'whitenoise.runserver_nostatic',  # <--- CORREÇÃO AQUI
+    'django.contrib.staticfiles',
+    'widget_tweaks',
+    'core',
+    'cloudinary',
     'cloudinary_storage',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware', # <--- O middleware do whitenoise fica aqui
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -48,15 +57,23 @@ TEMPLATES = [
 ]
 WSGI_APPLICATION = 'arutourism.wsgi.application'
 
-# Configuração de banco de dados simples que o Heroku entende
-DATABASES = {
-    'default': dj_database_url.config(conn_max_age=600, ssl_require=True)
-}
+# O DATABASES pode ficar vazio. O django-heroku preenche para nós.
+DATABASES = {}
 
-# ... AUTH_PASSWORD_VALIDATORS e Internationalization ...
+# ... (AUTH_PASSWORD_VALIDATORS e Internationalization continuam iguais) ...
+AUTH_PASSWORD_VALIDATORS = [{'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},{'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},{'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},{'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'}]
+LANGUAGE_CODE = 'pt-BR'
+TIME_ZONE = 'America/Sao_Paulo'
+USE_I18N = True
+USE_TZ = True
 
+
+# --- Configurações de Arquivos Estáticos e de Mídia ---
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+# AQUI FICA A VARIÁVEL QUE ESTAVA NO LUGAR ERRADO
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
@@ -65,5 +82,6 @@ CLOUDINARY_STORAGE = {
 }
 LOGIN_URL = '/login/'
 
-# Ativação do Django-Heroku no final
+# --- ATIVAÇÃO FINAL DO DJANGO-HEROKU ---
+# Esta linha no final configura tudo que o Heroku precisa (banco de dados, hosts, etc.)
 django_heroku.settings(locals())
