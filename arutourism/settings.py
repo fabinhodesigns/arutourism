@@ -1,23 +1,20 @@
-# arutourism/settings.py
-
 import os
 from pathlib import Path
 import django_heroku
+import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# --- Configurações Lidas do Ambiente ---
-SECRET_KEY = os.environ.get('SECRET_KEY')
-DEBUG = (os.environ.get('DEBUG') == 'True') # Será False no Heroku
+# Use os.environ.get para pegar as variáveis, com um valor padrão para segurança
+SECRET_KEY = os.environ.get('SECRET_KEY', 'chave-padrao-para-evitar-crash')
+DEBUG = os.environ.get('DEBUG') == 'True'
 
-# O django_heroku vai cuidar do ALLOWED_HOSTS
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [] # O django_heroku vai cuidar disso
 
-# --- Aplicações Instaladas ---
 INSTALLED_APPS = [
     'django.contrib.admin', 'django.contrib.auth', 'django.contrib.contenttypes',
     'django.contrib.sessions', 'django.contrib.messages',
-    'whitenoise.middleware.CompressedManifestStaticFilesStorage', # Para arquivos estáticos
+    'whitenoise.middleware.CompressedManifestStaticFilesStorage',
     'django.contrib.staticfiles', 'widget_tweaks', 'core', 'cloudinary',
     'cloudinary_storage',
 ]
@@ -51,12 +48,13 @@ TEMPLATES = [
 ]
 WSGI_APPLICATION = 'arutourism.wsgi.application'
 
-# O DATABASES pode ser um dicionário vazio. O django-heroku vai preenchê-lo.
-DATABASES = {}
+# Configuração de banco de dados simples que o Heroku entende
+DATABASES = {
+    'default': dj_database_url.config(conn_max_age=600, ssl_require=True)
+}
 
-# ... (seu AUTH_PASSWORD_VALIDATORS e Internationalization) ...
+# ... AUTH_PASSWORD_VALIDATORS e Internationalization ...
 
-# --- Configurações de Arquivos ---
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
@@ -67,6 +65,5 @@ CLOUDINARY_STORAGE = {
 }
 LOGIN_URL = '/login/'
 
-# --- ATIVAÇÃO FINAL DO DJANGO-HEROKU ---
-# Deixe esta linha no final. Ela configura TUDO: banco de dados, hosts, estáticos, etc.
+# Ativação do Django-Heroku no final
 django_heroku.settings(locals())
