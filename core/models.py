@@ -43,14 +43,12 @@ class Empresa(models.Model):
 
     telefone = models.CharField(max_length=20, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
+    facebook = models.URLField(blank=True, null=True)
+    instagram = models.URLField(blank=True, null=True)
     site = models.URLField(blank=True, null=True)
     imagem = CloudinaryField('image', blank=True, null=True)
 
-    # COMENTE TEMPORARIAMENTE OS CAMPOS ABAIXO
-    # facebook = models.URLField(blank=True, null=True)
-    # instagram = models.URLField(blank=True, null=True)
-    # sem_telefone = models.BooleanField(default=False)
-    # sem_email = models.BooleanField(default=False)
+    sem_email_telefone = models.BooleanField(default=False)
 
     data_cadastro = models.DateTimeField(auto_now_add=True)
 
