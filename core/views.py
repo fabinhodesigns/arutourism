@@ -12,6 +12,7 @@ from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.template.loader import render_to_string
 from django.http import HttpResponse
+import re
 
 def home(request):
     empresas = Empresa.objects.all().order_by('-data_cadastro')[:6]  # pega só 6
@@ -53,6 +54,7 @@ def login_view(request):
 
     if request.method == 'POST':
         form = CustomLoginForm(request.POST)
+
         if form.is_valid():
             auth_login(request, form.user)
             return redirect('home')
@@ -65,15 +67,13 @@ def login_view(request):
 
 @login_required(login_url='/login/')
 def suas_empresas(request):
-    # Filtra as empresas do usuário logado
     empresas = Empresa.objects.filter(user=request.user).order_by('-data_cadastro')
 
-    paginator = Paginator(empresas, 6)  # Exibe 6 empresas por página
+    paginator = Paginator(empresas, 6) 
     page_number = request.GET.get('page') or 1
     page_obj = paginator.get_page(page_number)
 
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-        # Retorna mais empresas via AJAX
         html = render_to_string('core/partials/empresas_cards.html', {'page_obj': page_obj})
         return JsonResponse({
             'html': html,
@@ -85,17 +85,36 @@ def suas_empresas(request):
 
 @login_required(login_url='/login/')
 def cadastrar_empresa(request):
+    if request.method == 'GET':
+        form = EmpresaForm()
+        return render(request, 'core/cadastrar_empresa.html', {'form': form})
+
     if request.method == 'POST':
-        form = EmpresaForm(request.POST, request.FILES)
+        post_data = request.POST.copy()
+        
+        if 'cep' in post_data:
+            post_data['cep'] = re.sub(r'\D', '', post_data['cep'])
+        
+        form = EmpresaForm(post_data, request.FILES)
+
         if form.is_valid():
             empresa = form.save(commit=False)
             empresa.user = request.user
             empresa.save()
-            return redirect('home')
-    else:
-        form = EmpresaForm()
-    return render(request, 'core/cadastrar_empresa.html', {'form': form})
 
+            message = f"Empresa '{empresa.nome}' cadastrada com sucesso!"
+            action = 'reset' if 'save_and_add' in request.POST else 'redirect'
+            redirect_url = '/suas_empresas/' if action == 'redirect' else ''
+            
+            return JsonResponse({
+                'status': 'success',
+                'message': message,
+                'action': action,
+                'redirect_url': redirect_url
+            })
+        
+        else:
+            return render(request, 'core/cadastrar_empresa.html', {'form': form}, status=400)
 
 def listar_usuarios(request):
     if not request.user.is_authenticated:
@@ -119,7 +138,6 @@ def editar_usuario(request, id):
         form = UserRegistrationForm(instance=usuario)
     return render(request, '/editar_usuario.html', {'form': form})
 
-# Excluir usuário
 def excluir_usuario(request, id):
     usuario = get_object_or_404(User, id=id)
     if request.user != usuario and not request.user.is_superuser:

@@ -1,90 +1,73 @@
 {% extends 'base2.html' %}
 {% block title %}Cadastrar Empresa{% endblock %}
 {% load widget_tweaks %}
+{% load form_helpers %}
 
 {% block content %}
+<style>
+    .toast-notification { position: fixed; top: 80px; right: 20px; background-color: #28a745; color: white; padding: 1rem 1.5rem; border-radius: 8px; font-weight: 500; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 1060; opacity: 0; transform: translateY(-20px); pointer-events: none; transition: all 0.4s ease-in-out; }
+    .toast-notification.show { opacity: 1; transform: translateY(0); pointer-events: all; }
+    .message-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: flex-start; padding-top: 50px; z-index: 1050; }
+    .message-box { background: white; padding: 1.5rem 2rem; border-radius: 8px; width: 90%; max-width: 500px; box-shadow: 0 5px 20px rgba(0,0,0,0.25); animation: slide-down 0.4s ease-out; }
+    @keyframes slide-down { from { transform: translateY(-30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .message-box h5 { font-weight: 600; border-bottom: 1px solid #eee; padding-bottom: 0.75rem; margin-bottom: 1rem; }
+    .message-box ul { list-style: none; margin: 0; padding: 0; max-height: 60vh; overflow-y: auto; }
+    .message-box li { font-size: 0.9rem; padding: 0.5rem 0; }
+    .message-box strong { color: #dc3545; margin-right: 5px; }
+</style>
+
+<div id="notification-container"></div>
+
 <div class="container py-5 mt-5">
     <div class="row justify-content-center">
         <div class="col-lg-10 col-md-11 col-12">
-            <div class="card shadow-sm rounded-4 p-4 bg-white">
-                <h4 class="text-center mb-4 fw-bold">Cadastro de Nova Empresa</h4>
-                <form method="POST" enctype="multipart/form-data" novalidate>
-                    {% csrf_token %}
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label for="nome" class="form-label fw-semibold">Nome da Empresa</label>
-                            {{ form.nome|add_class:"form-control form-control-lg" }}
-                        </div>
-
-                        <div class="col-md-6">
-                            <label for="categoria" class="form-label fw-semibold">Categoria</label>
-                            {{ form.categoria|add_class:"form-select form-select-lg" }}
-                        </div>
-
-                        <div class="col-12">
-                            <label for="descricao" class="form-label fw-semibold">Descrição</label>
-                            {{ form.descricao|add_class:"form-control form-control-lg" }}
-                        </div>
-
-                        <div class="col-md-6">
-                            <label for="rua" class="form-label fw-semibold">Rua</label>
-                            {{ form.rua|add_class:"form-control form-control-lg" }}
-                        </div>
-
-                        <div class="col-md-6">
-                            <label for="bairro" class="form-label fw-semibold">Bairro</label>
-                            {{ form.bairro|add_class:"form-control form-control-lg" }}
-                        </div>
-
-                        <div class="col-md-6">
-                            <label for="cidade" class="form-label fw-semibold">Cidade</label>
-                            {{ form.cidade|add_class:"form-control form-control-lg" }}
-                        </div>
-
-                        <div class="col-md-3">
-                            <label for="numero" class="form-label fw-semibold">Número</label>
-                            {{ form.numero|add_class:"form-control form-control-lg" }}
-                        </div>
-
-                        <div class="col-md-3">
-                            <label for="cep" class="form-label fw-semibold">CEP</label>
-                            {{ form.cep|add_class:"form-control form-control-lg" }}
-                        </div>
-
-                        <div class="col-md-6">
-                            <label for="telefone" class="form-label fw-semibold">Telefone</label>
-                            {{ form.telefone|add_class:"form-control form-control-lg" }}
-                        </div>
-
-                        <div class="col-md-6">
-                            <label for="email" class="form-label fw-semibold">Email de Contato</label>
-                            {{ form.email|add_class:"form-control form-control-lg" }}
-                        </div>
-
-                        <div class="col-md-6">
-                            <label for="site" class="form-label fw-semibold">Site (opcional)</label>
-                            {{ form.site|add_class:"form-control form-control-lg" }}
-                        </div>
-
-                        <div class="col-12">
-                            <label for="imagem" class="form-label fw-semibold">Imagem da Empresa</label>
-                            {{ form.imagem|add_class:"form-control form-control-sm" }}
-                            <small class="form-text text-muted fst-italic mt-1">Você pode enviar uma imagem da empresa.</small>
-                        </div>
-
-                        {{ form.latitude }}
-                        {{ form.longitude }}
-
-                        <div class="col-12 mt-3">
-                            <label class="form-label fw-semibold">Selecione a localização no mapa</label>
-                            <div id="map" style="height: 400px; border-radius: 8px;"></div>
+            
+            {% if form.errors %}
+                <div id="errors-from-server" style="display: none;">
+                    <div class="message-overlay">
+                        <div class="message-box">
+                            <h5>Por favor, corrija os seguintes erros:</h5>
+                            <ul>
+                                {% for field, error_list in form.errors.items %}
+                                    {% for error in error_list %}
+                                        <li>
+                                            {% if field != '__all__' %}<strong>{{ form|get_field_verbose_name:field }}:</strong>{% endif %}
+                                            {{ error }}
+                                        </li>
+                                    {% endfor %}
+                                {% endfor %}
+                            </ul>
+                            <div class="text-end mt-4"><button type="button" class="btn btn-secondary" id="close-error-btn">Fechar</button></div>
                         </div>
                     </div>
+                </div>
+            {% endif %}
 
+            <div class="card shadow-sm rounded-4 p-4 bg-white">
+                <h4 class="text-center mb-4 fw-bold">Cadastro de Nova Empresa</h4>
+                <form id="empresa-form" method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-md-6"> <label for="{{ form.nome.id_for_label }}" class="form-label fw-semibold">Nome da Empresa</label> {{ form.nome|add_class:"form-control form-control-lg" }} </div>
+                        <div class="col-md-6"> <label for="{{ form.categoria.id_for_label }}" class="form-label fw-semibold">Categoria</label> {{ form.categoria|add_class:"form-select form-select-lg" }} </div>
+                        <div class="col-12"> <label for="{{ form.descricao.id_for_label }}" class="form-label fw-semibold">Descrição</label> {{ form.descricao|add_class:"form-control form-control-lg" }} </div>
+                        <div class="col-md-6"> <label for="{{ form.rua.id_for_label }}" class="form-label fw-semibold">Rua</label> {{ form.rua|add_class:"form-control form-control-lg" }} </div>
+                        <div class="col-md-6"> <label for="{{ form.bairro.id_for_label }}" class="form-label fw-semibold">Bairro</label> {{ form.bairro|add_class:"form-control form-control-lg" }} </div>
+                        <div class="col-md-6"> <label for="{{ form.cidade.id_for_label }}" class="form-label fw-semibold">Cidade</label> {{ form.cidade|add_class:"form-control form-control-lg" }} </div>
+                        <div class="col-md-3"> <label for="{{ form.numero.id_for_label }}" class="form-label fw-semibold">Número</label> {{ form.numero|add_class:"form-control form-control-lg" }} </div>
+                        <div class="col-md-3"> <label for="{{ form.cep.id_for_label }}" class="form-label fw-semibold">CEP</label> {{ form.cep|add_class:"form-control form-control-lg" }} </div>
+                        <div class="col-md-6"> <label for="{{ form.telefone.id_for_label }}" class="form-label fw-semibold">Telefone</label> {{ form.telefone|add_class:"form-control form-control-lg" }} <div class="form-check form-check-inline mt-1"> {{ form.sem_telefone|add_class:"form-check-input" }} <label class="form-check-label" for="{{ form.sem_telefone.id_for_label }}"> Sem Telefone </label> </div> </div>
+                        <div class="col-md-6"> <label for="{{ form.email.id_for_label }}" class="form-label fw-semibold">Email de Contato</label> {{ form.email|add_class:"form-control form-control-lg" }} <div class="form-check form-check-inline mt-1"> {{ form.sem_email|add_class:"form-check-input" }} <label class="form-check-label" for="{{ form.sem_email.id_for_label }}"> Sem Email </label> </div> </div>
+                        <div class="col-md-12"> <label for="{{ form.site.id_for_label }}" class="form-label fw-semibold">Site (opcional)</label> {{ form.site|add_class:"form-control form-control-lg" }} </div>
+                        <div class="col-12"> <label for="{{ form.imagem.id_for_label }}" class="form-label fw-semibold">Imagem da Empresa</label> {{ form.imagem|add_class:"form-control form-control-sm" }} <small class="form-text text-muted fst-italic mt-1">Você pode enviar uma imagem da empresa.</small> </div>
+                        {{ form.latitude }} {{ form.longitude }}
+                        <div class="col-md-6"> <label for="{{ form.facebook.id_for_label }}" class="form-label fw-semibold">Facebook (opcional)</label> {{ form.facebook|add_class:"form-control form-control-lg" }} </div>
+                        <div class="col-md-6"> <label for="{{ form.instagram.id_for_label }}" class="form-label fw-semibold">Instagram (opcional)</label> {{ form.instagram|add_class:"form-control form-control-lg" }} </div>
+                        <div class="col-12 mt-3"> <label class="form-label fw-semibold">Selecione a localização no mapa</label> <div id="map" style="height: 400px; border-radius: 8px;"></div> </div>
+                    </div>
                     <div class="d-flex justify-content-center mt-4">
-                        <button type="submit" class="btn btn-primary btn-lg rounded-2 fw-semibold w-50">
-                            Cadastrar
-                        </button>
+                        <button type="submit" name="save" class="btn btn-primary btn-lg rounded-3 fw-semibold w-50">Salvar</button>
+                        <button type="submit" name="save_and_add" class="btn btn-secondary btn-lg rounded-3 fw-semibold w-50 ms-4">Salvar e Continuar Adicionando</button>
                     </div>
                 </form>
             </div>
@@ -92,37 +75,64 @@
     </div>
 </div>
 
-<!-- Leaflet CSS e JS sem integrity para evitar bloqueio -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    var map = L.map('map').setView([-28.9371, -49.4840], 13);
+$(document).ready(function() {
+    var map; var marker; if ($('#map').length) { map = L.map('map').setView([-28.9371, -49.4840], 13); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map); map.on('click', function(e) { if (marker) { map.removeLayer(marker); } marker = L.marker(e.latlng).addTo(map); $('#id_latitude').val(e.latlng.lat.toFixed(6)); $('#id_longitude').val(e.latlng.lng.toFixed(6)); }); }
+    $('#id_cep').on('input', function() { $(this).val($(this).val().replace(/\D/g, '').replace(/^(\d{5})(\d)/, '$1-$2').slice(0, 9)); });
+    function toggleFields() { $('#id_telefone').prop('disabled', $('#id_sem_telefone').is(':checked')); $('#id_email').prop('disabled', $('#id_sem_email').is(':checked')); }
+    $('#id_sem_telefone, #id_sem_email').on('change', toggleFields); toggleFields();
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
+    $('#empresa-form').on('submit', async function(e) {
+        e.preventDefault();
+        var form = this;
+        var formData = new FormData(form);
+        var submitter = e.originalEvent.submitter;
+        if (submitter) { formData.append(submitter.name, submitter.value); }
 
-    var marker;
+        const response = await fetch(form.action || window.location.pathname, {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+        });
 
-    var latInput = document.getElementById("id_latitude");
-    var lonInput = document.getElementById("id_longitude");
+        $('#notification-container').empty(); // Limpa notificações antigas
 
-    if (latInput.value && lonInput.value) {
-        marker = L.marker([latInput.value, lonInput.value]).addTo(map);
-        map.setView([latInput.value, lonInput.value], 15);
-    }
+        if (response.ok) {
+            const data = await response.json();
+            var toast = $('<div></div>').addClass('toast-notification').text(data.message);
+            $('#notification-container').html(toast);
+            setTimeout(() => toast.addClass('show'), 100);
+            setTimeout(() => {
+                toast.removeClass('show');
+                setTimeout(() => toast.remove(), 500);
+            }, 5000);
 
-    map.on('click', function(e) {
-        if (marker) {
-            map.removeLayer(marker);
+            if (data.action === 'redirect') {
+                setTimeout(() => window.location.href = data.redirect_url, 1500);
+            } else if (data.action === 'reset') {
+                form.reset();
+                if (marker) { map.removeLayer(marker); marker = null; }
+            }
+        } else { // ERRO
+            const html = await response.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const errorSource = doc.querySelector('#errors-from-server');
+            
+            if (errorSource) {
+                $('#notification-container').html(errorSource.innerHTML);
+            } else {
+                $('#notification-container').html('<div class="message-overlay"><div class="message-box"><h5>Erro Inesperado</h5><p>Ocorreu um problema no servidor ao processar sua solicitação. Tente novamente.</p><div class="text-end mt-4"><button type="button" class="btn btn-secondary" id="close-error-btn">Fechar</button></div></div></div>');
+            }
         }
-        marker = L.marker(e.latlng).addTo(map);
+    });
 
-        latInput.value = e.latlng.lat.toFixed(6);
-        lonInput.value = e.latlng.lng.toFixed(6);
+    $(document).on('click', '#close-error-btn', function() {
+        $('#notification-container').empty();
     });
 });
 </script>

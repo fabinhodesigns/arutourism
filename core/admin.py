@@ -6,6 +6,7 @@ from .models import Categoria, Empresa, PerfilUsuario
 @admin.register(Categoria)
 class CategoriaAdmin(admin.ModelAdmin):
     list_display = ['nome']
+    ordering = ['nome']
 
 @admin.register(Empresa)
 class EmpresaAdmin(admin.ModelAdmin):

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Página Não Encontrada</title>
+    
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            background: linear-gradient(-45deg, #2E3192, #1b8dff);
+            background-size: 400% 400%;
+            animation: gradient-animation 10s ease infinite;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #333;
+        }
+
+        @keyframes gradient-animation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .error-container {
+            text-align: center;
+            max-width: 90%;
+        }
+
+        .error-card {
+            background-color: #fff;
+            padding: 2rem 3rem;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            display: inline-block;
+            max-width: 600px;
+            border-radius: 1rem;
+        }
+
+        .error-code {
+            font-size: 8rem;
+            font-weight: 700;
+            color: #1b8dff;
+            margin: 0;
+            line-height: 1;
+        }
+
+        .error-heading {
+            font-weight: 600;
+            font-size: 2rem;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .error-message {
+            font-size: 1rem;
+            color: #6c757d;
+            margin-bottom: 2rem;
+        }
+
+        .home-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: 500;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            text-decoration: none;
+            cursor: pointer;
+            transition: background-color 0.25s ease;
+        }
+
+        .home-button:hover {
+            background-color: #0056b3;
+        }
+
+        @media (max-width: 576px) {
+            body {
+                align-items: flex-start;
+                padding-top: 5vh;
+            }
+
+            .error-card {
+                padding: 1.5rem 1rem;
+                box-shadow: none;
+                border-radius: 0;
+                height: 50vh;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            }
+
+            .error-code {
+                font-size: 6rem;
+            }
+
+            .error-heading {
+                font-size: 1.5rem;
+            }
+
+            .error-message {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="error-container">
+        <div class="error-card">
+            <h1 class="error-code">404</h1>
+            <h2 class="error-heading">Página Não Encontrada</h2>
+            <p class="error-message">Oops! Parece que você se perdeu.<br>A página que você procura não existe ou foi movida.</p>
+            
+            <a href="/" class="home-button">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-house-door-fill" viewBox="0 0 16 16">
+                    <path d="M6.5 14.5v-3.505c0-.245.25-.495.5-.495h2c.25 0 .5.25.5.5v3.5a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.146-.354L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.293L8.354 1.146a.5.5 0 0 0-.708 0l-6 6A.5.5 0 0 0 1.5 7.5v7a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5z"/>
+                </svg>
+                Voltar para a Página Inicial
+            </a>
+        </div>
+    </div>
+
+</body>
+</html>

@@ -2,23 +2,29 @@
 {% block title %}Suas Empresas Cadastradas{% endblock %}
 
 {% block content %}
-<div class="container py-5 mt-5">
-    <h2 class="text-center fw-bold mb-5">Suas Empresas Cadastradas</h2>
+<div class="d-flex flex-column justify-content-between" style="min-height: 90vh;">
+    <div class="container py-5 mt-5 flex-grow-1">
+        <h2 class="text-center fw-bold col-lg-12">
+            Suas Empresas Cadastradas
+        </h2>
 
-    {% if page_obj %}
-    <div class="row gx-4 gy-4 justify-content-center" id="empresas-container">
-        {% include 'core/partials/empresas_cards.html' %}
+        {% if page_obj %}
+            <div class="row gx-4 gy-4 justify-content-center" id="empresas-container">
+                {% include 'core/partials/empresas_cards.html' %}
+            </div>
+
+        {% if page_obj.has_next %}
+            <div class="d-flex justify-content-center mt-4">
+                <button id="load-more-btn" class="btn btn-primary btn-lg">Carregar mais</button>
+            </div>
+        {% endif %}
+
+        {% else %}
+            <div class="row gx-4 gy-4 justify-content-center">
+                <p class="text-center">Você ainda não cadastrou nenhuma empresa.</p>
+            </div>
+        {% endif %}
     </div>
-
-    {% if page_obj.has_next %}
-    <div class="d-flex justify-content-center mt-4">
-        <button id="load-more-btn" class="btn btn-primary btn-lg">Carregar mais</button>
-    </div>
-    {% endif %}
-
-    {% else %}
-    <p class="text-center">Você ainda não cadastrou nenhuma empresa.</p>
-    {% endif %}
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

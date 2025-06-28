@@ -41,10 +41,14 @@ class Empresa(models.Model):
     latitude = models.CharField(max_length=50, null=True, blank=True)
     longitude = models.CharField(max_length=50, null=True, blank=True)
 
-    telefone = models.CharField(max_length=20)
-    email = models.EmailField()
+    telefone = models.CharField(max_length=20, blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
+    facebook = models.URLField(blank=True, null=True)
+    instagram = models.URLField(blank=True, null=True)
     site = models.URLField(blank=True, null=True)
     imagem = CloudinaryField('image', blank=True, null=True)
+
+    sem_email_telefone = models.BooleanField(default=False)
 
     data_cadastro = models.DateTimeField(auto_now_add=True)
 

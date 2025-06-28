@@ -2,7 +2,7 @@ import re
 from django import forms
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
-from .models import PerfilUsuario, Empresa
+from .models import Categoria, PerfilUsuario, Empresa
 from django.contrib.auth import authenticate
 
 class UserRegistrationForm(forms.ModelForm):
@@ -33,6 +33,7 @@ class UserRegistrationForm(forms.ModelForm):
 
     def clean_email(self):
         email = self.cleaned_data.get('email')
+        email = email.lower()
         if User.objects.filter(email=email).exists():
             raise ValidationError('Este email já está em uso.')
         return email
@@ -52,6 +53,7 @@ class UserRegistrationForm(forms.ModelForm):
     def save(self, commit=True):
         user = super().save(commit=False)
         user.set_password(self.cleaned_data['password'])
+        user.email = user.email.lower()
         if commit:
             user.save()
             PerfilUsuario.objects.create(
@@ -63,31 +65,123 @@ class UserRegistrationForm(forms.ModelForm):
 
 
 class EmpresaForm(forms.ModelForm):
+    # 1. Declaramos os campos dos checkboxes que existem no seu HTML
+    # O 'required=False' permite que eles não precisem ser marcados.
+    sem_telefone = forms.BooleanField(required=False, label="Sem Telefone")
+    sem_email = forms.BooleanField(required=False, label="Sem Email")
+
     class Meta:
         model = Empresa
-        fields = ['nome', 'categoria', 'descricao', 'rua', 'bairro', 'cidade', 'numero', 'cep', 'telefone', 'email', 'site', 'imagem', 'latitude', 'longitude']
+        # 2. Adicionamos os novos campos à lista de fields do formulário
+        fields = [
+            'nome', 'categoria', 'descricao', 'rua', 'bairro', 'cidade', 
+            'numero', 'cep', 'telefone', 'email', 'site', 'imagem', 
+            'latitude', 'longitude', 'facebook', 'instagram',
+            'sem_telefone', 'sem_email'
+        ]
+        # Seus widgets continuam os mesmos
         widgets = {
-            'nome': forms.TextInput(attrs={'class': 'form-control form-control-lg'}),
-            'categoria': forms.Select(attrs={'class': 'form-select form-select-lg'}),
-            'descricao': forms.Textarea(attrs={'class': 'form-control form-control-lg'}),
-            'rua': forms.TextInput(attrs={'class': 'form-control form-control-lg'}),
-            'bairro': forms.TextInput(attrs={'class': 'form-control form-control-lg'}),
-            'cidade': forms.TextInput(attrs={'class': 'form-control form-control-lg'}),
-            'numero': forms.TextInput(attrs={'class': 'form-control form-control-lg'}),
-            'cep': forms.TextInput(attrs={'class': 'form-control form-control-lg', 'maxlength': 8}),
-            'telefone': forms.TextInput(attrs={'class': 'form-control form-control-lg'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control form-control-lg'}),
-            'site': forms.URLInput(attrs={'class': 'form-control form-control-lg'}),
-            'imagem': forms.ClearableFileInput(attrs={'class': 'form-control form-control-sm'}),
+            'nome': forms.TextInput(attrs={'placeholder': 'Digite o nome da empresa'}),
+            'categoria': forms.Select(),
+            'descricao': forms.Textarea(attrs={'placeholder': 'Digite a descrição da empresa'}),
+            'rua': forms.TextInput(attrs={'placeholder': 'Digite a rua'}),
+            'bairro': forms.TextInput(attrs={'placeholder': 'Digite o bairro'}),
+            'cidade': forms.TextInput(attrs={'placeholder': 'Digite a cidade'}),
+            'numero': forms.TextInput(attrs={'placeholder': 'Digite o número'}),
+            'cep': forms.TextInput(attrs={'placeholder': 'Apenas números'}),
+            'telefone': forms.TextInput(attrs={'placeholder': 'Ex: 48912345678'}),
+            'email': forms.EmailInput(attrs={'placeholder': 'contato@empresa.com'}),
+            'site': forms.URLInput(attrs={'placeholder': 'https://suaempresa.com'}),
+            'imagem': forms.ClearableFileInput(),
+            'facebook': forms.URLInput(attrs={'placeholder': 'https://facebook.com/suaempresa'}),
+            'instagram': forms.URLInput(attrs={'placeholder': 'https://instagram.com/suaempresa'}),
             'latitude': forms.HiddenInput(),
             'longitude': forms.HiddenInput(),
         }
+        # Adicionando labels amigáveis para os campos
+        labels = {
+            'nome': 'Nome da Empresa',
+            'categoria': 'Categoria',
+            'descricao': 'Descrição',
+            'rua': 'Rua',
+            'bairro': 'Bairro',
+            'cidade': 'Cidade',
+            'numero': 'Número',
+            'cep': 'CEP',
+            'telefone': 'Telefone',
+            'email': 'Email de Contato',
+            'site': 'Site (opcional)',
+            'imagem': 'Imagem da Empresa',
+            'facebook': 'Facebook (opcional)',
+            'instagram': 'Instagram (opcional)',
+        }
 
-    def clean_cep(self):
-        cep = self.cleaned_data.get('cep')
-        if not re.match(r'^\d{8}$', cep):
-            raise forms.ValidationError("CEP deve conter exatamente 8 números.")
-        return cep
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['categoria'].queryset = Categoria.objects.all().order_by('nome')
+        for field_name, field in self.fields.items():
+            if not isinstance(field.widget, (forms.CheckboxInput, forms.HiddenInput, forms.ClearableFileInput, forms.Select)):
+                field.widget.attrs.update({'class': 'form-control form-control-lg'})
+            elif isinstance(field.widget, forms.Select):
+                field.widget.attrs.update({'class': 'form-select form-select-lg'})
+
+    # --- NOVAS VALIDAÇÕES ---
+
+    def clean_numero(self):
+        numero = self.cleaned_data.get('numero')
+        if numero and not numero.isdigit():
+            raise ValidationError("O número deve conter apenas dígitos.")
+        return numero
+
+    def clean_telefone(self):
+        telefone = self.cleaned_data.get('telefone')
+        if telefone:
+            # Remove todos os caracteres que não são números
+            telefone_limpo = re.sub(r'\D', '', telefone)
+            if len(telefone_limpo) < 10 or len(telefone_limpo) > 11:
+                raise ValidationError("O telefone deve ter 10 ou 11 dígitos (com DDD).")
+            return telefone_limpo
+        return telefone
+
+    def clean_facebook(self):
+        url = self.cleaned_data.get('facebook')
+        if url and 'facebook.com' not in url.lower():
+            raise ValidationError("Por favor, insira um link válido do Facebook.")
+        return url
+
+    def clean_instagram(self):
+        url = self.cleaned_data.get('instagram')
+        if url and 'instagram.com' not in url.lower():
+            raise ValidationError("Por favor, insira um link válido do Instagram.")
+        return url
+
+    # 4. Lógica de validação central, agora CORRIGIDA
+    def clean(self):
+        cleaned_data = super().clean()
+        
+        sem_telefone = cleaned_data.get('sem_telefone')
+        sem_email = cleaned_data.get('sem_email')
+        
+        telefone = cleaned_data.get('telefone')
+        email = cleaned_data.get('email')
+
+        # Se "Sem Telefone" NÃO estiver marcado e o campo telefone estiver vazio, gera um erro.
+        if not sem_telefone and not telefone:
+            self.add_error('telefone', 'Este campo é obrigatório ou marque "Sem Telefone".')
+
+        # Se "Sem Email" NÃO estiver marcado e o campo email estiver vazio, gera um erro.
+        if not sem_email and not email:
+            self.add_error('email', 'Este campo é obrigatório ou marque "Sem Email".')
+        
+        # Se o checkbox estiver marcado, garantimos que o valor seja salvo como nulo/vazio.
+        if sem_telefone:
+            cleaned_data['telefone'] = ''
+        
+        if sem_email:
+            cleaned_data['email'] = ''
+
+        return cleaned_data
      
 class CustomLoginForm(forms.Form):
     identificador = forms.CharField(label="Usuário ou CPF", max_length=100)
@@ -107,6 +201,8 @@ class CustomLoginForm(forms.Form):
     def clean(self):
         identificador = self.cleaned_data.get('identificador')
         password = self.cleaned_data.get('password')
+
+        identificador = identificador.lower()
 
         user = None
         if User.objects.filter(username=identificador).exists():
