@@ -66,6 +66,28 @@ def login_view(request):
     return render(request, 'core/login.html', {'form': form})
 
 @login_required(login_url='/login/')
+def editar_empresa(request, empresa_id):
+    empresa = get_object_or_404(Empresa, id=empresa_id)
+
+    if empresa.user != request.user:
+        raise Http404("Você não tem permissão para editar esta empresa.")
+
+    if request.method == 'POST':
+        form = EmpresaForm(request.POST, request.FILES, instance=empresa)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"A empresa '{empresa.nome}' foi atualizada com sucesso!")
+            return redirect('suas_empresas')
+        
+    else:
+        form = EmpresaForm(instance=empresa)
+
+    return render(request, 'core/cadastrar_empresa.html', {
+        'form': form,
+        'is_editing': True
+    })
+
+@login_required(login_url='/login/')
 def suas_empresas(request):
     empresas = Empresa.objects.filter(user=request.user).order_by('-data_cadastro')
 

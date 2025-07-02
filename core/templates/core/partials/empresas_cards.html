@@ -1,43 +1,46 @@
 {% for empresa in page_obj.object_list %}
-<div class="col-12 col-sm-6 col-md-4 mb-5">
-    <a href="{% url 'empresa_detalhe' empresa.id %}" class="text-decoration-none link-dark">
-        <div class="card h-100 shadow border-0 animated-zoom d-flex flex-column">
+<div class="">
+    <div class="card h-100 shadow border-0 animated-zoom d-flex flex-column">
+        
+        <a href="{% url 'empresa_detalhe' empresa.id %}">
             {% if empresa.imagem %}
             <img class="card-img-top img-card" src="{{ empresa.imagem.url }}"
-                alt="{{ empresa.nome }}" style="max-height:200px; object-fit:cover;" />
+                alt="{{ empresa.nome }}" style="height:200px; object-fit:cover;" />
             {% else %}
-            <div class="text-center py-5"><i class="bi bi-building fs-1 text-muted"></i></div>
+            <div class="text-center py-5 bg-light"><i class="bi bi-building fs-1 text-muted"></i></div>
             {% endif %}
-            <div class="card-body p-4 d-flex flex-column">
-                {% if empresa.categoria %}
-                    <div class="badge bg-primary bg-gradient rounded-pill mb-2">{{ empresa.categoria.nome_limpo }}</div>
-                {% else %}
-                    <div class="badge bg-secondary bg-gradient rounded-pill mb-2">Sem Categoria</div>
-                {% endif %}
+        </a>
+        
+        <div class="card-body p-4 d-flex flex-column">
+            {% if empresa.categoria %}
+                <div class="badge bg-primary bg-gradient rounded-pill mb-2">{{ empresa.categoria.nome_limpo }}</div>
+            {% else %}
+                <div class="badge bg-secondary bg-gradient rounded-pill mb-2">Sem Categoria</div>
+            {% endif %}
+
+            <a href="{% url 'empresa_detalhe' empresa.id %}" class="text-decoration-none link-dark">
                 <h5 class="card-title mb-3">{{ empresa.nome }}</h5>
-                <p class="card-text mb-0 flex-grow-1">{{ empresa.descricao|truncatechars:80 }}</p>
-            </div>
-            <div class="card-footer p-4 pt-0 bg-transparent border-top-0">
-                <div class="d-flex align-items-end justify-content-between">
-                    <div class="d-flex align-items-center">
-                        <i class="bi bi-building me-2 fs-4 text-muted"></i>
-                        <div class="small">
-                            <div class="fw-bold">{{ empresa.usuario.username }}</div>
-                            <div class="text-muted">
-                                {{ empresa.categoria.nome_limpo }} ·
-                                <div data-id="{{ empresa.id }}" data-cadastro="{{ empresa.id }}">
-                                    Entrou em {{ empresa.data_cadastro|date:"d/m/Y" }}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            </a>
+            <p class="card-text mb-0 flex-grow-1">{{ empresa.descricao|truncatechars:80 }}</p>
+        </div>
+
+        <div class="card-footer p-3 pt-0 bg-transparent border-top-0">
+            <div class="d-flex align-items-center justify-content-between">
+                <a href="{% url 'empresa_detalhe' empresa.id %}" class="btn btn-sm btn-outline-primary">Ver Detalhes</a>
+                
+                <a href="{% url 'editar_empresa' empresa.id %}" class="btn btn-sm btn-outline-secondary" title="Editar Empresa">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 16 16">
+                        <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
+                        <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/>
+                    </svg>
+                    Editar
+                </a>
             </div>
         </div>
-    </a>
+    </div>
 </div>
 {% empty %}
 <div class="col text-center">
-    <p class="text-muted">Nenhum ponto turístico cadastrado ainda.</p>
+    <p class="text-muted">Nenhuma empresa cadastrada ainda.</p>
 </div>
 {% endfor %}

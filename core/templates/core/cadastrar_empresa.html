@@ -44,7 +44,13 @@
             {% endif %}
 
             <div class="card shadow-sm rounded-4 p-4 bg-white">
-                <h4 class="text-center mb-4 fw-bold">Cadastro de Nova Empresa</h4>
+                <h4 class="text-center mb-4 fw-bold">
+                    {% if is_editing %}
+                        Editar Empresa
+                    {% else %}
+                        Cadastro de Nova Empresa
+                    {% endif %}
+                </h4>
                 <form id="empresa-form" method="POST" enctype="multipart/form-data">
                     {% csrf_token %}
                     <div class="row g-3">
