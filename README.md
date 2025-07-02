@@ -10,10 +10,9 @@ O AruTourism é uma plataforma web projetada para solucionar o problema da infor
 
 ---
 
-###  демонстрация
-*(Recomendação: Substitua a imagem abaixo por um print ou GIF do seu sistema em funcionamento)*
+###  Tela Inicial
 
-![Demonstração do AruTourism](https://res.cloudinary.com/diqrjhtod/image/upload/v1720023414/git-readme/tela_cadastro_git_y9o0u2.png)
+![Demonstração do AruTourism]([https://res.cloudinary.com/diqrjhtod/image/upload/v1720023414/git-readme/tela_cadastro_git_y9o0u2.png](https://res-console.cloudinary.com/diqrjhtod/thumbnails/v1/image/upload/v1751473772/QVJVVE9VUklTTV9JTklDSUFMX3JqZ3lwNA==/drilldown))
 
 ---
 
@@ -179,5 +178,5 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 ### 👨‍💻 Autor
 
 -   **Fabiano Daros Freitas**
--   **Email:** fabianodaross@gmail.com
--   **LinkedIn:** [https://www.linkedin.com/in/fabianodaross/](https://www.linkedin.com/in/fabianodaross/)
+-   **Email:** freitasfabiano08@gmail.com
+-   **LinkedIn:** [https://www.linkedin.com/in/fabianodaross/]([https://www.linkedin.com/in/fabianodaross/])
