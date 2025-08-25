@@ -1,4 +1,5 @@
 import django_heroku
+from urllib.parse import urlparse
 import os
 from pathlib import Path
 import dj_database_url
@@ -10,12 +11,17 @@ import cloudinary.api
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-8jy1*9-$brc$f!b@%8bt6hqepqj(367@$&c$xxv@y6ax5luzgm'
+SECRET_KEY = os.getenv("SECRET_KEY", "change-me")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
+RENDER_EXTERNAL_URL = os.getenv("RENDER_EXTERNAL_URL")
+hostname = urlparse(RENDER_EXTERNAL_URL).hostname if RENDER_EXTERNAL_URL else None
 ALLOWED_HOSTS = ['*']
+CSRF_TRUSTED_ORIGINS = [RENDER_EXTERNAL_URL] if RENDER_EXTERNAL_URL else ["https://*.onrender.com"]
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Application definition
 
@@ -65,10 +71,11 @@ TEMPLATES = [
 WSGI_APPLICATION = 'arutourism.wsgi.application'
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',  # Caminho do banco de dados local
-    }
+    "default": dj_database_url.config(
+        default=f"sqlite:///{BASE_DIR/'db.sqlite3'}",
+        conn_max_age=600,
+        ssl_require=True
+    )
 }
 
 # Password validation
@@ -121,4 +128,4 @@ DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 # URL das mídias
 MEDIA_URL = 'https://res.cloudinary.com/diqrjhtod/image/upload/'
 
-django_heroku.settings(locals())
+# django_heroku.settings(locals())
