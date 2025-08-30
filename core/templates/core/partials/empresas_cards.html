@@ -1,45 +1,38 @@
+{% load static %}
 {% for empresa in page_obj.object_list %}
-<div class="col d-flex">  {# coluna auto com row-cols + estica altura #}
-  <div class="card empresa-card h-100 flex-grow-1 d-flex flex-column position-relative"
-       role="link" tabindex="0"
-       data-href="{% url 'empresa_detalhe' empresa.id %}">
-
-    {% if empresa.imagem %}
-      <img class="card-img-top" src="{{ empresa.imagem.url }}"
-           alt="{{ empresa.nome }}" loading="lazy" />
-    {% else %}
-      <div class="text-center py-5 bg-light"><i class="bi bi-building fs-1 text-muted"></i></div>
-    {% endif %}
-
-    <div class="card-body d-flex flex-column">
-      {% if empresa.categoria %}
-        <div class="badge bg-primary bg-gradient rounded-pill mb-2">
-          {{ empresa.categoria.nome_limpo }}
-        </div>
+  <div class="col d-flex">
+    <div class="card empresa-card h-100 flex-grow-1 d-flex flex-column position-relative"
+         role="link" tabindex="0" data-href="{% url 'empresa_detalhe' empresa.id %}">
+      {% if empresa.imagem %}
+        <img class="card-img-top" src="{{ empresa.imagem.url }}" alt="{{ empresa.nome }}" loading="lazy">
       {% else %}
-        <div class="badge bg-secondary bg-gradient rounded-pill mb-2">Sem Categoria</div>
+        <img class="card-img-top" src="{% static 'images/sem_imagem.png' %}" alt="Sem imagem" loading="lazy">
       {% endif %}
 
-      <h5 class="card-title">{{ empresa.nome }}</h5>
-      <p class="card-text flex-grow-1">{{ empresa.descricao|truncatechars:200 }}</p>
-
-      <a href="{% url 'empresa_detalhe' empresa.id %}" class="stretched-link"
-         aria-label="Ver detalhes de {{ empresa.nome }}"></a>
-    </div>
-
-    <div class="card-footer bg-transparent border-top-0">
-      <div class="d-flex justify-content-between align-items-center">
-        <a href="{% url 'empresa_detalhe' empresa.id %}" class="btn btn-sm btn-outline-primary">Ver Detalhes</a>
-        {% if request.user.is_authenticated and empresa.user_id == request.user.id %}
-          <a href="{% url 'editar_empresa' empresa.id %}" class="btn btn-sm btn-outline-secondary">
-            <i class="bi bi-pencil-square"></i> Editar
-          </a>
+      <div class="card-body d-flex flex-column">
+        {% if empresa.categoria %}
+          <div class="badge bg-primary bg-gradient rounded-pill mb-2">{{ empresa.categoria.nome_limpo }}</div>
+        {% else %}
+          <div class="badge bg-secondary bg-gradient rounded-pill mb-2">Sem Categoria</div>
         {% endif %}
+        <h5 class="card-title">{{ empresa.nome }}</h5>
+        <p class="card-text flex-grow-1">{{ empresa.descricao|truncatechars:200 }}</p>
+        <a href="{% url 'empresa_detalhe' empresa.id %}" class="stretched-link"
+           aria-label="Ver detalhes de {{ empresa.nome }}"></a>
+      </div>
+
+      <div class="card-footer bg-transparent border-top-0">
+        <div class="d-flex justify-content-between align-items-center">
+          <a href="{% url 'empresa_detalhe' empresa.id %}" class="btn btn-sm btn-outline-primary">Ver Detalhes</a>
+          {% if request.user.is_authenticated and empresa.user_id == request.user.id %}
+            <a href="{% url 'editar_empresa' empresa.id %}" class="btn btn-sm btn-outline-secondary">
+              <i class="bi bi-pencil-square"></i> Editar
+            </a>
+          {% endif %}
+        </div>
       </div>
     </div>
-
   </div>
-</div>
 {% empty %}
-<div class="col text-center"><p class="text-muted">Nenhuma empresa cadastrada ainda.</p></div>
+  <div class="col text-center"><p class="text-muted">Nenhuma empresa cadastrada ainda.</p></div>
 {% endfor %}

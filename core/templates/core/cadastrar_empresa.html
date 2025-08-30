@@ -22,6 +22,10 @@
 
   /* card uniform */
   .card-clean{border-radius:14px;box-shadow:0 10px 30px rgba(2,6,23,.06)}
+
+  .import-drop{border:2px dashed #cbd5e1;border-radius:12px;padding:2rem;background:#f8fafc;text-align:center}
+  .import-drop.drag{background:#eef2ff;border-color:#93c5fd}
+  .import-drop.invalid{background:#fff5f5;border-color:#dc3545}
 </style>
 
 <div id="notification-container"></div>
@@ -166,9 +170,9 @@
           <div class="card card-clean p-4 bg-white">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
               <h5 class="mb-0 fw-bold">Importar empresas por arquivo (.xlsx / .csv)</h5>
-              <a class="btn btn-outline-primary" href="{% url 'modelo_empresas_xlsx' %}">
-                <i class="bi bi-download"></i> Baixar modelo XLSX
-              </a>
+              <a class="btn btn-outline-secondary btn-sm" href="{% url 'download_template_empresas' %}">
+                Baixar modelo (.xlsx)
+            </a>
             </div>
 
             <p class="text-muted mb-3">
@@ -176,7 +180,8 @@
               (ex.: descrição). A categoria será criada automaticamente se não existir.
             </p>
 
-            <form id="form-import" method="post" enctype="multipart/form-data" action="{% url 'importar_empresas' %}">
+            <form id="form-import" method="post" enctype="multipart/form-data" action="{% url 'importar_empresas_arquivo' %}">
+              <div id="import-errors" class="alert alert-danger mt-3 d-none"></div>
               {% csrf_token %}
               <div id="drop" class="import-drop">
                 <input id="arquivo" name="arquivo" type="file" accept=".xlsx,.csv" hidden>
@@ -216,7 +221,9 @@
 
 <script>
 (function(){
-  // ====== MAPA ======
+  // ==========================
+  //   MAPA (Leaflet)
+  // ==========================
   let map, marker;
   const $map = $('#map');
   if ($map.length){
@@ -230,84 +237,233 @@
     });
   }
 
-  // ====== máscaras simples ======
-  $('#id_cep').on('input', function(){ $(this).val($(this).val().replace(/\D/g,'').slice(0,8)); });
+  // ==========================
+  //   Máscaras simples
+  // ==========================
+  $('#id_cep').on('input', function(){
+    $(this).val($(this).val().replace(/\D/g,'').slice(0,8));
+  });
 
   function toggleFields(){
     $('#id_telefone').prop('disabled', $('#id_sem_telefone').is(':checked'));
-    $('#id_email').prop('disabled', $('#id_sem_email').is(':checked'));
+    $('#id_email').prop('disabled',   $('#id_sem_email').is(':checked'));
   }
-  $('#id_sem_telefone,#id_sem_email').on('change', toggleFields); toggleFields();
+  $('#id_sem_telefone,#id_sem_email').on('change', toggleFields);
+  toggleFields();
 
-  // ====== SUBMIT AJAX (individual) ======
-  $('#empresa-form').on('submit', async function(e){
-    e.preventDefault();
-    const form = this;
-    const fd = new FormData(form);
-    const submitter = e.originalEvent.submitter; if (submitter){ fd.append(submitter.name, submitter.value); }
-    const resp = await fetch(form.action || window.location.pathname, { method:'POST', body:fd, headers:{'X-CSRFToken':'{{ csrf_token }}'} });
-
-    $('#notification-container').empty();
-    if (resp.ok){
-      const data = await resp.json();
-      toast(data.message || 'Salvo com sucesso!');
-      if (data.action === 'redirect'){ setTimeout(()=>location.href = data.redirect_url || '{% url "listar_empresas" %}', 1200); }
-      else { form.reset(); if (marker){ map.removeLayer(marker); marker=null; } }
-    }else{
-      const html = await resp.text();
-      const doc = new DOMParser().parseFromString(html, 'text/html');
-      const src = doc.querySelector('#errors-from-server');
-      $('#notification-container').html(src ? src.innerHTML :
-        '<div class="message-overlay"><div class="message-box"><h5>Erro Inesperado</h5><p>Ocorreu um problema ao salvar.</p></div></div>');
-    }
-  });
-
-  // ====== IMPORTAÇÃO (arquivo) ======
-  const drop = document.getElementById('drop');
-  const inp  = document.getElementById('arquivo');
-  const btn  = document.getElementById('btn-select');
-  const fn   = document.getElementById('fn');
-  const loading = document.getElementById('loading-overlay');
-
-  btn.addEventListener('click', ()=> inp.click());
-  inp.addEventListener('change', ()=> { fn.textContent = inp.files[0] ? inp.files[0].name : ''; });
-
-  ;['dragenter','dragover'].forEach(evt=> drop.addEventListener(evt, e=>{ e.preventDefault(); e.stopPropagation(); drop.classList.add('drag'); }));
-  ;['dragleave','drop'].forEach(evt=> drop.addEventListener(evt, e=>{ e.preventDefault(); e.stopPropagation(); drop.classList.remove('drag'); }));
-  drop.addEventListener('drop', e=>{
-    const file = e.dataTransfer.files && e.dataTransfer.files[0];
-    if (file){ inp.files = e.dataTransfer.files; fn.textContent = file.name; }
-  });
-
-  $('#form-import').on('submit', async function(e){
-    e.preventDefault();
-    if (!inp.files.length){ toast('Selecione um arquivo primeiro.', true); return; }
-
-    loading.style.display = 'flex';
-    const fd = new FormData(this);
-    const resp = await fetch(this.action, { method:'POST', body:fd, headers:{'X-CSRFToken':'{{ csrf_token }}'} });
-    loading.style.display = 'none';
-
-    if (resp.ok){
-      const data = await resp.json();
-      let msg = `Importação concluída: ${data.importados} ok`;
-      if (data.erros) msg += ` • ${data.erros} com erro`;
-      toast(msg);
-      if (data.redirect){ setTimeout(()=> location.href = data.redirect_url || '{% url "listar_empresas" %}', 1200); }
-    }else{
-      const err = await resp.json().catch(()=>null);
-      toast(err && err.error ? err.error : 'Falha ao importar.', true);
-    }
-  });
-
-  // ====== toast util ======
-  function toast(message, danger){
+  // ==========================
+  //   Toast utilitário
+  // ==========================
+  function toast(message, variant){ // variant: 'success' | 'danger' | 'warning' | 'info'
     const t = document.createElement('div');
-    t.className = 'toast-notification' + (danger?' bg-danger':'');
+    let cls = 'toast-notification';
+    if (variant === 'danger')  cls += ' bg-danger';
+    if (variant === 'warning') cls += ' bg-warning text-dark';
+    if (variant === 'info')    cls += ' bg-info text-dark';
+    t.className = cls;
     t.textContent = message;
     document.getElementById('notification-container').appendChild(t);
-    setTimeout(()=> t.classList.add('show'), 50);
-    setTimeout(()=> { t.classList.remove('show'); setTimeout(()=> t.remove(), 400); }, 3500);
+    setTimeout(()=> t.classList.add('show'), 30);
+    setTimeout(()=> { t.classList.remove('show'); setTimeout(()=> t.remove(), 350); }, 3800);
+  }
+
+  // ==========================
+  //   Cadastro individual (AJAX)
+  // ==========================
+  const $formEmp = $('#empresa-form');
+  if ($formEmp.length){
+    $formEmp.on('submit', async function(e){
+      e.preventDefault();
+
+      // desabilita botões
+      const $btns = $formEmp.find('button[type=submit]');
+      $btns.prop('disabled', true);
+
+      const form = this;
+      const fd = new FormData(form);
+      const trigger = e.originalEvent && e.originalEvent.submitter;
+      if (trigger){ fd.append(trigger.name, trigger.value); }
+
+      $('#notification-container').empty();
+      try{
+        const resp = await fetch(form.action || window.location.pathname, {
+          method: 'POST',
+          body: fd,
+          headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+        });
+
+        if (resp.ok){
+          const data = await resp.json();
+          toast(data.message || 'Salvo com sucesso!', 'success');
+          if (data.action === 'redirect'){
+            setTimeout(()=> location.href = data.redirect_url || '{% url "listar_empresas" %}', 1100);
+          }else{
+            form.reset();
+            if (marker){ map.removeLayer(marker); marker = null; }
+          }
+        }else{
+          // tenta extrair o HTML com erros do form (como você já usa)
+          const html = await resp.text();
+          const doc = new DOMParser().parseFromString(html, 'text/html');
+          const src = doc.querySelector('#errors-from-server');
+          $('#notification-container').html(
+            src ? src.innerHTML :
+                  '<div class="message-overlay"><div class="message-box"><h5>Erro Inesperado</h5><p>Ocorreu um problema ao salvar.</p></div></div>'
+          );
+        }
+      }catch(err){
+        toast('Falha de rede ao salvar. Tente novamente.', 'danger');
+        console.error(err);
+      }finally{
+        $btns.prop('disabled', false);
+      }
+    });
+  }
+
+  // ==========================
+  //   Importação (arquivo)
+  // ==========================
+  const drop     = document.getElementById('drop');
+  const inp      = document.getElementById('arquivo');
+  const btn      = document.getElementById('btn-select');
+  const fn       = document.getElementById('fn');
+  const loading  = document.getElementById('loading-overlay');
+  const $formImp = $('#form-import');
+
+  if (drop && inp && btn && fn && $formImp.length){
+    // estados visuais
+    function setDropValid(ok){
+      drop.classList.remove('drag');
+      drop.classList.toggle('border-danger', !ok);
+      drop.style.borderColor = ok ? '#cbd5e1' : '#dc3545';
+      drop.style.background  = ok ? '#f8fafc' : '#ffecec';
+    }
+
+    btn.addEventListener('click', ()=> inp.click());
+    inp.addEventListener('change', ()=> {
+      fn.textContent = inp.files[0] ? inp.files[0].name : '';
+      setDropValid(true);
+    });
+
+    ['dragenter','dragover'].forEach(evt=>{
+      drop.addEventListener(evt, e=>{
+        e.preventDefault(); e.stopPropagation();
+        drop.classList.add('drag');
+      });
+    });
+    ['dragleave','drop'].forEach(evt=>{
+      drop.addEventListener(evt, e=>{
+        e.preventDefault(); e.stopPropagation();
+        drop.classList.remove('drag');
+      });
+    });
+    drop.addEventListener('drop', e=>{
+      const file = e.dataTransfer.files && e.dataTransfer.files[0];
+      if (file){
+        inp.files = e.dataTransfer.files;
+        fn.textContent = file.name;
+        setDropValid(true);
+      }
+    });
+
+    $formImp.on('submit', async function(e){
+      e.preventDefault();
+      if (!inp.files.length){
+        toast('Selecione um arquivo (.xlsx ou .csv).', 'danger');
+        setDropValid(false);
+        return;
+      }
+
+      // desabilita botões + mostra loading
+      const $btnSubmit = $formImp.find('button[type=submit]');
+      $btnSubmit.prop('disabled', true);
+      loading.style.display = 'flex';
+      setDropValid(true); // reseta para estado neutro
+
+      try{
+        const fd = new FormData(this);
+        const resp = await fetch(this.action, {
+          method: 'POST',
+          body: fd,
+          headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+        });
+
+        // Oculta loading já aqui (o resto é só UI)
+        loading.style.display = 'none';
+
+        // Tenta sempre parsear JSON; se falhar, trata como erro bruto
+        let data = null, jsonOk = false;
+        try{ data = await resp.json(); jsonOk = true; }catch(_){}
+
+        // ----- CASOS DE ERRO HTTP OU JSON -----
+        if (!resp.ok || !jsonOk){
+          setDropValid(false);
+          if (jsonOk){
+            // backend mandou JSON de erro estruturado
+            const missing = data.missing_columns || data.missing || [];
+            const msgs    = data.mensagens || data.errors || [];
+            if (missing.length){
+              toast('Arquivo inválido. Faltam colunas: ' + missing.join(', '), 'danger');
+            }else if (data.error){
+              toast(data.error, 'danger');
+            }else if (msgs.length){
+              toast('Falha ao importar:\n' + msgs.slice(0,5).join(' | '), 'danger');
+            }else{
+              toast('Falha ao importar o arquivo.', 'danger');
+            }
+          }else{
+            toast('Falha ao importar o arquivo (resposta inesperada).', 'danger');
+          }
+          return; // não redireciona
+        }
+
+        // ----- SUCESSO HTTP + JSON -----
+        // Estrutura esperada: { ok, importados, erros, mensagens[], redirect?, redirect_url? }
+        const importados = Number(data.importados || 0);
+        const erros      = Number(data.erros || 0);
+        const mensagens  = data.mensagens || [];
+
+        if (erros > 0){
+          // NÃO redireciona; mostra detalhe e pinta de vermelho
+          setDropValid(false);
+          const head = `Importação feita com avisos: ${importados} ok • ${erros} erro(s)`;
+          toast(head, 'warning');
+
+          // Se vierem mensagens do backend, joga numa caixinha (até 10)
+          if (mensagens.length){
+            // cria um painel simples inline
+            let box = document.getElementById('import-messages');
+            if (!box){
+              box = document.createElement('div');
+              box.id = 'import-messages';
+              box.className = 'alert alert-warning mt-3';
+              drop.parentNode.appendChild(box);
+            }
+            box.innerHTML = '<strong>Ocorreram erros nas linhas:</strong><br>' +
+              '<ul style="margin: .5rem 0 0; padding-left: 1.25rem;">' +
+              mensagens.slice(0,10).map(m => `<li>${m}</li>`).join('') +
+              (mensagens.length>10 ? `<li>... (+${mensagens.length-10} restantes)</li>` : '') +
+              '</ul>';
+          }
+          return;
+        }
+
+        // Sem erros => OK para redirecionar (se o backend solicitar)
+        setDropValid(true);
+        toast(`Importação concluída: ${importados} registro(s).`, 'success');
+        if (data.redirect){
+          setTimeout(()=> location.href = data.redirect_url || '{% url "listar_empresas" %}', 1100);
+        }
+
+      }catch(err){
+        loading.style.display = 'none';
+        setDropValid(false);
+        console.error(err);
+        toast('Erro de rede ao enviar arquivo. Tente novamente.', 'danger');
+      }finally{
+        $formImp.find('button[type=submit]').prop('disabled', false);
+      }
+    });
   }
 })();
 </script>

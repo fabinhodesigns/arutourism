@@ -1,35 +1,37 @@
+# core/urls.py
 from django.conf import settings
 from django.conf.urls.static import static
-
 from django.urls import path
-from . import views
 from django.contrib import admin
 
+from . import views
 
 urlpatterns = [
     path('', views.home, name='home'),
     path('admin/', admin.site.urls),
+
+    # Auth/usuários
     path('register/', views.register, name='register'),
     path('login/', views.login_view, name='login'),
-    path('usuarios/', views.listar_usuarios, name='listar_usuarios'), 
     path('logout/', views.logout_view, name='logout'),
+    path('usuarios/', views.listar_usuarios, name='listar_usuarios'),
     path('editar_usuario/<int:id>/', views.editar_usuario, name='editar_usuario'),
     path('excluir_usuario/<int:id>/', views.excluir_usuario, name='excluir_usuario'),
-    path('empresa/<int:empresa_id>/', views.empresa_detalhe, name='empresa_detalhe'),
-    path('cadastrar_empresa/', views.cadastrar_empresa, name='cadastrar_empresa'),
-    path('empresa/<int:empresa_id>/editar/', views.editar_empresa, name='editar_empresa'),
+
+    # Empresas
     path('empresas/', views.listar_empresas, name='listar_empresas'),
-    path('sobre/', views.sobre, name='sobre'),
-    path('termo_de_servico/', views.termo_de_servico, name='termo_de_servico'),
-    path('politica_de_privacidade/', views.politica_de_privacidade, name='politica_de_privacidade'),
+    path('empresa/<int:empresa_id>/', views.empresa_detalhe, name='empresa_detalhe'),
+    path('empresa/<int:empresa_id>/editar/', views.editar_empresa, name='editar_empresa'),
+    path('cadastrar_empresa/', views.cadastrar_empresa, name='cadastrar_empresa'),
     path('suas_empresas/', views.suas_empresas, name='suas_empresas'),
 
+    # Busca/filtros (compat)
     path('empresas/buscar/', views.buscar_empresas, name='buscar_empresas'),
     path('empresas/filtros/', views.filtros_empresas, name='filtros_empresas'),
 
-    path('empresas/modelo.xlsx', views.modelo_empresas_xlsx, name='modelo_empresas_xlsx'),
-    path('empresas/importar/', views.importar_empresas, name='importar_empresas'),
-    path('empresas/cadastrar/', views.cadastrar_empresa, name='cadastrar_empresa'),
+    # Importação em lote + modelo (NOVOS nomes)
+    path("empresas/modelo/", views.download_template_empresas, name="download_template_empresas"),
+    path("empresas/importar/", views.importar_empresas_arquivo, name="importar_empresas_arquivo"),
 ]
 
 # servir mídia local quando DEBUG=True
