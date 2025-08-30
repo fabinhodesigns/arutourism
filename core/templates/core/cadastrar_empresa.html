@@ -466,5 +466,29 @@
     });
   }
 })();
+
+$('#form-import').on('submit', async function(e){
+  e.preventDefault();
+  if (!inp.files.length){ toast('Selecione um arquivo primeiro.', true); return; }
+
+  loading.style.display = 'flex';
+  const fd = new FormData(this);
+  const resp = await fetch(this.action, { method:'POST', body:fd, headers:{'X-CSRFToken':'{{ csrf_token }}'} });
+  loading.style.display = 'none';
+
+  const data = await resp.json().catch(()=>null);
+
+  if (resp.ok && data && data.ok){
+    toast(`Importação concluída: ${data.importados} ok`);
+    if (data.redirect){ setTimeout(()=> location.href = data.redirect_url || '{% url "listar_empresas" %}', 1200); }
+  } else {
+    const base = (data && (data.error || data.msg)) || 'Falha ao importar.';
+    let msg = base;
+    if (data && Array.isArray(data.mensagens) && data.mensagens.length){
+      msg += '\n\nOcorreram erros nas linhas:\n' + data.mensagens.join(' | ');
+    }
+    toast(msg, true); // vermelho e NÃO redireciona
+  }
+});
 </script>
 {% endblock %}

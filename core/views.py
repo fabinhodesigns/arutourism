@@ -570,116 +570,123 @@ def importar_empresas_arquivo(request):
     if not header_map:
         return JsonResponse({"ok": False, "error": "Nenhum cabeçalho reconhecido."}, status=400)
 
+    # Coordenadas default (evita NOT NULL em produção)
+    DEFAULT_LAT = -28.9371
+    DEFAULT_LNG = -49.4840
+
     created, errors = 0, 0
     msgs = []
 
-    # campos que vamos popular no model Empresa (ajuste se seu model tiver nomes diferentes)
-    FIELD_MAP = {
-        "nome": "nome",
-        "categoria": "categoria",   # tratado à parte
-        "descricao": "descricao",
-        "bairro": "bairro",
-        "endereco": "rua",
-        "numero": "numero",
-        "cidade": "cidade",
-        "cep": "cep",
-        "telefone": "telefone",
-        "contato": "contato_direto",   # só se existir no seu model
-        "digital": "site",
-        "cadastrur": "cadastrur",      # só se existir no seu model
-        "maps": None,                  # vira latitude/longitude
-        "app": None,                   # ignore se não existir no model
-        "cnpj": "cnpj",                # só se existir no seu model
-    }
-
-    has_contato = hasattr(Empresa, "contato_direto")
-    has_cadastrur = hasattr(Empresa, "cadastrur")
-    has_cnpj = hasattr(Empresa, "cnpj")
-
-    for line_no, r in enumerate(rows, start=2):
-        # extrai dados da linha
+    for line_no, r in enumerate(rows, start=2):  # 2 por causa do header
+        # coleta valores por chave canônica
         data = {k: "" for k in COLUMN_ALIASES.keys()}
         for idx, canon in header_map.items():
             if idx < len(r):
                 data[canon] = (r[idx] or "").strip()
 
-        # obrigatórios mínimos
-        nome = (data.get("nome") or "").strip()
+        # normalizações e defaults
+        nome       = (data.get("nome") or "").strip()
         if not nome:
             errors += 1
-            msgs.append(f"Linha {line_no}: Nome ausente.")
+            msgs.append(f"Linha {line_no}: NOME é obrigatório.")
             continue
 
+        cat_name   = (data.get("categoria") or "Sem Categoria").strip()
+        bairro     = data.get("bairro") or ""
+        endereco   = data.get("endereco") or ""   # seu model usa 'rua'
+        numero     = data.get("numero") or ""
+        cidade     = (data.get("cidade") or "Araranguá").strip()
+
+        cep_raw    = _digits(data.get("cep"))
+        telefone   = (data.get("telefone") or "").strip()
+        contato    = (data.get("contato") or "").strip()
+        digital    = (data.get("digital") or "").strip()
+        cadastrur  = (data.get("cadastrur") or "").strip()
+        app_val    = (data.get("app") or "").strip()   # só atribui se existir no model
+        descricao  = (data.get("descricao") or LOREM_DEFAULT).strip()
+        cnpj       = _digits(data.get("cnpj"))
+
+        # tenta lat/lng via link do Maps
+        lat, lng = _extract_latlng_from_maps(data.get("maps") or "")
+        if lat is None or lng is None:
+            lat, lng = DEFAULT_LAT, DEFAULT_LNG
+
+        # sanity: truncar para não estourar VARCHAR (ajuste tamanhos conforme o seu model)
+        cep       = (cep_raw or "")[:20]
+        telefone  = telefone[:50]
+        contato   = contato[:100]
+        digital   = digital[:200]
+        cadastrur = cadastrur[:50]
+        app_val   = app_val[:50]
+        bairro    = bairro[:100]
+        endereco  = endereco[:120]
+        numero    = numero[:20]
+        cidade    = cidade[:80]
+        descricao = descricao[:2000]
+        cnpj      = cnpj[:20]
+
         try:
-            # categoria
-            cat_name = (data.get("categoria") or "").strip() or "Sem Categoria"
-            categoria, _ = Categoria.objects.get_or_create(nome=cat_name)
-
-            # lat/lng do Maps (opcional)
-            lat, lng = _extract_latlng_from_maps(data.get("maps") or "")
-
-            # monta kwargs do model respeitando limites
-            kwargs = {
-                "user": request.user,
-                "nome": _clip(Empresa, "nome", nome),
-                "categoria": categoria,
-                "descricao": _clip(Empresa, "descricao", data.get("descricao") or LOREM_DEFAULT),
-                "bairro": _clip(Empresa, "bairro", data.get("bairro") or ""),
-                "rua": _clip(Empresa, "rua", data.get("endereco") or ""),
-                "numero": _clip(Empresa, "numero", data.get("numero") or ""),
-                "cidade": _clip(Empresa, "cidade", (data.get("cidade") or "Araranguá").strip()),
-                "cep": _clip(Empresa, "cep", (data.get("cep") or "").replace("-", "").strip()),
-                "telefone": _clip(Empresa, "telefone", (data.get("telefone") or "").strip()),
-                "site": _clip(Empresa, "site", (data.get("digital") or "").strip()),
-                "latitude": lat,
-                "longitude": lng,
-            }
-            if has_contato:
-                kwargs["contato_direto"] = _clip(Empresa, "contato_direto", data.get("contato") or "")
-            if has_cadastrur:
-                kwargs["cadastrur"] = _clip(Empresa, "cadastrur", data.get("cadastrur") or "")
-            if has_cnpj:
-                kwargs["cnpj"] = _clip(Empresa, "cnpj", re.sub(r"\D", "", data.get("cnpj") or ""))
-
-            # valida excedentes e gera mensagem amigável (sem derrubar a linha)
-            overflow_notes = []
-            for canon, model_field in FIELD_MAP.items():
-                if not model_field:
-                    continue
-                val = kwargs.get(model_field)
-                if val and isinstance(val, str):
-                    lim = _maxlen(Empresa, model_field)
-                    if lim and len(val) > lim:
-                        overflow_notes.append(f"{model_field} ({len(val)}>{lim})")
-                        kwargs[model_field] = val[:lim]
-
-            # salva por linha dentro de savepoint
+            # cada linha com seu savepoint — se falhar, não suja a transação das próximas
             with transaction.atomic():
-                Empresa.objects.create(**kwargs)
+                categoria, _ = Categoria.objects.get_or_create(nome=cat_name)
+
+                emp_kwargs = dict(
+                    user=request.user,
+                    nome=nome,
+                    categoria=categoria,
+                    descricao=descricao,
+                    bairro=bairro,
+                    rua=endereco,          # ajuste se seu campo tiver outro nome
+                    numero=numero,
+                    cidade=cidade,
+                    cep=cep,
+                    telefone=telefone,
+                    site=digital,
+                    latitude=lat,
+                    longitude=lng,
+                    cnpj=cnpj,
+                    contato_direto=contato if hasattr(Empresa, "contato_direto") else "",
+                    cadastrur=cadastrur if hasattr(Empresa, "cadastrur") else "",
+                )
+                if hasattr(Empresa, "app"):
+                    emp_kwargs["app"] = app_val
+
+                emp = Empresa(**emp_kwargs)
+                emp.save()
+
             created += 1
 
-            if overflow_notes:
-                msgs.append(f"Linha {line_no}: campos truncados — " + ", ".join(overflow_notes))
-
+        except IntegrityError as e:
+            errors += 1
+            msgs.append(f"Linha {line_no}: {e.__class__.__name__}: {e}")
         except Exception as e:
             errors += 1
             msgs.append(f"Linha {line_no}: {e}")
 
-    # Se houve qualquer erro, devolve 400 para sua UI pintar a caixa vermelha e não redirecionar
-    if errors > 0:
-        return JsonResponse({
-            "ok": False,
-            "importados": created,
-            "erros": errors,
-            "mensagens": msgs[:100],   # limita a resposta
-        }, status=400)
+    # Se houver QUALQUER erro, devolve 400 para seu JS pintar em vermelho e NÃO redirecionar
+    if errors > 0 and created == 0:
+        return JsonResponse(
+            {"ok": False, "error": "Falha ao importar.", "mensagens": msgs[:50]},
+            status=400
+        )
 
-    # Sucesso total -> redireciona como antes
+    # Parcialmente ok (algumas com erro): também devolvo 400 para você corrigir na hora
+    if errors > 0 and created > 0:
+        return JsonResponse(
+            {
+                "ok": False,
+                "error": f"Importação parcial: {created} ok • {errors} com erro.",
+                "mensagens": msgs[:50]
+            },
+            status=400
+        )
+
+    # Tudo ok
     return JsonResponse({
         "ok": True,
         "importados": created,
         "erros": 0,
-        "mensagens": msgs[:100],
+        "mensagens": [],
         "redirect": True,
         "redirect_url": "/empresas/",
     })
