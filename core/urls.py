@@ -24,3 +24,7 @@ urlpatterns = [
     path('politica_de_privacidade/', views.politica_de_privacidade, name='politica_de_privacidade'),
     path('suas_empresas/', views.suas_empresas, name='suas_empresas')
 ]
+
+# servir mídia local quando DEBUG=True
+if settings.DEBUG and settings.MEDIA_URL and settings.MEDIA_ROOT:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

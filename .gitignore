@@ -1,13 +1,28 @@
-__pycache__
-*.*˜
-.idea
+# ▸ Python/Django
+__pycache__/
+*.py[cod]
 *.pyc
 *.pyo
 *.pyd
-env/
-venv/
+*.egg-info/
 *.sqlite3
+db.sqlite3
+
+# ▸ Virtual envs
+.venv/
+venv/
+env/
+
+# ▸ Django collectstatic
 /staticfiles/
-.DS_Store
-node_modules/
 staticfiles/
+
+# ▸ IDE / OS
+.vscode/
+.idea/
+.DS_Store
+
+# ▸ Environment files (NÃO commitar chaves)
+.env
+*.env
+.env.*
