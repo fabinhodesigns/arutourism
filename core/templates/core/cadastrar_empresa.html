@@ -218,131 +218,143 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
 <script>
 (function(){
-  // ==========================
-  //   MAPA (Leaflet)
-  // ==========================
+
+  // ===== Util: toast =====
+  function toast(message, danger){
+    const t = document.createElement('div');
+    t.className = 'toast-notification' + (danger ? ' bg-danger' : '');
+    t.textContent = message;
+    document.getElementById('notification-container')?.appendChild(t);
+    setTimeout(()=> t.classList.add('show'), 30);
+    setTimeout(()=> { t.classList.remove('show'); setTimeout(()=> t.remove(), 350); }, 3500);
+  }
+
+  // ===== MAPA (só liga se existir) =====
   let map, marker;
-  const $map = $('#map');
-  if ($map.length){
-    map = L.map('map').setView([-28.9371, -49.4840], 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-    map.on('click', function(e){
-      if (marker) map.removeLayer(marker);
-      marker = L.marker(e.latlng).addTo(map);
-      $('#id_latitude').val(e.latlng.lat.toFixed(6));
-      $('#id_longitude').val(e.latlng.lng.toFixed(6));
+  const $map = document.getElementById('map');
+  if ($map){
+    // Leaflet precisa estar carregado nessa página
+    try{
+      map = L.map('map').setView([-28.9371, -49.4840], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+      map.on('click', function(e){
+        if (marker) map.removeLayer(marker);
+        marker = L.marker(e.latlng).addTo(map);
+        const lat = document.getElementById('id_latitude');
+        const lng = document.getElementById('id_longitude');
+        if (lat) lat.value = e.latlng.lat.toFixed(6);
+        if (lng) lng.value = e.latlng.lng.toFixed(6);
+      });
+    }catch(_e){ /* Leaflet não carregado nesta view; ignora */ }
+  }
+
+  // ===== Máscara simples de CEP =====
+  const cep = document.getElementById('id_cep');
+  if (cep){
+    cep.addEventListener('input', function(){
+      this.value = this.value.replace(/\D/g,'').slice(0,8);
     });
   }
 
-  // ==========================
-  //   Máscaras simples
-  // ==========================
-  $('#id_cep').on('input', function(){
-    $(this).val($(this).val().replace(/\D/g,'').slice(0,8));
-  });
-
+  // ===== Habilita/desabilita telefone/e-mail =====
   function toggleFields(){
-    $('#id_telefone').prop('disabled', $('#id_sem_telefone').is(':checked'));
-    $('#id_email').prop('disabled',   $('#id_sem_email').is(':checked'));
+    const tel = document.getElementById('id_telefone');
+    const semTel = document.getElementById('id_sem_telefone');
+    if (tel && semTel) tel.disabled = semTel.checked;
+
+    const em = document.getElementById('id_email');
+    const semEm = document.getElementById('id_sem_email');
+    if (em && semEm) em.disabled = semEm.checked;
   }
-  $('#id_sem_telefone,#id_sem_email').on('change', toggleFields);
+  const semTel = document.getElementById('id_sem_telefone');
+  const semEm = document.getElementById('id_sem_email');
+  if (semTel) semTel.addEventListener('change', toggleFields);
+  if (semEm) semEm.addEventListener('change', toggleFields);
   toggleFields();
 
-  // ==========================
-  //   Toast utilitário
-  // ==========================
-  function toast(message, variant){ // variant: 'success' | 'danger' | 'warning' | 'info'
-    const t = document.createElement('div');
-    let cls = 'toast-notification';
-    if (variant === 'danger')  cls += ' bg-danger';
-    if (variant === 'warning') cls += ' bg-warning text-dark';
-    if (variant === 'info')    cls += ' bg-info text-dark';
-    t.className = cls;
-    t.textContent = message;
-    document.getElementById('notification-container').appendChild(t);
-    setTimeout(()=> t.classList.add('show'), 30);
-    setTimeout(()=> { t.classList.remove('show'); setTimeout(()=> t.remove(), 350); }, 3800);
-  }
-
-  // ==========================
-  //   Cadastro individual (AJAX)
-  // ==========================
-  const $formEmp = $('#empresa-form');
-  if ($formEmp.length){
-    $formEmp.on('submit', async function(e){
+  // ===== Cadastro Individual (AJAX) =====
+  const formEmpresa = document.getElementById('empresa-form');
+  if (formEmpresa){
+    formEmpresa.addEventListener('submit', async function(e){
       e.preventDefault();
+      const fd = new FormData(formEmpresa);
+      const submitter = e.submitter;
+      if (submitter && submitter.name) fd.append(submitter.name, submitter.value);
 
-      // desabilita botões
-      const $btns = $formEmp.find('button[type=submit]');
-      $btns.prop('disabled', true);
+      // limpa notificações
+      const notif = document.getElementById('notification-container');
+      if (notif) notif.innerHTML = '';
 
-      const form = this;
-      const fd = new FormData(form);
-      const trigger = e.originalEvent && e.originalEvent.submitter;
-      if (trigger){ fd.append(trigger.name, trigger.value); }
-
-      $('#notification-container').empty();
       try{
-        const resp = await fetch(form.action || window.location.pathname, {
-          method: 'POST',
+        const resp = await fetch(formEmpresa.action || window.location.pathname, {
+          method:'POST',
           body: fd,
           headers: { 'X-CSRFToken': '{{ csrf_token }}' }
         });
 
         if (resp.ok){
+          // deve vir JSON
           const data = await resp.json();
-          toast(data.message || 'Salvo com sucesso!', 'success');
+          toast(data.message || 'Salvo com sucesso!');
           if (data.action === 'redirect'){
-            setTimeout(()=> location.href = data.redirect_url || '{% url "listar_empresas" %}', 1100);
+            setTimeout(()=> location.href = data.redirect_url || "{% url 'listar_empresas' %}", 1200);
           }else{
-            form.reset();
-            if (marker){ map.removeLayer(marker); marker = null; }
+            formEmpresa.reset();
+            if (marker && map){ map.removeLayer(marker); marker = null; }
           }
         }else{
-          // tenta extrair o HTML com erros do form (como você já usa)
-          const html = await resp.text();
-          const doc = new DOMParser().parseFromString(html, 'text/html');
-          const src = doc.querySelector('#errors-from-server');
-          $('#notification-container').html(
-            src ? src.innerHTML :
-                  '<div class="message-overlay"><div class="message-box"><h5>Erro Inesperado</h5><p>Ocorreu um problema ao salvar.</p></div></div>'
-          );
+          // pode vir HTML (template com erros) ou JSON
+          const text = await resp.text();
+          try{
+            const asJson = JSON.parse(text);
+            toast(asJson.error || 'Erro ao salvar.', true);
+          }catch{
+            const doc = new DOMParser().parseFromString(text, 'text/html');
+            const src = doc.querySelector('#errors-from-server');
+            const container = document.getElementById('notification-container');
+            if (src && container){
+              container.innerHTML = src.innerHTML;
+            }else{
+              toast('Erro inesperado ao salvar.', true);
+            }
+          }
         }
       }catch(err){
-        toast('Falha de rede ao salvar. Tente novamente.', 'danger');
-        console.error(err);
-      }finally{
-        $btns.prop('disabled', false);
+        toast('Falha de conexão. Tente novamente.', true);
       }
     });
   }
 
-  // ==========================
-  //   Importação (arquivo)
-  // ==========================
-  const drop     = document.getElementById('drop');
-  const inp      = document.getElementById('arquivo');
-  const btn      = document.getElementById('btn-select');
-  const fn       = document.getElementById('fn');
-  const loading  = document.getElementById('loading-overlay');
-  const $formImp = $('#form-import');
+  // ===== Importação por arquivo (.xlsx/.csv) =====
+  const drop = document.getElementById('drop');
+  const inp  = document.getElementById('arquivo');
+  const btn  = document.getElementById('btn-select');
+  const fn   = document.getElementById('fn');
+  const loading = document.getElementById('loading-overlay');
+  const formImport = document.getElementById('form-import');
 
-  if (drop && inp && btn && fn && $formImp.length){
-    // estados visuais
-    function setDropValid(ok){
+  // só liga tudo se os elementos existem nesta página
+  if (drop && inp && btn && fn && formImport){
+
+    function clearErrorBox(){
       drop.classList.remove('drag');
-      drop.classList.toggle('border-danger', !ok);
-      drop.style.borderColor = ok ? '#cbd5e1' : '#dc3545';
-      drop.style.background  = ok ? '#f8fafc' : '#ffecec';
+      drop.classList.remove('has-error');
+      drop.style.borderColor = '';
+      drop.style.background = '';
+    }
+    function markErrorBox(){
+      drop.classList.add('has-error');
+      // fallback visual imediato mesmo sem CSS extra:
+      drop.style.borderColor = '#dc3545';
+      drop.style.background = '#fff5f5';
     }
 
     btn.addEventListener('click', ()=> inp.click());
-    inp.addEventListener('change', ()=> {
+    inp.addEventListener('change', ()=>{
       fn.textContent = inp.files[0] ? inp.files[0].name : '';
-      setDropValid(true);
+      clearErrorBox();
     });
 
     ['dragenter','dragover'].forEach(evt=>{
@@ -362,133 +374,73 @@
       if (file){
         inp.files = e.dataTransfer.files;
         fn.textContent = file.name;
-        setDropValid(true);
+        clearErrorBox();
       }
     });
 
-    $formImp.on('submit', async function(e){
+    formImport.addEventListener('submit', async function(e){
       e.preventDefault();
       if (!inp.files.length){
-        toast('Selecione um arquivo (.xlsx ou .csv).', 'danger');
-        setDropValid(false);
+        markErrorBox();
+        toast('Selecione um arquivo primeiro.', true);
         return;
       }
 
-      // desabilita botões + mostra loading
-      const $btnSubmit = $formImp.find('button[type=submit]');
-      $btnSubmit.prop('disabled', true);
-      loading.style.display = 'flex';
-      setDropValid(true); // reseta para estado neutro
-
+      if (loading) loading.style.display = 'flex';
       try{
-        const fd = new FormData(this);
-        const resp = await fetch(this.action, {
-          method: 'POST',
+        const fd = new FormData(formImport);
+        const resp = await fetch(formImport.action, {
+          method:'POST',
           body: fd,
           headers: { 'X-CSRFToken': '{{ csrf_token }}' }
         });
 
-        // Oculta loading já aqui (o resto é só UI)
-        loading.style.display = 'none';
+        if (loading) loading.style.display = 'none';
 
-        // Tenta sempre parsear JSON; se falhar, trata como erro bruto
-        let data = null, jsonOk = false;
-        try{ data = await resp.json(); jsonOk = true; }catch(_){}
+        // Tenta JSON sempre; se não der, pega texto
+        let payload, raw = null;
+        try{
+          payload = await resp.json();
+        }catch(_e){
+          raw = await resp.text();
+        }
 
-        // ----- CASOS DE ERRO HTTP OU JSON -----
-        if (!resp.ok || !jsonOk){
-          setDropValid(false);
-          if (jsonOk){
-            // backend mandou JSON de erro estruturado
-            const missing = data.missing_columns || data.missing || [];
-            const msgs    = data.mensagens || data.errors || [];
-            if (missing.length){
-              toast('Arquivo inválido. Faltam colunas: ' + missing.join(', '), 'danger');
-            }else if (data.error){
-              toast(data.error, 'danger');
-            }else if (msgs.length){
-              toast('Falha ao importar:\n' + msgs.slice(0,5).join(' | '), 'danger');
-            }else{
-              toast('Falha ao importar o arquivo.', 'danger');
-            }
+        if (resp.ok && payload && (payload.ok === true || payload.importados !== undefined)){
+          const ok = payload.importados ?? 0;
+          const err = payload.erros ?? 0;
+          const msgs = payload.mensagens ?? [];
+          if (err > 0){
+            // não redireciona; mostra erros
+            markErrorBox();
+            const top = msgs.slice(0, 10).join(' | ');
+            toast(`Ocorreram erros (${err}). ${top}`, true);
+            return; // ← não redireciona em caso de erro
+          }
+          // sucesso: pode redirecionar
+          toast(`Importação concluída: ${ok} registro(s).`);
+          if (payload.redirect){
+            setTimeout(()=> location.href = payload.redirect_url || "{% url 'listar_empresas' %}", 1200);
+          }
+        }else{
+          // Falhou (400/500). Mostra mensagem vinda do servidor ou fallback
+          markErrorBox();
+          if (payload && (payload.error || payload.msg)){
+            toast(payload.error || payload.msg, true);
+          }else if (raw){
+            toast('Falha ao importar (servidor retornou erro).', true);
+            console.error('Import error raw response:', raw);
           }else{
-            toast('Falha ao importar o arquivo (resposta inesperada).', 'danger');
+            toast('Falha ao importar.', true);
           }
-          return; // não redireciona
         }
-
-        // ----- SUCESSO HTTP + JSON -----
-        // Estrutura esperada: { ok, importados, erros, mensagens[], redirect?, redirect_url? }
-        const importados = Number(data.importados || 0);
-        const erros      = Number(data.erros || 0);
-        const mensagens  = data.mensagens || [];
-
-        if (erros > 0){
-          // NÃO redireciona; mostra detalhe e pinta de vermelho
-          setDropValid(false);
-          const head = `Importação feita com avisos: ${importados} ok • ${erros} erro(s)`;
-          toast(head, 'warning');
-
-          // Se vierem mensagens do backend, joga numa caixinha (até 10)
-          if (mensagens.length){
-            // cria um painel simples inline
-            let box = document.getElementById('import-messages');
-            if (!box){
-              box = document.createElement('div');
-              box.id = 'import-messages';
-              box.className = 'alert alert-warning mt-3';
-              drop.parentNode.appendChild(box);
-            }
-            box.innerHTML = '<strong>Ocorreram erros nas linhas:</strong><br>' +
-              '<ul style="margin: .5rem 0 0; padding-left: 1.25rem;">' +
-              mensagens.slice(0,10).map(m => `<li>${m}</li>`).join('') +
-              (mensagens.length>10 ? `<li>... (+${mensagens.length-10} restantes)</li>` : '') +
-              '</ul>';
-          }
-          return;
-        }
-
-        // Sem erros => OK para redirecionar (se o backend solicitar)
-        setDropValid(true);
-        toast(`Importação concluída: ${importados} registro(s).`, 'success');
-        if (data.redirect){
-          setTimeout(()=> location.href = data.redirect_url || '{% url "listar_empresas" %}', 1100);
-        }
-
       }catch(err){
-        loading.style.display = 'none';
-        setDropValid(false);
-        console.error(err);
-        toast('Erro de rede ao enviar arquivo. Tente novamente.', 'danger');
-      }finally{
-        $formImp.find('button[type=submit]').prop('disabled', false);
+        if (loading) loading.style.display = 'none';
+        markErrorBox();
+        toast('Falha de conexão ao importar.', true);
       }
     });
   }
+
 })();
-
-$('#form-import').on('submit', async function(e){
-  e.preventDefault();
-  if (!inp.files.length){ toast('Selecione um arquivo primeiro.', true); return; }
-
-  loading.style.display = 'flex';
-  const fd = new FormData(this);
-  const resp = await fetch(this.action, { method:'POST', body:fd, headers:{'X-CSRFToken':'{{ csrf_token }}'} });
-  loading.style.display = 'none';
-
-  const data = await resp.json().catch(()=>null);
-
-  if (resp.ok && data && data.ok){
-    toast(`Importação concluída: ${data.importados} ok`);
-    if (data.redirect){ setTimeout(()=> location.href = data.redirect_url || '{% url "listar_empresas" %}', 1200); }
-  } else {
-    const base = (data && (data.error || data.msg)) || 'Falha ao importar.';
-    let msg = base;
-    if (data && Array.isArray(data.mensagens) && data.mensagens.length){
-      msg += '\n\nOcorreram erros nas linhas:\n' + data.mensagens.join(' | ');
-    }
-    toast(msg, true); // vermelho e NÃO redireciona
-  }
-});
 </script>
 {% endblock %}
