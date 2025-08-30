@@ -4,52 +4,206 @@
 {% block title %}Todas as Empresas{% endblock %}
 
 {% block content %}
-<div class="container py-5 mt-5">
-    <h2 class="text-center fw-bold mb-5">Todas as Empresas Cadastradas</h2>
-    <div class="row gx-4 gy-4 justify-content-center" id="empresas-container">
-        {% include 'core/partials/empresas_cards.html' %}
+
+<style>
+  /* ----- área útil da página (não deixa o footer "subir") ----- */
+  .page-shell{
+    /* ajuste leve: suficiente para manter o footer colado no fim */
+    min-height: 65vh;
+  }
+
+  /* imagem com proporção fixa */
+  .empresa-card .card-img-top{
+    height: 180px;
+    aspect-ratio: 16/9;
+    object-fit: cover;
+  }
+
+  /* título: 2 linhas no máximo */
+  .empresa-card .card-title{
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: calc(1.25rem * 2 + .25rem);
+    margin-bottom: .5rem;
+  }
+
+  /* descrição: 3 linhas no máximo */
+  .empresa-card .card-text{
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: calc(1rem * 1.5 * 3);
+    color: #495057;
+  }
+
+  /* feedback de hover/foco e acessibilidade */
+  .empresa-card{
+    transition: transform .15s ease, box-shadow .15s ease;
+    cursor: pointer;
+  }
+  .empresa-card:hover, .empresa-card:focus{
+    transform: translateY(-2px);
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
+    outline: none;
+  }
+
+  /* “estado vazio” elegante */
+  .empty-state{
+    border: 1px dashed #ced4da;
+    border-radius: .75rem;
+    padding: 2rem;
+    background: #f8f9fa;
+  }
+  .empty-state i{
+    opacity: .6;
+  }
+
+  /* bloco de filtros (pills) */
+  .filter-pill{
+    font-weight: 600;
+    background: #e7f1ff;
+    color: #0b5ed7;
+  }
+
+   #btn-open-filters {
+    --at-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
+    box-shadow: var(--at-shadow);
+    border-radius: .75rem;
+    padding-inline: 1.1rem;
+  }
+  #btn-open-filters:hover,
+  #btn-open-filters:focus-visible {
+    filter: brightness(1.05);
+    transform: translateY(-1px);
+  }
+</style>
+
+<div class="container page-shell py-5 mt-5">
+
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div class="container">
+      <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 mb-4">
+        <h2 class="fw-bold m-0">Todas as Empresas Cadastradas</h2>
+
+        <button id="btn-open-filters"
+                type="button"
+                class="btn btn-dark d-inline-flex align-items-center gap-2"
+                aria-label="Abrir filtros de busca"
+                onclick="const c=document.getElementById('open-search'); c && c.click()">
+          <i class="bi bi-funnel"></i>
+          Buscar
+        </button>
+      </div>
+    </div>
+
+
+    {# resumo de filtros, aparece só quando há algo aplicado #}
+    {% if filtros_aplicados.q or filtros_aplicados.categoria or filtros_aplicados.cidade or filtros_aplicados.com_imagem_real or filtros_aplicados.meus %}
+      <div class="d-flex align-items-center gap-2">
+        <span class="fw-semibold">Filtros:</span>
+        <div class="d-flex flex-wrap gap-2">
+          {% if filtros_aplicados.q %}
+            <span class="badge rounded-pill filter-pill">termo: {{ filtros_aplicados.q }}</span>
+          {% endif %}
+          {% if filtros_aplicados.categoria %}
+            <span class="badge rounded-pill filter-pill">categoria: {{ filtros_aplicados.categoria }}</span>
+          {% endif %}
+          {% if filtros_aplicados.cidade %}
+            <span class="badge rounded-pill filter-pill">cidade: {{ filtros_aplicados.cidade }}</span>
+          {% endif %}
+          {% if filtros_aplicados.com_imagem_real %}
+            <span class="badge rounded-pill filter-pill">com imagem</span>
+          {% endif %}
+          {% if filtros_aplicados.meus %}
+            <span class="badge rounded-pill filter-pill">minhas</span>
+          {% endif %}
+        </div>
+
+        <button class="btn btn-sm btn-outline-secondary ms-2"
+                onclick="const b=document.getElementById('open-search'); b && b.click()">
+          Editar filtros
+        </button>
+      </div>
+    {% endif %}
+  </div>
+
+  {# SE NÃO HÁ RESULTADOS: mostra estado vazio #}
+  {% if page_obj.paginator.count == 0 %}
+    <div class="row justify-content-center">
+      <div class="col-12 col-md-10 col-lg-8">
+        <div class="empty-state text-center">
+          <i class="bi bi-geo-alt fs-1 d-block mb-2"></i>
+          <h5 class="mb-2">Nenhuma empresa cadastrada ainda.</h5>
+          <p class="text-muted mb-4">
+            Ajusta os filtros ou explora outras categorias/cidades.
+          </p>
+          <div class="d-flex gap-2 justify-content-center">
+            <a class="btn btn-light" href="{% url 'listar_empresas' %}">Limpar filtros</a>
+            <button class="btn btn-primary" onclick="const b=document.getElementById('open-search'); b && b.click()">
+              <i class="bi bi-sliders"></i> Abrir filtros
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  {% else %}
+    {# TEM RESULTADOS: mostra a grade de cards #}
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4" id="empresas-container">
+      {% include 'core/partials/empresas_cards.html' %}
     </div>
 
     {% if page_obj.has_next %}
-    <div class="d-flex justify-content-center mt-4">
+      <div class="d-flex justify-content-center mt-4">
         <button id="load-more-btn" class="btn btn-primary btn-lg">Carregar mais</button>
-    </div>
+      </div>
     {% endif %}
+  {% endif %}
+
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-    $(document).ready(function(){
-        let nextPage = {% if page_obj.has_next %}{{ page_obj.next_page_number }}{% else %}null{% endif %};
+  // acessibilidade: Enter/Space também navegam
+  $(document).on('keydown', '.empresa-card', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      window.location = this.dataset.href;
+    }
+  });
 
-        $('#load-more-btn').click(function(){
-            if(!nextPage) return;
+  // “carregar mais” somente quando a lista existe
+  $(function(){
+    const $btn = $('#load-more-btn');
+    if (!$btn.length) return;
 
-            $.ajax({
-                url: "{% url 'listar_empresas' %}",
-                data: { page: nextPage },
-                dataType: 'json',
-                success: function(data){
-                    $('#empresas-container').append(data.html);
-                    if(data.has_next){
-                        nextPage = data.next_page_number;
-                    } else {
-                        nextPage = null;
-                        $('#load-more-btn').hide();
-                    }
+    let nextPage = {% if page_obj.has_next %}{{ page_obj.next_page_number }}{% else %}null{% endif %};
 
-                    // Garantir que a data de cadastro seja clicável com o link correto
-                    $('div[data-cadastro]').each(function(){
-                        var empresaId = $(this).data('id');  // Obter o ID da empresa
-                        var cadastroLink = '/empresa/' + empresaId + '/'; // URL de detalhes da empresa
-                        $(this).html('Entrou em <a href="' + cadastroLink + '" class="text-decoration-none">' + $(this).text() + '</a>');
-                    });
-                },
-                error: function(){
-                    alert('Erro ao carregar mais empresas.');
-                }
-            });
-        });
+    $btn.on('click', function(){
+      if(!nextPage) return;
+
+      $.ajax({
+        url: "{% url 'listar_empresas' %}",
+        data: { page: nextPage },
+        dataType: 'json',
+        success: function(data){
+          $('#empresas-container').append(data.html);
+          if(data.has_next){
+            nextPage = data.next_page_number;
+          } else {
+            nextPage = null;
+            $btn.hide();
+          }
+        },
+        error: function(){
+          alert('Erro ao carregar mais empresas.');
+        }
+      });
     });
+  });
 </script>
+
 {% endblock %}

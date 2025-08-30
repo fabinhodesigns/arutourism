@@ -4,81 +4,210 @@
 {% load form_helpers %}
 
 {% block content %}
+
 <style>
-    .toast-notification { position: fixed; top: 80px; right: 20px; background-color: #28a745; color: white; padding: 1rem 1.5rem; border-radius: 8px; font-weight: 500; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 1060; opacity: 0; transform: translateY(-20px); pointer-events: none; transition: all 0.4s ease-in-out; }
-    .toast-notification.show { opacity: 1; transform: translateY(0); pointer-events: all; }
-    .message-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: flex-start; padding-top: 50px; z-index: 1050; }
-    .message-box { background: white; padding: 1.5rem 2rem; border-radius: 8px; width: 90%; max-width: 500px; box-shadow: 0 5px 20px rgba(0,0,0,0.25); animation: slide-down 0.4s ease-out; }
-    @keyframes slide-down { from { transform: translateY(-30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-    .message-box h5 { font-weight: 600; border-bottom: 1px solid #eee; padding-bottom: 0.75rem; margin-bottom: 1rem; }
-    .message-box ul { list-style: none; margin: 0; padding: 0; max-height: 60vh; overflow-y: auto; }
-    .message-box li { font-size: 0.9rem; padding: 0.5rem 0; }
-    .message-box strong { color: #dc3545; margin-right: 5px; }
+  .toast-notification{position:fixed;top:80px;right:20px;background:#28a745;color:#fff;padding:1rem 1.5rem;border-radius:8px;font-weight:500;box-shadow:0 4px 15px rgba(0,0,0,.2);z-index:1060;opacity:0;transform:translateY(-20px);pointer-events:none;transition:all .4s}
+  .toast-notification.show{opacity:1;transform:translateY(0);pointer-events:auto}
+  .message-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);display:flex;justify-content:center;align-items:flex-start;padding-top:50px;z-index:1050}
+  .message-box{background:#fff;padding:1.5rem 2rem;border-radius:12px;width:90%;max-width:520px;box-shadow:0 5px 20px rgba(0,0,0,.25);animation:slide-down .35s ease-out}
+  @keyframes slide-down{from{transform:translateY(-30px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+  /* abas */
+  .nav-tabs .nav-link{font-weight:600}
+  .nav-tabs .nav-link.active{color:#1e3c72}
+  .import-drop{border:2px dashed #cbd5e1;border-radius:12px;padding:2rem;background:#f8fafc;text-align:center}
+  .import-drop.drag{background:#eef2ff;border-color:#93c5fd}
+  .spinner-lg{width:2rem;height:2rem;border:.3rem solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* card uniform */
+  .card-clean{border-radius:14px;box-shadow:0 10px 30px rgba(2,6,23,.06)}
 </style>
 
 <div id="notification-container"></div>
 
 <div class="container py-5 mt-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-10 col-md-11 col-12">
-            
+  <div class="row justify-content-center">
+    <div class="col-lg-10 col-md-11 col-12">
+
+      <!-- Título -->
+      <h3 class="text-center fw-bold mb-4">Cadastro de Empresas</h3>
+
+      <!-- Abas -->
+      <ul class="nav nav-tabs justify-content-center mb-4" id="cadTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="tab-individual" data-bs-toggle="tab" data-bs-target="#pane-individual" type="button" role="tab" aria-controls="pane-individual" aria-selected="true">
+            Cadastro Individual
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="tab-arquivo" data-bs-toggle="tab" data-bs-target="#pane-arquivo" type="button" role="tab" aria-controls="pane-arquivo" aria-selected="false">
+            Cadastro com Arquivo
+          </button>
+        </li>
+      </ul>
+
+      <div class="tab-content">
+
+        <!-- PANE 1: CADASTRO INDIVIDUAL -->
+        <div class="tab-pane fade show active" id="pane-individual" role="tabpanel" aria-labelledby="tab-individual">
+          <div class="card card-clean p-4 bg-white">
+
             {% if form.errors %}
-                <div id="errors-from-server" style="display: none;">
-                    <div class="message-overlay">
-                        <div class="message-box">
-                            <h5>Por favor, corrija os seguintes erros:</h5>
-                            <ul>
-                                {% for field, error_list in form.errors.items %}
-                                    {% for error in error_list %}
-                                        <li>
-                                            {% if field != '__all__' %}<strong>{{ form|get_field_verbose_name:field }}:</strong>{% endif %}
-                                            {{ error }}
-                                        </li>
-                                    {% endfor %}
-                                {% endfor %}
-                            </ul>
-                            <div class="text-end mt-4"><button type="button" class="btn btn-secondary" id="close-error-btn">Fechar</button></div>
-                        </div>
-                    </div>
-                </div>
+            <div id="errors-from-server" class="mb-3">
+              <div class="message-box">
+                <h5>Por favor, corrija os seguintes erros:</h5>
+                <ul>
+                  {% for field, error_list in form.errors.items %}
+                    {% for error in error_list %}
+                      <li>{% if field != '__all__' %}<strong>{{ form|get_field_verbose_name:field }}:</strong>{% endif %} {{ error }}</li>
+                    {% endfor %}
+                  {% endfor %}
+                </ul>
+              </div>
+            </div>
             {% endif %}
 
-            <div class="card shadow-sm rounded-4 p-4 bg-white">
-                <h4 class="text-center mb-4 fw-bold">
-                    {% if is_editing %}
-                        Editar Empresa
-                    {% else %}
-                        Cadastro de Nova Empresa
-                    {% endif %}
-                </h4>
-                <form id="empresa-form" method="POST" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    <div class="row g-3">
-                        <div class="col-md-6"> <label for="{{ form.nome.id_for_label }}" class="form-label fw-semibold">Nome da Empresa</label> {{ form.nome|add_class:"form-control form-control-lg" }} </div>
-                        <div class="col-md-6"> <label for="{{ form.categoria.id_for_label }}" class="form-label fw-semibold">Categoria</label> {{ form.categoria|add_class:"form-select form-select-lg" }} </div>
-                        <div class="col-12"> <label for="{{ form.descricao.id_for_label }}" class="form-label fw-semibold">Descrição</label> {{ form.descricao|add_class:"form-control form-control-lg" }} </div>
-                        <div class="col-md-6"> <label for="{{ form.rua.id_for_label }}" class="form-label fw-semibold">Rua</label> {{ form.rua|add_class:"form-control form-control-lg" }} </div>
-                        <div class="col-md-6"> <label for="{{ form.bairro.id_for_label }}" class="form-label fw-semibold">Bairro</label> {{ form.bairro|add_class:"form-control form-control-lg" }} </div>
-                        <div class="col-md-6"> <label for="{{ form.cidade.id_for_label }}" class="form-label fw-semibold">Cidade</label> {{ form.cidade|add_class:"form-control form-control-lg" }} </div>
-                        <div class="col-md-3"> <label for="{{ form.numero.id_for_label }}" class="form-label fw-semibold">Número</label> {{ form.numero|add_class:"form-control form-control-lg" }} </div>
-                        <div class="col-md-3"> <label for="{{ form.cep.id_for_label }}" class="form-label fw-semibold">CEP</label> {{ form.cep|add_class:"form-control form-control-lg" }} </div>
-                        <div class="col-md-6"> <label for="{{ form.telefone.id_for_label }}" class="form-label fw-semibold">Telefone</label> {{ form.telefone|add_class:"form-control form-control-lg" }} <div class="form-check form-check-inline mt-1"> {{ form.sem_telefone|add_class:"form-check-input" }} <label class="form-check-label" for="{{ form.sem_telefone.id_for_label }}"> Sem Telefone </label> </div> </div>
-                        <div class="col-md-6"> <label for="{{ form.email.id_for_label }}" class="form-label fw-semibold">Email de Contato</label> {{ form.email|add_class:"form-control form-control-lg" }} <div class="form-check form-check-inline mt-1"> {{ form.sem_email|add_class:"form-check-input" }} <label class="form-check-label" for="{{ form.sem_email.id_for_label }}"> Sem Email </label> </div> </div>
-                        <div class="col-md-12"> <label for="{{ form.site.id_for_label }}" class="form-label fw-semibold">Site (opcional)</label> {{ form.site|add_class:"form-control form-control-lg" }} </div>
-                        <div class="col-12"> <label for="{{ form.imagem.id_for_label }}" class="form-label fw-semibold">Imagem da Empresa</label> {{ form.imagem|add_class:"form-control form-control-sm" }} <small class="form-text text-muted fst-italic mt-1">Você pode enviar uma imagem da empresa.</small> </div>
-                        {{ form.latitude }} {{ form.longitude }}
-                        <div class="col-md-6"> <label for="{{ form.facebook.id_for_label }}" class="form-label fw-semibold">Facebook (opcional)</label> {{ form.facebook|add_class:"form-control form-control-lg" }} </div>
-                        <div class="col-md-6"> <label for="{{ form.instagram.id_for_label }}" class="form-label fw-semibold">Instagram (opcional)</label> {{ form.instagram|add_class:"form-control form-control-lg" }} </div>
-                        <div class="col-12 mt-3"> <label class="form-label fw-semibold">Selecione a localização no mapa</label> <div id="map" style="height: 400px; border-radius: 8px;"></div> </div>
-                    </div>
-                    <div class="d-flex justify-content-center mt-4">
-                        <button type="submit" name="save" class="btn btn-primary btn-lg rounded-3 fw-semibold w-50">Salvar</button>
-                        <button type="submit" name="save_and_add" class="btn btn-secondary btn-lg rounded-3 fw-semibold w-50 ms-4">Salvar e Continuar Adicionando</button>
-                    </div>
-                </form>
-            </div>
+            <form id="empresa-form" method="POST" enctype="multipart/form-data">
+              {% csrf_token %}
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label for="{{ form.nome.id_for_label }}" class="form-label fw-semibold">Nome da Empresa</label>
+                  {{ form.nome|add_class:"form-control form-control-lg" }}
+                </div>
+                <div class="col-md-6">
+                  <label for="{{ form.categoria.id_for_label }}" class="form-label fw-semibold">Categoria</label>
+                  {{ form.categoria|add_class:"form-select form-select-lg" }}
+                </div>
+
+                <div class="col-12">
+                  <label for="{{ form.descricao.id_for_label }}" class="form-label fw-semibold">Descrição</label>
+                  {{ form.descricao|add_class:"form-control form-control-lg" }}
+                  <small class="text-muted">Se deixar em branco, colocaremos uma descrição padrão automaticamente.</small>
+                </div>
+
+                <div class="col-md-6">
+                  <label for="{{ form.rua.id_for_label }}" class="form-label fw-semibold">Rua</label>
+                  {{ form.rua|add_class:"form-control form-control-lg" }}
+                </div>
+                <div class="col-md-6">
+                  <label for="{{ form.bairro.id_for_label }}" class="form-label fw-semibold">Bairro</label>
+                  {{ form.bairro|add_class:"form-control form-control-lg" }}
+                </div>
+
+                <div class="col-md-6">
+                  <label for="{{ form.cidade.id_for_label }}" class="form-label fw-semibold">Cidade</label>
+                  {{ form.cidade|add_class:"form-control form-control-lg" }}
+                </div>
+                <div class="col-md-3">
+                  <label for="{{ form.numero.id_for_label }}" class="form-label fw-semibold">Número</label>
+                  {{ form.numero|add_class:"form-control form-control-lg" }}
+                </div>
+                <div class="col-md-3">
+                  <label for="{{ form.cep.id_for_label }}" class="form-label fw-semibold">CEP</label>
+                  {{ form.cep|add_class:"form-control form-control-lg" }}
+                </div>
+
+                <div class="col-md-6">
+                  <label for="{{ form.telefone.id_for_label }}" class="form-label fw-semibold">Telefone</label>
+                  {{ form.telefone|add_class:"form-control form-control-lg" }}
+                  <div class="form-check form-check-inline mt-1">
+                    {{ form.sem_telefone|add_class:"form-check-input" }}
+                    <label class="form-check-label" for="{{ form.sem_telefone.id_for_label }}">Sem Telefone</label>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <label for="{{ form.email.id_for_label }}" class="form-label fw-semibold">Email de Contato</label>
+                  {{ form.email|add_class:"form-control form-control-lg" }}
+                  <div class="form-check form-check-inline mt-1">
+                    {{ form.sem_email|add_class:"form-check-input" }}
+                    <label class="form-check-label" for="{{ form.sem_email.id_for_label }}">Sem Email</label>
+                  </div>
+                </div>
+
+                <div class="col-12">
+                  <label for="{{ form.site.id_for_label }}" class="form-label fw-semibold">Site (opcional)</label>
+                  {{ form.site|add_class:"form-control form-control-lg" }}
+                </div>
+
+                <div class="col-12">
+                  <label for="{{ form.imagem.id_for_label }}" class="form-label fw-semibold">Imagem da Empresa</label>
+                  {{ form.imagem|add_class:"form-control form-control-sm" }}
+                  <small class="form-text text-muted fst-italic mt-1">Você pode enviar uma imagem da empresa.</small>
+                </div>
+
+                {{ form.latitude }} {{ form.longitude }}
+
+                <div class="col-md-6">
+                  <label for="{{ form.facebook.id_for_label }}" class="form-label fw-semibold">Facebook</label>
+                  {{ form.facebook|add_class:"form-control form-control-lg" }}
+                </div>
+                <div class="col-md-6">
+                  <label for="{{ form.instagram.id_for_label }}" class="form-label fw-semibold">Instagram</label>
+                  {{ form.instagram|add_class:"form-control form-control-lg" }}
+                </div>
+
+                <div class="col-12 mt-3">
+                  <label class="form-label fw-semibold">Selecione a localização no mapa</label>
+                  <div id="map" style="height: 380px; border-radius: 10px;"></div>
+                </div>
+              </div>
+
+              <div class="d-flex flex-column flex-md-row gap-3 justify-content-center mt-4">
+                <button type="submit" name="save" class="btn btn-primary btn-lg rounded-3 fw-semibold px-4">Salvar</button>
+                <button type="submit" name="save_and_add" class="btn btn-outline-secondary btn-lg rounded-3 fw-semibold px-4">Salvar e Continuar</button>
+              </div>
+            </form>
+          </div>
         </div>
+
+        <!-- PANE 2: CADASTRO COM ARQUIVO -->
+        <div class="tab-pane fade" id="pane-arquivo" role="tabpanel" aria-labelledby="tab-arquivo">
+          <div class="card card-clean p-4 bg-white">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+              <h5 class="mb-0 fw-bold">Importar empresas por arquivo (.xlsx / .csv)</h5>
+              <a class="btn btn-outline-primary" href="{% url 'modelo_empresas_xlsx' %}">
+                <i class="bi bi-download"></i> Baixar modelo XLSX
+              </a>
+            </div>
+
+            <p class="text-muted mb-3">
+              Preencha o arquivo seguindo os cabeçalhos do modelo. Campos vazios serão preenchidos com valores padrão
+              (ex.: descrição). A categoria será criada automaticamente se não existir.
+            </p>
+
+            <form id="form-import" method="post" enctype="multipart/form-data" action="{% url 'importar_empresas' %}">
+              {% csrf_token %}
+              <div id="drop" class="import-drop">
+                <input id="arquivo" name="arquivo" type="file" accept=".xlsx,.csv" hidden>
+                <p class="mb-2">Arraste e solte seu arquivo aqui, ou</p>
+                <button type="button" id="btn-select" class="btn btn-secondary">Selecionar arquivo</button>
+                <div id="fn" class="mt-2 small text-muted"></div>
+              </div>
+
+              <div class="d-flex justify-content-end mt-3">
+                <button type="submit" class="btn btn-success">
+                  <i class="bi bi-upload"></i> Enviar e importar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+      </div> <!-- /.tab-content -->
     </div>
+  </div>
+</div>
+
+<!-- Loading fullscreen (reutilizável) -->
+<div id="loading-overlay" class="message-overlay" style="display:none;">
+  <div class="message-box text-center">
+    <div class="d-flex justify-content-center mb-3">
+      <div class="spinner-lg"></div>
+    </div>
+    <h5 class="mb-2">Importando empresas…</h5>
+    <p class="text-muted mb-0">Isso pode levar alguns segundos. Não feche a página.</p>
+  </div>
 </div>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -86,60 +215,100 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <script>
-$(document).ready(function() {
-    var map; var marker; if ($('#map').length) { map = L.map('map').setView([-28.9371, -49.4840], 13); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map); map.on('click', function(e) { if (marker) { map.removeLayer(marker); } marker = L.marker(e.latlng).addTo(map); $('#id_latitude').val(e.latlng.lat.toFixed(6)); $('#id_longitude').val(e.latlng.lng.toFixed(6)); }); }
-    $('#id_cep').on('input', function() { $(this).val($(this).val().replace(/\D/g, '').replace(/^(\d{5})(\d)/, '$1-$2').slice(0, 9)); });
-    function toggleFields() { $('#id_telefone').prop('disabled', $('#id_sem_telefone').is(':checked')); $('#id_email').prop('disabled', $('#id_sem_email').is(':checked')); }
-    $('#id_sem_telefone, #id_sem_email').on('change', toggleFields); toggleFields();
-
-    $('#empresa-form').on('submit', async function(e) {
-        e.preventDefault();
-        var form = this;
-        var formData = new FormData(form);
-        var submitter = e.originalEvent.submitter;
-        if (submitter) { formData.append(submitter.name, submitter.value); }
-
-        const response = await fetch(form.action || window.location.pathname, {
-            method: 'POST',
-            body: formData,
-            headers: { 'X-CSRFToken': '{{ csrf_token }}' }
-        });
-
-        $('#notification-container').empty(); // Limpa notificações antigas
-
-        if (response.ok) {
-            const data = await response.json();
-            var toast = $('<div></div>').addClass('toast-notification').text(data.message);
-            $('#notification-container').html(toast);
-            setTimeout(() => toast.addClass('show'), 100);
-            setTimeout(() => {
-                toast.removeClass('show');
-                setTimeout(() => toast.remove(), 500);
-            }, 5000);
-
-            if (data.action === 'redirect') {
-                setTimeout(() => window.location.href = data.redirect_url, 1500);
-            } else if (data.action === 'reset') {
-                form.reset();
-                if (marker) { map.removeLayer(marker); marker = null; }
-            }
-        } else { // ERRO
-            const html = await response.text();
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            const errorSource = doc.querySelector('#errors-from-server');
-            
-            if (errorSource) {
-                $('#notification-container').html(errorSource.innerHTML);
-            } else {
-                $('#notification-container').html('<div class="message-overlay"><div class="message-box"><h5>Erro Inesperado</h5><p>Ocorreu um problema no servidor ao processar sua solicitação. Tente novamente.</p><div class="text-end mt-4"><button type="button" class="btn btn-secondary" id="close-error-btn">Fechar</button></div></div></div>');
-            }
-        }
+(function(){
+  // ====== MAPA ======
+  let map, marker;
+  const $map = $('#map');
+  if ($map.length){
+    map = L.map('map').setView([-28.9371, -49.4840], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    map.on('click', function(e){
+      if (marker) map.removeLayer(marker);
+      marker = L.marker(e.latlng).addTo(map);
+      $('#id_latitude').val(e.latlng.lat.toFixed(6));
+      $('#id_longitude').val(e.latlng.lng.toFixed(6));
     });
+  }
 
-    $(document).on('click', '#close-error-btn', function() {
-        $('#notification-container').empty();
-    });
-});
+  // ====== máscaras simples ======
+  $('#id_cep').on('input', function(){ $(this).val($(this).val().replace(/\D/g,'').slice(0,8)); });
+
+  function toggleFields(){
+    $('#id_telefone').prop('disabled', $('#id_sem_telefone').is(':checked'));
+    $('#id_email').prop('disabled', $('#id_sem_email').is(':checked'));
+  }
+  $('#id_sem_telefone,#id_sem_email').on('change', toggleFields); toggleFields();
+
+  // ====== SUBMIT AJAX (individual) ======
+  $('#empresa-form').on('submit', async function(e){
+    e.preventDefault();
+    const form = this;
+    const fd = new FormData(form);
+    const submitter = e.originalEvent.submitter; if (submitter){ fd.append(submitter.name, submitter.value); }
+    const resp = await fetch(form.action || window.location.pathname, { method:'POST', body:fd, headers:{'X-CSRFToken':'{{ csrf_token }}'} });
+
+    $('#notification-container').empty();
+    if (resp.ok){
+      const data = await resp.json();
+      toast(data.message || 'Salvo com sucesso!');
+      if (data.action === 'redirect'){ setTimeout(()=>location.href = data.redirect_url || '{% url "listar_empresas" %}', 1200); }
+      else { form.reset(); if (marker){ map.removeLayer(marker); marker=null; } }
+    }else{
+      const html = await resp.text();
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const src = doc.querySelector('#errors-from-server');
+      $('#notification-container').html(src ? src.innerHTML :
+        '<div class="message-overlay"><div class="message-box"><h5>Erro Inesperado</h5><p>Ocorreu um problema ao salvar.</p></div></div>');
+    }
+  });
+
+  // ====== IMPORTAÇÃO (arquivo) ======
+  const drop = document.getElementById('drop');
+  const inp  = document.getElementById('arquivo');
+  const btn  = document.getElementById('btn-select');
+  const fn   = document.getElementById('fn');
+  const loading = document.getElementById('loading-overlay');
+
+  btn.addEventListener('click', ()=> inp.click());
+  inp.addEventListener('change', ()=> { fn.textContent = inp.files[0] ? inp.files[0].name : ''; });
+
+  ;['dragenter','dragover'].forEach(evt=> drop.addEventListener(evt, e=>{ e.preventDefault(); e.stopPropagation(); drop.classList.add('drag'); }));
+  ;['dragleave','drop'].forEach(evt=> drop.addEventListener(evt, e=>{ e.preventDefault(); e.stopPropagation(); drop.classList.remove('drag'); }));
+  drop.addEventListener('drop', e=>{
+    const file = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (file){ inp.files = e.dataTransfer.files; fn.textContent = file.name; }
+  });
+
+  $('#form-import').on('submit', async function(e){
+    e.preventDefault();
+    if (!inp.files.length){ toast('Selecione um arquivo primeiro.', true); return; }
+
+    loading.style.display = 'flex';
+    const fd = new FormData(this);
+    const resp = await fetch(this.action, { method:'POST', body:fd, headers:{'X-CSRFToken':'{{ csrf_token }}'} });
+    loading.style.display = 'none';
+
+    if (resp.ok){
+      const data = await resp.json();
+      let msg = `Importação concluída: ${data.importados} ok`;
+      if (data.erros) msg += ` • ${data.erros} com erro`;
+      toast(msg);
+      if (data.redirect){ setTimeout(()=> location.href = data.redirect_url || '{% url "listar_empresas" %}', 1200); }
+    }else{
+      const err = await resp.json().catch(()=>null);
+      toast(err && err.error ? err.error : 'Falha ao importar.', true);
+    }
+  });
+
+  // ====== toast util ======
+  function toast(message, danger){
+    const t = document.createElement('div');
+    t.className = 'toast-notification' + (danger?' bg-danger':'');
+    t.textContent = message;
+    document.getElementById('notification-container').appendChild(t);
+    setTimeout(()=> t.classList.add('show'), 50);
+    setTimeout(()=> { t.classList.remove('show'); setTimeout(()=> t.remove(), 400); }, 3500);
+  }
+})();
 </script>
 {% endblock %}

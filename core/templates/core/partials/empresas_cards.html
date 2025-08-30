@@ -1,46 +1,45 @@
 {% for empresa in page_obj.object_list %}
-<div class="">
-    <div class="card h-100 shadow border-0 animated-zoom d-flex flex-column">
-        
-        <a href="{% url 'empresa_detalhe' empresa.id %}">
-            {% if empresa.imagem %}
-            <img class="card-img-top img-card" src="{{ empresa.imagem.url }}"
-                alt="{{ empresa.nome }}" style="height:200px; object-fit:cover;" />
-            {% else %}
-            <div class="text-center py-5 bg-light"><i class="bi bi-building fs-1 text-muted"></i></div>
-            {% endif %}
-        </a>
-        
-        <div class="card-body p-4 d-flex flex-column">
-            {% if empresa.categoria %}
-                <div class="badge bg-primary bg-gradient rounded-pill mb-2">{{ empresa.categoria.nome_limpo }}</div>
-            {% else %}
-                <div class="badge bg-secondary bg-gradient rounded-pill mb-2">Sem Categoria</div>
-            {% endif %}
+<div class="col d-flex">  {# coluna auto com row-cols + estica altura #}
+  <div class="card empresa-card h-100 flex-grow-1 d-flex flex-column position-relative"
+       role="link" tabindex="0"
+       data-href="{% url 'empresa_detalhe' empresa.id %}">
 
-            <a href="{% url 'empresa_detalhe' empresa.id %}" class="text-decoration-none link-dark">
-                <h5 class="card-title mb-3">{{ empresa.nome }}</h5>
-            </a>
-            <p class="card-text mb-0 flex-grow-1">{{ empresa.descricao|truncatechars:80 }}</p>
-        </div>
+    {% if empresa.imagem %}
+      <img class="card-img-top" src="{{ empresa.imagem.url }}"
+           alt="{{ empresa.nome }}" loading="lazy" />
+    {% else %}
+      <div class="text-center py-5 bg-light"><i class="bi bi-building fs-1 text-muted"></i></div>
+    {% endif %}
 
-        <div class="card-footer p-3 pt-0 bg-transparent border-top-0">
-            <div class="d-flex align-items-center justify-content-between">
-                <a href="{% url 'empresa_detalhe' empresa.id %}" class="btn btn-sm btn-outline-primary">Ver Detalhes</a>
-                
-                <a href="{% url 'editar_empresa' empresa.id %}" class="btn btn-sm btn-outline-secondary" title="Editar Empresa">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 16 16">
-                        <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
-                        <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/>
-                    </svg>
-                    Editar
-                </a>
-            </div>
+    <div class="card-body d-flex flex-column">
+      {% if empresa.categoria %}
+        <div class="badge bg-primary bg-gradient rounded-pill mb-2">
+          {{ empresa.categoria.nome_limpo }}
         </div>
+      {% else %}
+        <div class="badge bg-secondary bg-gradient rounded-pill mb-2">Sem Categoria</div>
+      {% endif %}
+
+      <h5 class="card-title">{{ empresa.nome }}</h5>
+      <p class="card-text flex-grow-1">{{ empresa.descricao|truncatechars:200 }}</p>
+
+      <a href="{% url 'empresa_detalhe' empresa.id %}" class="stretched-link"
+         aria-label="Ver detalhes de {{ empresa.nome }}"></a>
     </div>
+
+    <div class="card-footer bg-transparent border-top-0">
+      <div class="d-flex justify-content-between align-items-center">
+        <a href="{% url 'empresa_detalhe' empresa.id %}" class="btn btn-sm btn-outline-primary">Ver Detalhes</a>
+        {% if request.user.is_authenticated and empresa.user_id == request.user.id %}
+          <a href="{% url 'editar_empresa' empresa.id %}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-pencil-square"></i> Editar
+          </a>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
 </div>
 {% empty %}
-<div class="col text-center">
-    <p class="text-muted">Nenhuma empresa cadastrada ainda.</p>
-</div>
+<div class="col text-center"><p class="text-muted">Nenhuma empresa cadastrada ainda.</p></div>
 {% endfor %}
