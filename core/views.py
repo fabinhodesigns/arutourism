@@ -94,9 +94,25 @@ HUMAN_LABEL_BY_CANON = {c: label for (label, _req, c) in TEMPLATE_HEADERS}
 # Helpers
 # ============================================================
 
+def _clip(model_cls, field_name, value):
+    """Trunca strings para caber no max_length do campo (se houver)."""
+    if value is None:
+        return value
+    try:
+        f = model_cls._meta.get_field(field_name)
+    except Exception:
+        return value
+    if hasattr(f, "max_length") and f.max_length and isinstance(value, str):
+        return value[:f.max_length]
+    return value
 
 
-
+def _maxlen(model_cls, field_name):
+    try:
+        f = model_cls._meta.get_field(field_name)
+        return getattr(f, "max_length", None)
+    except Exception:
+        return None
 
 def _norm_text(s: str | None) -> str:
     return re.sub(r"[\W_]+", " ", (s or "")).strip().lower()
@@ -537,7 +553,6 @@ def download_template_empresas(request):
 
 @login_required
 @require_POST
-@transaction.atomic
 def importar_empresas_arquivo(request):
     up = request.FILES.get("arquivo")
     if not up:
@@ -558,74 +573,113 @@ def importar_empresas_arquivo(request):
     created, errors = 0, 0
     msgs = []
 
-    for line_no, r in enumerate(rows, start=2):  # 2 por causa do header
-        # coleta valores normalizados pelas chaves canônicas
+    # campos que vamos popular no model Empresa (ajuste se seu model tiver nomes diferentes)
+    FIELD_MAP = {
+        "nome": "nome",
+        "categoria": "categoria",   # tratado à parte
+        "descricao": "descricao",
+        "bairro": "bairro",
+        "endereco": "rua",
+        "numero": "numero",
+        "cidade": "cidade",
+        "cep": "cep",
+        "telefone": "telefone",
+        "contato": "contato_direto",   # só se existir no seu model
+        "digital": "site",
+        "cadastrur": "cadastrur",      # só se existir no seu model
+        "maps": None,                  # vira latitude/longitude
+        "app": None,                   # ignore se não existir no model
+        "cnpj": "cnpj",                # só se existir no seu model
+    }
+
+    has_contato = hasattr(Empresa, "contato_direto")
+    has_cadastrur = hasattr(Empresa, "cadastrur")
+    has_cnpj = hasattr(Empresa, "cnpj")
+
+    for line_no, r in enumerate(rows, start=2):
+        # extrai dados da linha
         data = {k: "" for k in COLUMN_ALIASES.keys()}
         for idx, canon in header_map.items():
             if idx < len(r):
                 data[canon] = (r[idx] or "").strip()
 
-        try:
-            nome = (data.get("nome") or "").strip()
-            if not nome:
-                raise ValueError("NOME é obrigatório.")
+        # obrigatórios mínimos
+        nome = (data.get("nome") or "").strip()
+        if not nome:
+            errors += 1
+            msgs.append(f"Linha {line_no}: Nome ausente.")
+            continue
 
-            # categoria (cria se não existir)
+        try:
+            # categoria
             cat_name = (data.get("categoria") or "").strip() or "Sem Categoria"
             categoria, _ = Categoria.objects.get_or_create(nome=cat_name)
 
-            # campos base (todos opcionais além do nome)
-            bairro    = data.get("bairro") or ""
-            endereco  = data.get("endereco") or ""
-            numero    = data.get("numero") or ""
-            cidade    = (data.get("cidade") or "Araranguá").strip()
-            cep       = _digits(data.get("cep"))
-            telefone  = data.get("telefone") or ""
-            digital   = data.get("digital") or ""
-            contato   = data.get("contato") or ""
-            cadastrur = data.get("cadastrur") or ""
-            app_val   = data.get("app") or ""
-            descricao = data.get("descricao") or LOREM_DEFAULT
-            cnpj      = _digits(data.get("cnpj"))
-            lat, lng  = _extract_latlng_from_maps(data.get("maps"))
+            # lat/lng do Maps (opcional)
+            lat, lng = _extract_latlng_from_maps(data.get("maps") or "")
 
-            # monta kwargs apenas com campos que existem no model
+            # monta kwargs do model respeitando limites
             kwargs = {
                 "user": request.user,
-                "nome": nome,
+                "nome": _clip(Empresa, "nome", nome),
                 "categoria": categoria,
-                "descricao": descricao,
+                "descricao": _clip(Empresa, "descricao", data.get("descricao") or LOREM_DEFAULT),
+                "bairro": _clip(Empresa, "bairro", data.get("bairro") or ""),
+                "rua": _clip(Empresa, "rua", data.get("endereco") or ""),
+                "numero": _clip(Empresa, "numero", data.get("numero") or ""),
+                "cidade": _clip(Empresa, "cidade", (data.get("cidade") or "Araranguá").strip()),
+                "cep": _clip(Empresa, "cep", (data.get("cep") or "").replace("-", "").strip()),
+                "telefone": _clip(Empresa, "telefone", (data.get("telefone") or "").strip()),
+                "site": _clip(Empresa, "site", (data.get("digital") or "").strip()),
+                "latitude": lat,
+                "longitude": lng,
             }
+            if has_contato:
+                kwargs["contato_direto"] = _clip(Empresa, "contato_direto", data.get("contato") or "")
+            if has_cadastrur:
+                kwargs["cadastrur"] = _clip(Empresa, "cadastrur", data.get("cadastrur") or "")
+            if has_cnpj:
+                kwargs["cnpj"] = _clip(Empresa, "cnpj", re.sub(r"\D", "", data.get("cnpj") or ""))
 
-            if _has_field(Empresa, "bairro"):      kwargs["bairro"] = bairro
-            if _has_field(Empresa, "rua"):         kwargs["rua"] = endereco
-            if _has_field(Empresa, "numero"):      kwargs["numero"] = numero
-            if _has_field(Empresa, "cidade"):      kwargs["cidade"] = cidade
-            if _has_field(Empresa, "cep"):         kwargs["cep"] = cep
-            if _has_field(Empresa, "telefone"):    kwargs["telefone"] = telefone
-            if _has_field(Empresa, "site"):        kwargs["site"] = digital
-            if _has_field(Empresa, "contato_direto"): kwargs["contato_direto"] = contato
-            if _has_field(Empresa, "cadastrur"):   kwargs["cadastrur"] = cadastrur
-            if _has_field(Empresa, "app"):         kwargs["app"] = app_val
-            if _has_field(Empresa, "cnpj"):        kwargs["cnpj"] = cnpj
-            if _has_field(Empresa, "latitude") and lat is not None:   kwargs["latitude"] = lat
-            if _has_field(Empresa, "longitude") and lng is not None:  kwargs["longitude"] = lng
+            # valida excedentes e gera mensagem amigável (sem derrubar a linha)
+            overflow_notes = []
+            for canon, model_field in FIELD_MAP.items():
+                if not model_field:
+                    continue
+                val = kwargs.get(model_field)
+                if val and isinstance(val, str):
+                    lim = _maxlen(Empresa, model_field)
+                    if lim and len(val) > lim:
+                        overflow_notes.append(f"{model_field} ({len(val)}>{lim})")
+                        kwargs[model_field] = val[:lim]
 
-            emp = Empresa(**kwargs)
-            emp.save()
+            # salva por linha dentro de savepoint
+            with transaction.atomic():
+                Empresa.objects.create(**kwargs)
             created += 1
+
+            if overflow_notes:
+                msgs.append(f"Linha {line_no}: campos truncados — " + ", ".join(overflow_notes))
 
         except Exception as e:
             errors += 1
             msgs.append(f"Linha {line_no}: {e}")
 
-    # se teve erro, devolve como erro (para o JS pintar o drop em vermelho e não redirecionar)
-    status_code = 200 if errors == 0 else 400
+    # Se houve qualquer erro, devolve 400 para sua UI pintar a caixa vermelha e não redirecionar
+    if errors > 0:
+        return JsonResponse({
+            "ok": False,
+            "importados": created,
+            "erros": errors,
+            "mensagens": msgs[:100],   # limita a resposta
+        }, status=400)
+
+    # Sucesso total -> redireciona como antes
     return JsonResponse({
-        "ok": errors == 0,
+        "ok": True,
         "importados": created,
-        "erros": errors,
-        "mensagens": msgs[:50],   # manda uma amostra (até 50 linhas)
-        "redirect": errors == 0,
+        "erros": 0,
+        "mensagens": msgs[:100],
+        "redirect": True,
         "redirect_url": "/empresas/",
-    }, status=status_code)
+    })
