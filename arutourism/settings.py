@@ -1,143 +1,229 @@
-from urllib.parse import urlparse
-import dj_database_url
-from dotenv import load_dotenv
-import os, sys
 from pathlib import Path
+from urllib.parse import urlparse
+import os
+import sys
+import dj_database_url
 import environ
 
+# ===========================
+# Paths / env
+# ===========================
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Inicializa django-environ
 env = environ.Env(
-    DEBUG=(bool, True),
+    DEBUG=(bool, False),
 )
-# Lê o .env se existir
+# Carrega .env localmente (em produção, Render injeta via env)
 environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 
-# --- Paths / .env ---
-BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv(BASE_DIR / ".env")  # carrega variáveis do .env automaticamente
+# ===========================
+# Flags básicas
+# ===========================
+DEBUG = env.bool("DEBUG", default=False)
 
-def env_bool(name: str, default: str = "false") -> bool:
-    return str(os.getenv(name, default)).lower() in ("1", "true", "yes", "on")
-
-# --- Core flags ---
-DEBUG = env_bool("DEBUG", "false")
-
-SECRET_KEY = os.getenv("SECRET_KEY")
+SECRET_KEY = env("SECRET_KEY", default=None)
 if not SECRET_KEY:
-    raise RuntimeError("SECRET_KEY não definido. Configure no .env")
+    # Em dev, se quiser, gera uma fallback fraca; em prod deve estar setada
+    # Melhor falhar cedo em prod:
+    if not DEBUG:
+        raise RuntimeError("SECRET_KEY não definido. Configure no ambiente.")
+    SECRET_KEY = "dev-insecure-key"
 
-# Detecta produção no Render
-RENDER_EXTERNAL_URL = os.getenv("RENDER_EXTERNAL_URL")
+# Detecta host do Render (se existir)
+RENDER_EXTERNAL_URL = env("RENDER_EXTERNAL_URL", default=None)
 parsed_render = urlparse(RENDER_EXTERNAL_URL) if RENDER_EXTERNAL_URL else None
+render_host = parsed_render.hostname if parsed_render else None
+render_origin = f"{parsed_render.scheme}://{parsed_render.hostname}" if parsed_render else None
 
-# --- Hosts/CSRF ---
+# ===========================
+# Hosts / CSRF
+# ===========================
+# 1) Pega das variáveis, se existirem
+ALLOWED_HOSTS = [h for h in env.list("ALLOWED_HOSTS", default=[]) if h]
+CSRF_TRUSTED_ORIGINS = [o for o in env.list("CSRF_TRUSTED_ORIGINS", default=[]) if o]
+
+# 2) Completa automaticamente para Render, se não informado
+if render_host and render_host not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(render_host)
+
+# 3) Em dev, garante localhost
 if DEBUG:
-    ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
-else:
-    ALLOWED_HOSTS = [parsed_render.hostname] if parsed_render else ["*"]
+    for h in ["127.0.0.1", "localhost"]:
+        if h not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(h)
 
-CSRF_TRUSTED_ORIGINS = []
-if parsed_render:
-    CSRF_TRUSTED_ORIGINS.append(f"{parsed_render.scheme}://{parsed_render.hostname}")
-# Mantém compatibilidade com *.onrender.com
-CSRF_TRUSTED_ORIGINS.append("https://*.onrender.com")
+# 4) CSRF origins
+if render_origin and render_origin not in CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS.append(render_origin)
+# compat: qualquer *.onrender.com
+if "https://*.onrender.com" not in CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS.append("https://*.onrender.com")
 
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
-# --- Apps ---
+# ===========================
+# Apps
+# ===========================
 INSTALLED_APPS = [
-    'django.contrib.admin','django.contrib.auth','django.contrib.contenttypes',
-    'django.contrib.sessions','django.contrib.messages','django.contrib.staticfiles',
-    'widget_tweaks',
-    'cloudinary','cloudinary_storage',
-    'core',
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "widget_tweaks",
+    "cloudinary",
+    "cloudinary_storage",
+    "core",
 ]
 
-# --- Middleware ---
+# ===========================
+# Middleware
+# ===========================
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = 'arutourism.urls'
+ROOT_URLCONF = "arutourism.urls"
 
-TEMPLATES = [{
-    'BACKEND': 'django.template.backends.django.DjangoTemplates',
-    'DIRS': [BASE_DIR / 'core' / 'templates'],
-    'APP_DIRS': True,
-    'OPTIONS': {'context_processors': [
-        'django.template.context_processors.debug',
-        'django.template.context_processors.request',
-        'django.contrib.auth.context_processors.auth',
-        'django.contrib.messages.context_processors.messages',
-        'core.context_processors.search_filters',
-    ]},
-}]
+TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [BASE_DIR / "core" / "templates"],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+                "core.context_processors.search_filters",
+            ],
+        },
+    },
+]
 
-WSGI_APPLICATION = 'arutourism.wsgi.application'
+WSGI_APPLICATION = "arutourism.wsgi.application"
 
-# --- Database: SQLite local / Postgres produção ---
+# ===========================
+# Database (SQLite dev / PG prod)
+# ===========================
 DATABASES = {
     "default": dj_database_url.config(
         default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
         conn_max_age=600,
-        ssl_require=not DEBUG  # em prod exige SSL
+        ssl_require=not DEBUG,
     )
 }
 
-# --- Password validators ---
+# ===========================
+# Password validators
+# ===========================
 AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-# --- Locale/Timezone ---
-LANGUAGE_CODE = 'pt-BR'
-TIME_ZONE = 'America/Sao_Paulo'
+# ===========================
+# Locale
+# ===========================
+LANGUAGE_CODE = "pt-BR"
+TIME_ZONE = "America/Sao_Paulo"
 USE_I18N = True
 USE_TZ = True
 
-# --- Static (Whitenoise) ---
-STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-# Se tiver uma pasta 'static' no projeto, descomente a linha abaixo:
-# STATICFILES_DIRS = [BASE_DIR / 'static']
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# ===========================
+# Static (Whitenoise)
+# ===========================
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+# Se tiver pasta 'static' dentro do projeto, descomente:
+# STATICFILES_DIRS = [BASE_DIR / "static"]
 
-# --- Auth redirects ---
-LOGIN_URL = '/login/'
-LOGIN_REDIRECT_URL = '/'
-LOGOUT_REDIRECT_URL = '/login/'
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
-# --- Media: local em DEV / Cloudinary em PROD ---
-if DEBUG:
-    # Mídia salva no disco local (e ignorada pelo Git)
-    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
-    MEDIA_URL = '/media/'
-    MEDIA_ROOT = BASE_DIR / 'media'
-else:
-    # Cloudinary (produçao)
+# ===========================
+# Auth redirects
+# ===========================
+LOGIN_URL = "/login/"
+LOGIN_REDIRECT_URL = "/"
+LOGOUT_REDIRECT_URL = "/login/"
+
+# ===========================
+# Media (local dev / Cloudinary prod se configurado)
+# ===========================
+cloud_name = env("CLOUDINARY_CLOUD_NAME", default="")
+api_key = env("CLOUDINARY_API_KEY", default="")
+api_secret = env("CLOUDINARY_API_SECRET", default="")
+
+if not DEBUG and cloud_name and api_key and api_secret:
     import cloudinary
-    cloudinary.config(
-        cloud_name=os.environ.get("CLOUDINARY_CLOUD_NAME", ""),
-        api_key=os.environ.get("CLOUDINARY_API_KEY", ""),
-        api_secret=os.environ.get("CLOUDINARY_API_SECRET", ""),
-    )
-    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-    # MEDIA_URL não é usado diretamente com Cloudinary, mas deixamos por clareza
-    MEDIA_URL = f"https://res.cloudinary.com/{os.environ.get('CLOUDINARY_CLOUD_NAME','')}/image/upload/"
+    cloudinary.config(cloud_name=cloud_name, api_key=api_key, api_secret=api_secret)
+    DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
+    MEDIA_URL = f"https://res.cloudinary.com/{cloud_name}/image/upload/"
+else:
+    DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
+    MEDIA_URL = "/media/"
+    MEDIA_ROOT = BASE_DIR / "media"
 
-# --- Security headers (ativos em produção) ---
+# ===========================
+# E-mail (robusto)
+# ===========================
+EMAIL_ENABLED = env.bool("EMAIL_ENABLED", default=False)
+
+if EMAIL_ENABLED:
+    EMAIL_BACKEND = env(
+        "EMAIL_BACKEND",
+        default="django.core.mail.backends.smtp.EmailBackend",
+    )
+    EMAIL_HOST = env("EMAIL_HOST", default="smtp.gmail.com")
+    EMAIL_PORT = env.int("EMAIL_PORT", default=587)
+    EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
+    EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL", default=False)
+    EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
+    EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
+
+    # Se faltarem credenciais, cai automaticamente para console (não quebra o deploy)
+    if not EMAIL_HOST_USER or not EMAIL_HOST_PASSWORD:
+        EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+        DEFAULT_FROM_EMAIL = "no-reply@localhost"
+        SERVER_EMAIL = "server@localhost"
+    else:
+        DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default=EMAIL_HOST_USER)
+        SERVER_EMAIL = env("SERVER_EMAIL", default=EMAIL_HOST_USER)
+else:
+    # Desliga e-mail por padrão (evita crash em prod sem variáveis)
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+    DEFAULT_FROM_EMAIL = "no-reply@localhost"
+    SERVER_EMAIL = "server@localhost"
+
+EMAIL_TIMEOUT = 20
+
+# ===========================
+# Links absolutos (e-mail)
+# ===========================
+if render_host and not DEBUG:
+    DEFAULT_DOMAIN = env("DEFAULT_DOMAIN", default=render_host)
+    DEFAULT_PROTOCOL = env("DEFAULT_PROTOCOL", default="https")
+else:
+    DEFAULT_DOMAIN = env("DEFAULT_DOMAIN", default="127.0.0.1:8000")
+    DEFAULT_PROTOCOL = env("DEFAULT_PROTOCOL", default="http")
+
+# Tempo de validade do link de reset (24h)
+PASSWORD_RESET_TIMEOUT = 60 * 60 * 24
+
+# ===========================
+# Segurança (só em produção)
+# ===========================
 if not DEBUG:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
@@ -150,30 +236,9 @@ if not DEBUG:
     SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
     X_FRAME_OPTIONS = "DENY"
 
-# === DEBUG / HOSTS ===
-DEBUG = env("DEBUG")
-ALLOWED_HOSTS = [h.strip() for h in env("ALLOWED_HOSTS", default="").split(",") if h.strip()]
-CSRF_TRUSTED_ORIGINS = [o.strip() for o in env("CSRF_TRUSTED_ORIGINS", default="").split(",") if o.strip()]
-
-# === Email ===
-EMAIL_BACKEND       = env("EMAIL_BACKEND", default="django.core.mail.backends.smtp.EmailBackend")
-EMAIL_HOST          = env("EMAIL_HOST", default="smtp.gmail.com")
-EMAIL_PORT          = env.int("EMAIL_PORT", default=587)
-EMAIL_USE_TLS       = env.bool("EMAIL_USE_TLS", default=True)
-EMAIL_USE_SSL       = env.bool("EMAIL_USE_SSL", default=False)  # Gmail: TLS em 587
-EMAIL_HOST_USER     = env("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
-DEFAULT_FROM_EMAIL  = env("DEFAULT_FROM_EMAIL", default=EMAIL_HOST_USER)
-SERVER_EMAIL        = env("SERVER_EMAIL", default=EMAIL_HOST_USER)
-EMAIL_TIMEOUT       = 20
-
-# Tempo de validade do link (em segundos) – ex.: 24h
-PASSWORD_RESET_TIMEOUT = 60 * 60 * 24
-
-# Para construir URLs absolutas corretamente nos e-mails
-DEFAULT_DOMAIN = "127.0.0.1:8000"  # em produção coloque seu domínio real
-DEFAULT_PROTOCOL = "http"          # ou "https" se tiver TLS
-
-TESTING = 'test' in sys.argv
+# ===========================
+# Modo testes (evita erro de manifest)
+# ===========================
+TESTING = "test" in sys.argv
 if TESTING:
-    STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+    STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
