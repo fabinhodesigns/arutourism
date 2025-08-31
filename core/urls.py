@@ -10,6 +10,11 @@ urlpatterns = [
     path('', views.home, name='home'),
     path('admin/', admin.site.urls),
 
+    # Páginas estáticas
+    path('sobre/', views.sobre, name='sobre'),
+    path('termo_de_servico/', views.termo_de_servico, name='termo_de_servico'),
+    path('politica_de_privacidade/', views.politica_de_privacidade, name='politica_de_privacidade'),
+
     # Auth/usuários
     path('register/', views.register, name='register'),
     path('login/', views.login_view, name='login'),
@@ -32,6 +37,14 @@ urlpatterns = [
     # Importação em lote + modelo (NOVOS nomes)
     path("empresas/modelo/", views.download_template_empresas, name="download_template_empresas"),
     path("empresas/importar/", views.importar_empresas_arquivo, name="importar_empresas_arquivo"),
+
+     # Perfil
+    path('perfil/', views.perfil, name='perfil'),
+    path('perfil/trocar-senha/', views.trocar_senha, name='trocar_senha'),
+
+    # Reset por e-mail (padrão Django, páginas custom)
+    path('senha/esqueci/', views.esqueci_senha_email, name='esqueci_senha_email'),
+    path('senha/esqueci-cpf/', views.esqueci_senha_cpf, name='esqueci_senha_cpf'),
 ]
 
 # servir mídia local quando DEBUG=True

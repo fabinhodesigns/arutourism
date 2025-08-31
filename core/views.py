@@ -7,6 +7,7 @@ import re
 from io import BytesIO, StringIO
 from urllib.parse import urlparse, parse_qs
 
+from django.views.decorators.http import require_http_methods
 from django.contrib import messages
 from django.contrib.auth import login as auth_login, logout
 from django.contrib.auth.decorators import login_required
@@ -24,30 +25,23 @@ from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
 import csv, io
 
+# core/views.py (imports)
+
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.forms import PasswordChangeForm, PasswordResetForm
+from django.urls import reverse, reverse_lazy
+from django.core.mail import send_mail  # se usar backend real
+from django.utils import timezone
+
+from .forms import ProfileForm, StartResetByCpfForm
+from .models import PerfilUsuario, Empresa, Categoria
+
 from core.models import Categoria, Empresa
 from .forms import CustomLoginForm, EmpresaForm, UserRegistrationForm
 
 # ============================================================
 # Constantes / Mapeamentos
 # ============================================================
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 # nomes aceitos (mantém os seus sinônimos)
 COLUMN_ALIASES = {
@@ -67,50 +61,6 @@ COLUMN_ALIASES = {
     "app":         ["app", "aplicativo"],
     "descricao":   ["descrição", "descricao", "observacao", "observação", "obs"],
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-COLUMN_ALIASES = {
-    "cnpj":      ["cnpj"],
-    "categoria": [
-        "categoria", "ramo atividade", "ramo de atividade", "ramo",
-        "categoria (ramo atividade)", "categoria ramo atividade"
-    ],
-    "nome":      ["nome", "razão social", "razao social"],
-    "bairro":    ["bairro", "endereço 2", "endereco 2"],
-    "endereco":  [
-        "endereço", "endereco", "logradouro", "rua",
-        "endereço completo", "endereco completo"
-    ],
-    "numero":    ["número", "numero", "nº", "nro"],
-    "cidade":    ["cidade", "municipio", "município"],
-    "cep":       ["cep", "c.e.p."],
-    "telefone":  ["telefone", "fone", "whatsapp"],
-    "contato":   ["contato direto", "contato"],
-    "digital":   [
-        "digital", "site / redes", "site redes", "redes sociais",
-        "site", "instagram", "facebook", "digital (site/redes)"
-    ],
-    "cadastrur": ["cadastur", "cadas tur", "cadastro tur"],
-    "maps":      ["maps", "google maps", "mapa", "link mapa", "maps (link)"],
-    "app":       ["app", "aplicativo"],
-    "descricao": ["descrição", "descricao", "observacao", "observação", "obs"],
-}
-
 
 TEMPLATE_HEADERS = [
     ("CNPJ",                          False, "cnpj"),
@@ -331,8 +281,6 @@ def _first_url_in_text(s):
     m = re.search(r'(https?://\S+)', s)
     return m.group(1) if m else None
 
-
-
 # ============================================================
 # Páginas básicas / Auth
 # ============================================================
@@ -343,13 +291,13 @@ def home(request):
     return render(request, 'home.html', {'empresas': empresas, 'total_empresas': total_empresas})
 
 def sobre(request):
-    return render(request, 'core/sobre.html/')
+    return render(request, 'core/sobre.html')
 
 def termo_de_servico(request):
-    return render(request, 'core/termo_de_servico.html/')
+    return render(request, 'core/termo_de_servico.html')
 
 def politica_de_privacidade(request):
-    return render(request, 'core/politica_de_privacidade.html/')
+    return render(request, 'core/politica_de_privacidade.html')
 
 def register(request):
     if request.user.is_authenticated:
@@ -423,42 +371,82 @@ def excluir_usuario(request, id):
 # ============================================================
 
 @login_required(login_url='/login/')
+@require_http_methods(["GET", "POST"])
 def cadastrar_empresa(request):
+    initial = {"latitude": "-28.937100", "longitude": "-49.484000"}
     if request.method == 'GET':
-        form = EmpresaForm()
-        return render(request, 'core/cadastrar_empresa.html', {'form': form})
+        form = EmpresaForm(initial=initial)
+        return render(request, 'core/cadastrar_empresa.html', {'form': form, 'is_editing': False})
 
-    if request.method == 'POST':
-        post_data = request.POST.copy()
+    # POST
+    form = EmpresaForm(request.POST, request.FILES)
+    wants_json = (
+        'application/json' in (request.headers.get('Accept') or '')
+            or (request.headers.get('x-requested-with') == 'XMLHttpRequest')
+    )
 
-        # saneia CEP
-        if 'cep' in post_data:
-            post_data['cep'] = re.sub(r'\D', '', post_data['cep'])
+    if form.is_valid():
+        empresa = form.save(commit=False)
+        empresa.user = request.user
+        empresa.save()
 
-        form = EmpresaForm(post_data, request.FILES)
-
-        if form.is_valid():
-            empresa = form.save(commit=False)
-
-            # descrição padrão
-            if not (empresa.descricao or '').strip():
-                empresa.descricao = DEFAULT_DESC  # <— agora existe
-
-            empresa.user = request.user
-            empresa.save()
-
-            message = f"Empresa '{empresa.nome}' cadastrada com sucesso!"
+        # Resposta JSON para o JS atual
+        if wants_json:
             action = 'reset' if 'save_and_add' in request.POST else 'redirect'
-            redirect_url = '/suas_empresas/' if action == 'redirect' else ''
-
             return JsonResponse({
                 'status': 'success',
-                'message': message,
+                'message': f"Empresa '{empresa.nome}' cadastrada com sucesso!",
                 'action': action,
-                'redirect_url': redirect_url
+                'redirect_url': '/suas_empresas/' if action == 'redirect' else ''
             })
 
-        return render(request, 'core/cadastrar_empresa.html', {'form': form}, status=400)
+        # Fallback para POST sem JS
+        messages.success(request, f"Empresa '{empresa.nome}' cadastrada com sucesso!")
+        return redirect('suas_empresas')
+
+    # Erros de validação
+    if wants_json:
+        # devolve o bloco de erros renderizado para o JS mostrar
+        html = render_to_string('core/partials/form_errors.html', {'form': form}, request=request)
+        return JsonResponse({'ok': False, 'error': 'Erros de validação no formulário.', 'html': html}, status=400)
+
+    return render(request, 'core/cadastrar_empresa.html', {'form': form, 'is_editing': False}, status=400)
+
+@login_required(login_url='/login/')
+@require_http_methods(["GET", "POST"])
+def editar_empresa(request, empresa_id):
+    empresa = get_object_or_404(Empresa, id=empresa_id)
+    if empresa.user != request.user:
+        raise Http404("Você não tem permissão para editar esta empresa.")
+
+    wants_json = (
+        'application/json' in (request.headers.get('Accept') or '')
+            or (request.headers.get('x-requested-with') == 'XMLHttpRequest')
+    )
+
+    if request.method == 'GET':
+        form = EmpresaForm(instance=empresa)
+        return render(request, 'core/empresa_editar.html', {'form': form, 'empresa': empresa, 'is_editing': True})
+
+    form = EmpresaForm(request.POST, request.FILES, instance=empresa)
+    if form.is_valid():
+        form.save()
+
+        if wants_json:
+            return JsonResponse({
+                'status': 'success',
+                'message': f"A empresa '{empresa.nome}' foi atualizada com sucesso!",
+                'redirect_url': '/suas_empresas/'
+            })
+
+        messages.success(request, f"A empresa '{empresa.nome}' foi atualizada com sucesso!")
+        return redirect('suas_empresas')
+
+    if wants_json:
+        html = render_to_string('core/partials/form_errors.html', {'form': form}, request=request)
+        return JsonResponse({'ok': False, 'error': 'Erros de validação no formulário.', 'html': html}, status=400)
+
+    return render(request, 'core/empresa_editar.html', {'form': form, 'empresa': empresa, 'is_editing': True}, status=400)
     
 @login_required(login_url='/login/')
 def editar_empresa(request, empresa_id):
@@ -470,10 +458,29 @@ def editar_empresa(request, empresa_id):
         form = EmpresaForm(request.POST, request.FILES, instance=empresa)
         if form.is_valid():
             form.save()
+            # Se a requisição espera JSON, devolve JSON; senão redireciona clássico
+            if request.headers.get('accept','').lower().find('application/json') >= 0:
+                return JsonResponse({
+                    'status':'success',
+                    'message': f"A empresa '{empresa.nome}' foi atualizada com sucesso!",
+                    'action': 'redirect',
+                    'redirect_url': '/suas_empresas/'
+                })
             messages.success(request, f"A empresa '{empresa.nome}' foi atualizada com sucesso!")
             return redirect('suas_empresas')
+        else:
+            if request.headers.get('accept','').lower().find('application/json') >= 0:
+                # opcional: sumariza erros
+                errs = []
+                for f, lst in form.errors.items():
+                    for e in lst: errs.append(f"{f}: {e}")
+                return JsonResponse({'ok': False, 'error': "Erros de validação.", 'mensagens': errs}, status=400)
+
     else:
         form = EmpresaForm(instance=empresa)
+
+    # use o template dedicado de edição se criou (passo 3)
+    return render(request, 'core/editar_empresa.html', {'form': form, 'empresa': empresa})
 
     return render(request, 'core/cadastrar_empresa.html', {'form': form, 'is_editing': True})
 
@@ -533,12 +540,37 @@ def listar_empresas(request):
         return JsonResponse({'html': html, 'has_next': page_obj.has_next(),
                              'next_page_number': page_obj.next_page_number() if page_obj.has_next() else None})
 
+    categoria_label = None
+    if categoria:
+        try:
+            cat_obj = Categoria.objects.only("nome").get(pk=int(categoria))
+            categoria_label = cat_obj.nome
+        except (Categoria.DoesNotExist, ValueError, TypeError):
+            categoria_label = None  # some em silêncio se não achar
+
+    # Filtros “crus” (úteis se você precisa reconstruir URLs)
     filtros_aplicados = {
-        'q': q, 'categoria': categoria, 'cidade': cidade,
+        'q': q,
+        'categoria': categoria,           # <- ID original (ou string vazia)
+        'cidade': cidade,
         'com_imagem_real': '1' if com_imagem_real else '',
         'meus': '1' if meus else '',
     }
-    return render(request, 'core/listar_empresas.html', {'page_obj': page_obj, 'filtros_aplicados': filtros_aplicados})
+
+    # Filtros legíveis para a UI
+    filtros_legiveis = {
+        'q': q or None,
+        'categoria': categoria_label,     # <- nome da categoria (ou None)
+        'cidade': cidade or None,
+        'com_imagem_real': com_imagem_real,
+        'meus': meus,
+    }
+
+    return render(request, 'core/listar_empresas.html', {
+        'page_obj': page_obj,
+        'filtros_aplicados': filtros_aplicados,
+        'filtros_legiveis': filtros_legiveis,
+    })
 
 def buscar_empresas(request):
     """Rota legada: redireciona para a listagem com os mesmos GETs."""
@@ -796,3 +828,100 @@ def importar_empresas_arquivo(request):
             "error": "Erro inesperado ao importar. Tente novamente ou contate o suporte.",
             "detalhe": str(e),
         }, status=500)
+    
+
+    # ========== PERFIL DO USUÁRIO ==========
+@login_required
+def perfil(request):
+    perfil = getattr(request.user, 'perfil', None)
+    if perfil is None:
+        # cria se não existir
+        perfil = PerfilUsuario.objects.create(user=request.user, cpf_cnpj='')
+
+    empresas_qtd = Empresa.objects.filter(user=request.user).count()
+    entrou_em = request.user.date_joined  # DateTimeField
+    entrou_fmt = timezone.localtime(entrou_em).strftime("%m/%Y")
+
+    if request.method == 'POST':
+        form = ProfileForm(request.POST, request.FILES, instance=perfil, user=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Perfil atualizado com sucesso!")
+            return redirect('perfil')
+    else:
+        form = ProfileForm(instance=perfil, user=request.user)
+
+    return render(request, 'core/perfil.html', {
+        'form': form,
+        'empresas_qtd': empresas_qtd,
+        'entrou_fmt': entrou_fmt,
+    })
+
+
+# ========== TROCAR SENHA (AUTENTICADO) ==========
+@login_required
+def trocar_senha(request):
+    if request.method == 'POST':
+        form = PasswordChangeForm(user=request.user, data=request.POST)
+        if form.is_valid():
+            user = form.save()
+            update_session_auth_hash(request, user)  # mantém logado
+            messages.success(request, "Senha atualizada com sucesso!")
+            return redirect('perfil')
+    else:
+        form = PasswordChangeForm(user=request.user)
+
+    return render(request, 'core/password_change.html', {'form': form})
+
+
+# ========== ESQUECI A SENHA (E-MAIL PADRÃO DJANGO) ==========
+def esqueci_senha_email(request):
+    if request.method == 'POST':
+        form = PasswordResetForm(request.POST)
+        if form.is_valid():
+            form.save(
+                request=request,
+                use_https=request.is_secure(),
+                email_template_name='core/email_password_reset.txt',
+                html_email_template_name='core/email_password_reset.html',  # <-- ADICIONE
+                subject_template_name='core/email_password_reset_subject.txt',
+                from_email=None
+            )
+            messages.success(request, "Se o e-mail existir no sistema, você receberá um link para alterar sua senha.")
+            return redirect('perfil')
+    else:
+        form = PasswordResetForm()
+    return render(request, 'core/password_reset_email.html', {'form': form})
+
+
+def esqueci_senha_cpf(request):
+    msg_privacidade = (
+        "Por segurança, se o CPF existir e estiver vinculado a um e-mail, "
+        "enviaremos um link de redefinição para esse e-mail."
+    )
+    if request.method == 'POST':
+        form = StartResetByCpfForm(request.POST)
+        if form.is_valid():
+            cpf = form.cleaned_data['cpf_cnpj']
+            try:
+                perfil = PerfilUsuario.objects.select_related('user').get(cpf_cnpj=cpf)
+                if perfil.user.email:
+                    prf = PasswordResetForm({'email': perfil.user.email})
+                    if prf.is_valid():
+                        prf.save(
+                            request=request,
+                            use_https=request.is_secure(),
+                            email_template_name='core/email_password_reset.txt',
+                            html_email_template_name='core/email_password_reset.html',  # <-- ADICIONE
+                            subject_template_name='core/email_password_reset_subject.txt',
+                            from_email=None
+                        )
+                messages.success(request, msg_privacidade)
+                return redirect('login')
+            except PerfilUsuario.DoesNotExist:
+                messages.success(request, msg_privacidade)
+                return redirect('login')
+    else:
+        form = StartResetByCpfForm()
+
+    return render(request, 'core/password_reset_cpf.html', {'form': form})

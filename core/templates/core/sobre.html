@@ -1,105 +1,226 @@
 {% extends 'base2.html' %}
+{% load static %}
 
 {% block title %}Sobre - ARUTOURISM{% endblock %}
 
 {% block content %}
+<a class="visually-hidden-focusable" href="#conteudo-principal">Pular para o conteúdo</a>
 
-<body class="d-flex flex-column">
-    <main class="flex-shrink-0">
-        <div class="py-5">
-            <div class="container px-5">
-                <div class="row justify-content-center">
-                    <div class="col-lg-8 col-xxl-6">
-                        <div class="text-center my-5">
-                            <h1 class="fw-bolder mb-3">Our mission is to make building websites easier for everyone.
-                            </h1>
-                            <p class="lead fw-normal text-muted mb-4">Start Bootstrap was built on the idea that
-                                quality, functional website templates and themes should be available to everyone. Use
-                                our open source, free products, or support us by purchasing one of our premium products
-                                or services.</p>
-                            <a class="btn btn-primary btn-lg" href="#scroll-target">Read our story</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
+<main id="conteudo-principal" class="flex-shrink-0">
+  <!-- Hero -->
+  <section class="py-5">
+    <div class="container px-5 mt-5">
+      <div class="row justify-content-center">
+        <div class="col-lg-9 col-xxl-8 text-center">
+          <h1 class="fw-bolder mb-3">AruTourism: inventariar o turismo municipal de forma simples, inclusiva e aberta</h1>
+          <p class="lead fw-normal text-muted mb-4">
+            Construímos uma plataforma web para <b>centralizar, organizar e divulgar</b> atrativos, serviços e empreendimentos turísticos no âmbito municipal. 
+            O foco está na <b>acessibilidade</b>, na <b>governança de dados</b> e na <b>usabilidade</b> para visitantes, moradoras(es) e gestoras(es) públicas(os).
+          </p>
+          <div class="d-flex gap-2 justify-content-center">
+            <a class="btn btn-primary btn-lg" href="#nossa-missao" aria-label="Ler nossa missão">Nossa missão</a>
+            <a class="btn btn-outline-secondary btn-lg" href="#como-funciona" aria-label="Entender como funciona">Como funciona</a>
+          </div>
         </div>
-        <!-- About section one-->
-        <section class="py-5 bg-light" id="scroll-target">
-            <div class="container px-5 my-5">
-                <div class="row gx-5 align-items-center">
-                    <div class="col-lg-6"><img class="img-fluid rounded mb-5 mb-lg-0"
-                            src="https://dummyimage.com/600x400/343a40/6c757d" alt="..." /></div>
-                    <div class="col-lg-6">
-                        <h2 class="fw-bolder">Our founding</h2>
-                        <p class="lead fw-normal text-muted mb-0">Lorem ipsum dolor sit amet consectetur adipisicing
-                            elit. Iusto est, ut esse a labore aliquam beatae expedita. Blanditiis impedit numquam libero
-                            molestiae et fugit cupiditate, quibusdam expedita, maiores eaque quisquam.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-        <!-- About section two-->
-        <section class="py-5">
-            <div class="container px-5 my-5">
-                <div class="row gx-5 align-items-center">
-                    <div class="col-lg-6 order-first order-lg-last"><img class="img-fluid rounded mb-5 mb-lg-0"
-                            src="https://dummyimage.com/600x400/343a40/6c757d" alt="..." /></div>
-                    <div class="col-lg-6">
-                        <h2 class="fw-bolder">Growth &amp; beyond</h2>
-                        <p class="lead fw-normal text-muted mb-0">Lorem ipsum dolor sit amet consectetur adipisicing
-                            elit. Iusto est, ut esse a labore aliquam beatae expedita. Blanditiis impedit numquam libero
-                            molestiae et fugit cupiditate, quibusdam expedita, maiores eaque quisquam.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-        <!-- Team members section-->
-        <section class="py-5 bg-light">
-            <div class="container px-5 my-5">
-                <div class="text-center">
-                    <h2 class="fw-bolder">Our team</h2>
-                    <p class="lead fw-normal text-muted mb-5">Dedicated to quality and your success</p>
-                </div>
-                <div class="row gx-5 row-cols-1 row-cols-sm-2 row-cols-xl-4 justify-content-center">
-                    <div class="col mb-5 mb-5 mb-xl-0">
-                        <div class="text-center">
-                            <img class="img-fluid rounded-circle mb-4 px-4"
-                                src="https://dummyimage.com/150x150/ced4da/6c757d" alt="..." />
-                            <h5 class="fw-bolder">Ibbie Eckart</h5>
-                            <div class="fst-italic text-muted">Founder &amp; CEO</div>
-                        </div>
-                    </div>
-                    <div class="col mb-5 mb-5 mb-xl-0">
-                        <div class="text-center">
-                            <img class="img-fluid rounded-circle mb-4 px-4"
-                                src="https://dummyimage.com/150x150/ced4da/6c757d" alt="..." />
-                            <h5 class="fw-bolder">Arden Vasek</h5>
-                            <div class="fst-italic text-muted">CFO</div>
-                        </div>
-                    </div>
-                    <div class="col mb-5 mb-5 mb-sm-0">
-                        <div class="text-center">
-                            <img class="img-fluid rounded-circle mb-4 px-4"
-                                src="https://dummyimage.com/150x150/ced4da/6c757d" alt="..." />
-                            <h5 class="fw-bolder">Toribio Nerthus</h5>
-                            <div class="fst-italic text-muted">Operations Manager</div>
-                        </div>
-                    </div>
-                    <div class="col mb-5">
-                        <div class="text-center">
-                            <img class="img-fluid rounded-circle mb-4 px-4"
-                                src="https://dummyimage.com/150x150/ced4da/6c757d" alt="..." />
-                            <h5 class="fw-bolder">Malvina Cilla</h5>
-                            <div class="fst-italic text-muted">CTO</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </main>
+      </div>
+    </div>
+  </section>
 
-</body>
+  <!-- Nossa missão -->
+  <section id="nossa-missao" class="py-5 bg-light">
+    <div class="container px-5 my-5">
+      <div class="row gx-5 align-items-center">
+        <div class="col-lg-6 mb-4 mb-lg-0">
+          <img class="img-fluid rounded shadow-sm" src="{% static 'img/about/mission.jpg' %}" alt="Mapa com pins indicando pontos turísticos no município">
+        </div>
+        <div class="col-lg-6">
+          <h2 class="fw-bolder">Nossa missão</h2>
+          <p class="lead fw-normal text-muted">
+            Facilitar o <b>acesso centralizado a informações turísticas</b> e fortalecer a identidade local. 
+            Promovemos um turismo <b>inclusivo</b>, com dados confiáveis, linguagem clara e recursos que ampliam a autonomia de quem navega.
+          </p>
+          <ul class="list-unstyled">
+            <li class="mb-2">• Centralização das informações em um só lugar</li>
+            <li class="mb-2">• Experiência responsiva e acessível (WCAG 2.2)</li>
+            <li class="mb-2">• Transparência e governança de dados</li>
+            <li class="mb-2">• Base sólida com <b>PostgreSQL</b> e segurança por padrão</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
 
-</html>
+  <!-- O que é e como funciona -->
+  <section id="como-funciona" class="py-5">
+    <div class="container px-5 my-5">
+      <div class="row gx-5 align-items-center">
+        <div class="col-lg-6 order-2 order-lg-1">
+          <h2 class="fw-bolder mb-3">O que é o AruTourism</h2>
+          <p class="lead fw-normal text-muted">
+            Um <b>Sistema de Inventário Turístico Municipal</b>: cadastramos e atualizamos <b>atrativos, serviços, eventos e empreendimentos</b> com filtros por categoria, acessibilidade, localização e contato.
+          </p>
+          <h3 class="h5 fw-bold mt-4">Como funciona</h3>
+          <ul class="text-muted">
+            <li class="mb-1"><strong>Cadastro e gestão:</strong> painel administrativo para criar/editar itens com verificação e histórico.</li>
+            <li class="mb-1"><strong>Busca e descoberta:</strong> pesquisa por nome, tags, bairros e recursos de acessibilidade.</li>
+            <li class="mb-1"><strong>Mapa interativo:</strong> visualização georreferenciada para planejar rotas.</li>
+            <li class="mb-1"><strong>Tradução e conteúdo claro:</strong> suporte a múltiplos idiomas e escrita objetiva.</li>
+          </ul>
+        </div>
+        <div class="col-lg-6 order-1 order-lg-2 mb-4 mb-lg-0">
+          <img class="img-fluid rounded shadow-sm" src="{% static 'img/about/how-it-works.jpg' %}" alt="Interface do sistema apresentando lista e mapa de pontos turísticos">
+        </div>
+      </div>
+    </div>
+  </section>
 
+  <!-- Metodologia (DSRM) -->
+  <section id="metodologia" class="py-5 bg-light">
+    <div class="container px-5 my-5">
+      <div class="row gx-5 align-items-center">
+        <div class="col-lg-6 mb-4 mb-lg-0">
+          <img class="img-fluid rounded shadow-sm" src="{% static 'img/about/dsrm.jpg' %}" alt="Quadro com etapas iterativas de design e avaliação">
+        </div>
+        <div class="col-lg-6">
+          <h2 class="fw-bolder">Metodologia de desenvolvimento</h2>
+          <p class="lead fw-normal text-muted">
+            Adotamos <b>Design Science Research Methodology (DSRM)</b> para conceber, demonstrar e avaliar o artefato com foco em <b>problemas reais</b> do turismo municipal.
+          </p>
+          <ol class="text-muted">
+            <li>Identificação do problema e motivação</li>
+            <li>Definição de objetivos da solução</li>
+            <li>Design e desenvolvimento</li>
+            <li>Demonstração em cenários de uso</li>
+            <li>Avaliação de usabilidade e acessibilidade</li>
+            <li>Comunicação dos resultados</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Acessibilidade -->
+  <section id="acessibilidade" class="py-5">
+    <div class="container px-5 my-5">
+      <div class="row gx-5 align-items-center">
+        <div class="col-lg-6 order-2 order-lg-1">
+          <h2 class="fw-bolder">Acessibilidade como pilar</h2>
+          <p class="lead fw-normal text-muted">
+            Garantimos navegação por <b>teclado</b>, textos com <b>alto contraste</b>, <b>descrições alternativas</b> e compatibilidade com leitores de tela. 
+            Indicamos recursos de acessibilidade presentes em cada atrativo e promovemos informações claras para <b>planejamento seguro</b> da visita.
+          </p>
+          <ul class="text-muted">
+            <li>Rótulos e landmarks ARIA</li>
+            <li>Foco visível e ordem lógica de tabulação</li>
+            <li>Conteúdo robusto e semântico (HTML5)</li>
+          </ul>
+        </div>
+        <div class="col-lg-6 order-1 order-lg-2 mb-4 mb-lg-0">
+          <img class="img-fluid rounded shadow-sm" src="{% static 'img/about/accessibility.jpg' %}" alt="Pessoa usando leitor de tela navegando em um site responsivo">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Segurança, LGPD e Banco de Dados -->
+  <section id="seguranca-lgpd" class="py-5 bg-light">
+    <div class="container px-5 my-5">
+      <div class="row gx-5 align-items-center">
+        <div class="col-lg-6 mb-4 mb-lg-0">
+          <img class="img-fluid rounded shadow-sm" src="{% static 'img/about/security.jpg' %}" alt="Ícone de escudo representando segurança de dados">
+        </div>
+        <div class="col-lg-6">
+          <h2 class="fw-bolder">Segurança, LGPD e PostgreSQL</h2>
+          <p class="lead fw-normal text-muted">
+            Implementamos <b>boas práticas de segurança</b> end-to-end e privacidade desde a concepção. Utilizamos <b>PostgreSQL</b> para garantir <b>integridade, performance e auditabilidade</b> dos dados.
+          </p>
+          <ul class="text-muted">
+            <li>Hash de senhas forte, sessões seguras e proteção CSRF/XSS</li>
+            <li>Princípio do mínimo privilégio e auditoria de alterações</li>
+            <li>Política de retenção e consentimento em conformidade com a <b>LGPD</b></li>
+            <li>Backups e monitoração de disponibilidade</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Governança de Dados -->
+  <section id="governanca" class="py-5">
+    <div class="container px-5 my-5">
+      <div class="row gx-5 align-items-center">
+        <div class="col-lg-6 order-2 order-lg-1">
+          <h2 class="fw-bolder">Governança e qualidade da informação</h2>
+          <p class="lead fw-normal text-muted">
+            Mantemos <b>padrões de cadastro</b>, validação de campos, revisão periódica e trilhas de auditoria. 
+            Com isso, fortalecemos a confiabilidade do inventário turístico e apoiamos decisões públicas.
+          </p>
+          <ul class="text-muted">
+            <li>Taxonomia de categorias e tags</li>
+            <li>Campos obrigatórios e métricas de completude</li>
+            <li>Histórico de versões e responsáveis pela atualização</li>
+          </ul>
+        </div>
+        <div class="col-lg-6 order-1 order-lg-2 mb-4 mb-lg-0">
+          <img class="img-fluid rounded shadow-sm" src="{% static 'img/about/governance.jpg' %}" alt="Quadro de governança com responsáveis e fluxos de aprovação">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Equipe
+     <section id="equipe" class="py-5 bg-light">
+    <div class="container px-5 my-5">
+      <div class="text-center">
+        <h2 class="fw-bolder">Nossa equipe</h2>
+        <p class="lead fw-normal text-muted mb-5">Compromisso com qualidade, acessibilidade e impacto local</p>
+      </div>
+      <div class="row gx-5 row-cols-1 row-cols-sm-2 row-cols-xl-4 justify-content-center">
+
+        <div class="col mb-5">
+          <div class="text-center">
+            <img class="img-fluid rounded-circle mb-4 px-4" src="{% static 'img/team/person-1.jpg' %}" alt="Foto de perfil da pessoa 1">
+            <h5 class="fw-bolder">Nome 1</h5>
+            <div class="fst-italic text-muted">Coordenação</div>
+          </div>
+        </div>
+        <div class="col mb-5">
+          <div class="text-center">
+            <img class="img-fluid rounded-circle mb-4 px-4" src="{% static 'img/team/person-2.jpg' %}" alt="Foto de perfil da pessoa 2">
+            <h5 class="fw-bolder">Nome 2</h5>
+            <div class="fst-italic text-muted">Back-end (Django)</div>
+          </div>
+        </div>
+        <div class="col mb-5">
+          <div class="text-center">
+            <img class="img-fluid rounded-circle mb-4 px-4" src="{% static 'img/team/person-3.jpg' %}" alt="Foto de perfil da pessoa 3">
+            <h5 class="fw-bolder">Nome 3</h5>
+            <div class="fst-italic text-muted">Front-end (Bootstrap)</div>
+          </div>
+        </div>
+        <div class="col mb-5">
+          <div class="text-center">
+            <img class="img-fluid rounded-circle mb-4 px-4" src="{% static 'img/team/person-4.jpg' %}" alt="Foto de perfil da pessoa 4">
+            <h5 class="fw-bolder">Nome 4</h5>
+            <div class="fst-italic text-muted">Dados &amp; Acessibilidade</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+   -->
+
+  <!-- CTA -->
+  <section id="contato" class="py-5">
+    <div class="container px-5 my-5 text-center">
+      <h2 class="fw-bolder mb-3">Quer implementar o AruTourism no seu município?</h2>
+      <p class="lead fw-normal text-muted mb-4">
+        Podemos apoiar desde o diagnóstico inicial até a implantação completa, com treinamento e documentação.
+      </p>
+      <a class="btn btn-primary btn-lg" href="#contato" aria-label="Ir para a página de contato">
+        Falar com a equipe
+      </a>
+    </div>
+  </section>
+</main>
 {% endblock %}

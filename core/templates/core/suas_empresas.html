@@ -1,58 +1,83 @@
 {% extends 'base2.html' %}
+{% load static %}
+
 {% block title %}Suas Empresas Cadastradas{% endblock %}
 
 {% block content %}
-<div class="d-flex flex-column justify-content-between" style="min-height: 90vh;">
-    <div class="container py-5 mt-5 flex-grow-1">
-        <h2 class="text-center fw-bold col-lg-12">
-            Suas Empresas Cadastradas
-        </h2>
+<style>
+  .page-shell{ min-height:65vh; }
+  .empresa-card .card-img-top{ height:200px; object-fit:cover; }
+  .empresa-card{ min-width:280px; transition:transform .15s, box-shadow .15s; cursor:pointer; }
+  .empresa-card:hover{ transform:translateY(-2px); box-shadow:0 .5rem 1rem rgba(0,0,0,.15); }
+  .empty-state{ border:1px dashed #ced4da; border-radius:.75rem; padding:2rem; background:#f8f9fa; }
+  main .container{ min-height:60vh; }
+</style>
 
-        {% if page_obj %}
-            <div class="row justify-content-center" id="empresas-container">
-                {% include 'core/partials/empresas_cards.html' %}
-            </div>
+<div class="container page-shell py-5 mt-5">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4 w-100">
+    <h2 class="fw-bold m-0">Suas Empresas Cadastradas</h2>
+    <a class="btn btn-primary d-inline-flex align-items-center gap-2" href="{% url 'cadastrar_empresa' %}">
+      <i class="bi bi-plus-lg"></i> Cadastrar empresa
+    </a>
+  </div>
 
-        {% if page_obj.has_next %}
-            <div class="d-flex justify-content-center mt-4">
-                <button id="load-more-btn" class="btn btn-primary btn-lg">Carregar mais</button>
-            </div>
-        {% endif %}
-
-        {% else %}
-            <div class="row gx-4 gy-4 justify-content-center">
-                <p class="text-center">Você ainda não cadastrou nenhuma empresa.</p>
-            </div>
-        {% endif %}
+  {% if page_obj.paginator.count == 0 %}
+    <div class="row justify-content-center">
+      <div class="col-12 col-md-10 col-lg-8">
+        <div class="empty-state text-center">
+          <i class="bi bi-building fs-1 d-block mb-2"></i>
+          <h5 class="mb-2">Você ainda não cadastrou nenhuma empresa.</h5>
+          <p class="text-muted mb-4">Clique no botão acima para adicionar sua primeira empresa.</p>
+          <a class="btn btn-primary" href="{% url 'cadastrar_empresa' %}">
+            <i class="bi bi-plus-circle"></i> Cadastrar empresa
+          </a>
+        </div>
+      </div>
     </div>
+  {% else %}
+    {% with qtd=page_obj.object_list|length %}
+    <div class="row g-4 {% if qtd == 1 %}justify-content-center{% endif %}" id="empresas-container">
+      {# Usa o mesmo partial de cards para manter consistência visual #}
+      {% include 'core/partials/empresas_cards.html' %}
+    </div>
+    {% endwith %}
+
+    {% if page_obj.has_next %}
+      <div class="d-flex justify-content-center mt-4">
+        <button id="load-more-btn" class="btn btn-primary btn-lg">Carregar mais</button>
+      </div>
+    {% endif %}
+  {% endif %}
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-    $(document).ready(function(){
-        var nextPage = {% if page_obj.has_next %}{{ page_obj.next_page_number }}{% else %}null{% endif %};
+  // Acessibilidade: Enter/Espaço abre o card
+  $(document).on('keydown', '.empresa-card', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); window.location = this.dataset.href; }
+  });
 
-        $('#load-more-btn').click(function(){
-            if (!nextPage) return;
-
-            $.ajax({
-                url: "{% url 'suas_empresas' %}",
-                data: { page: nextPage },
-                dataType: 'json',
-                success: function(data){
-                    $('#empresas-container').append(data.html);
-                    if (data.has_next) {
-                        nextPage = data.next_page_number;
-                    } else {
-                        nextPage = null;
-                        $('#load-more-btn').hide();
-                    }
-                },
-                error: function(){
-                    alert('Erro ao carregar mais empresas.');
-                }
-            });
-        });
+  // "Carregar mais" via AJAX (rota de "suas_empresas")
+  $(function(){
+    const $btn = $('#load-more-btn'); if (!$btn.length) return;
+    let nextPage = {% if page_obj.has_next %}{{ page_obj.next_page_number }}{% else %}null{% endif %};
+    $btn.on('click', function(){
+      if(!nextPage) return;
+      $.ajax({
+        url: "{% url 'suas_empresas' %}",
+        data: { page: nextPage },
+        dataType: 'json',
+        success: function(data){
+          $('#empresas-container').append(data.html);
+          if(data.has_next){
+            nextPage = data.next_page_number;
+          } else {
+            nextPage = null; $btn.hide();
+          }
+        },
+        error: function(){ alert('Erro ao carregar mais empresas.'); }
+      });
     });
+  });
 </script>
 {% endblock %}

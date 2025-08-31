@@ -1,0 +1,249 @@
+{% extends 'base2.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Editar Empresa{% endblock %}
+
+{% block content %}
+<div class="container py-5 mt-5">
+  <h3 class="fw-bold mb-4">Editar Empresa</h3>
+
+  <form id="empresa-form" method="POST" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+
+    <div class="row g-3">
+
+      <!-- Nome -->
+      <div class="col-md-6">
+        <label for="{{ form.nome.id_for_label }}" class="form-label fw-semibold">Nome da Empresa</label>
+        {{ form.nome|add_class:"form-control form-control-lg"|attr:"placeholder:Digite o nome da empresa" }}
+      </div>
+
+      <!-- Categoria -->
+      <div class="col-md-6">
+        <label for="{{ form.categoria.id_for_label }}" class="form-label fw-semibold">Categoria</label>
+        {{ form.categoria|add_class:"form-select form-select-lg" }}
+      </div>
+
+      <!-- Descrição -->
+      <div class="col-12">
+        <label for="{{ form.descricao.id_for_label }}" class="form-label fw-semibold">Descrição</label>
+        {{ form.descricao|add_class:"form-control form-control-lg"|attr:"placeholder:Digite a descrição da empresa" }}
+        <small class="text-muted">Se deixar em branco, colocaremos uma descrição padrão automaticamente.</small>
+      </div>
+
+      <!-- Endereço -->
+      <div class="col-md-6">
+        <label for="{{ form.rua.id_for_label }}" class="form-label fw-semibold">Rua</label>
+        {{ form.rua|add_class:"form-control form-control-lg"|attr:"placeholder:Digite a rua" }}
+      </div>
+      <div class="col-md-6">
+        <label for="{{ form.bairro.id_for_label }}" class="form-label fw-semibold">Bairro</label>
+        {{ form.bairro|add_class:"form-control form-control-lg"|attr:"placeholder:Digite o bairro" }}
+      </div>
+      <div class="col-md-6">
+        <label for="{{ form.cidade.id_for_label }}" class="form-label fw-semibold">Cidade</label>
+        {{ form.cidade|add_class:"form-control form-control-lg"|attr:"placeholder:Digite a cidade" }}
+      </div>
+      <div class="col-md-3">
+        <label for="{{ form.numero.id_for_label }}" class="form-label fw-semibold">Número</label>
+        {{ form.numero|add_class:"form-control form-control-lg"|attr:"placeholder:Digite o número" }}
+      </div>
+      <div class="col-md-3">
+        <label for="{{ form.cep.id_for_label }}" class="form-label fw-semibold">CEP</label>
+        {{ form.cep|add_class:"form-control form-control-lg"|attr:"placeholder:Apenas números" }}
+      </div>
+
+      <!-- Contatos -->
+      <div class="col-md-6">
+        <label for="{{ form.telefone.id_for_label }}" class="form-label fw-semibold">Telefone</label>
+        {{ form.telefone|add_class:"form-control form-control-lg"|attr:"placeholder:Ex: 48912345678" }}
+        <div class="form-check form-check-inline mt-1">
+          {{ form.sem_telefone|add_class:"form-check-input" }}
+          <label class="form-check-label" for="{{ form.sem_telefone.id_for_label }}">Sem Telefone</label>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <label for="{{ form.email.id_for_label }}" class="form-label fw-semibold">Email de Contato</label>
+        {{ form.email|add_class:"form-control form-control-lg"|attr:"placeholder:contato@empresa.com" }}
+        <div class="form-check form-check-inline mt-1">
+          {{ form.sem_email|add_class:"form-check-input" }}
+          <label class="form-check-label" for="{{ form.sem_email.id_for_label }}">Sem Email</label>
+        </div>
+      </div>
+
+      <!-- Presença digital -->
+      <div class="col-12">
+        <label for="{{ form.site.id_for_label }}" class="form-label fw-semibold">Site (opcional)</label>
+        {{ form.site|add_class:"form-control form-control-lg"|attr:"placeholder:https://suaempresa.com" }}
+      </div>
+      <div class="col-md-6">
+        <label for="{{ form.facebook.id_for_label }}" class="form-label fw-semibold">Facebook (opcional)</label>
+        {{ form.facebook|add_class:"form-control form-control-lg"|attr:"placeholder:https://facebook.com/suaempresa" }}
+      </div>
+      <div class="col-md-6">
+        <label for="{{ form.instagram.id_for_label }}" class="form-label fw-semibold">Instagram (opcional)</label>
+        {{ form.instagram|add_class:"form-control form-control-lg"|attr:"placeholder:https://instagram.com/suaempresa" }}
+      </div>
+
+      <!-- Imagem: ATUAL x NOVA (lado a lado) -->
+      <div class="col-12">
+        <label for="{{ form.imagem.id_for_label }}" class="form-label fw-semibold">Imagem da Empresa</label>
+        {{ form.imagem|add_class:"form-control form-control-sm"|attr:"aria-describedby:help-imagem" }}
+        <small id="help-imagem" class="form-text text-muted fst-italic mt-1">Selecione um arquivo para trocar a imagem. A imagem só muda ao salvar.</small>
+
+        <div class="row g-3 mt-2" role="group" aria-label="Pré-visualizações de imagem">
+          <div class="col-md-6">
+            <div class="card h-100">
+              <div class="card-header fw-semibold">Imagem atual</div>
+              <div class="card-body text-center">
+                <img id="img-atual"
+                     src="{% if form.instance and form.instance.imagem %}{{ form.instance.imagem.url }}{% else %}{% static 'images/sem_imagem.png' %}{% endif %}"
+                     alt="Imagem atual da empresa"
+                     class="img-fluid rounded"
+                     style="max-height:260px;">
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="card h-100">
+              <div class="card-header fw-semibold">Nova imagem (pré-visualização)</div>
+              <div class="card-body text-center">
+                <img id="img-preview"
+                     src="{% static 'images/sem_imagem.png' %}"
+                     alt="Pré-visualização da nova imagem"
+                     class="img-fluid rounded"
+                     style="max-height:260px;">
+                <p class="text-muted small mt-2 mb-0">A imagem atual não muda até você salvar.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lat/Lng (hidden) -->
+      {{ form.latitude }} {{ form.longitude }}
+
+      <!-- Mapa -->
+      <div class="col-12 mt-3">
+        <label class="form-label fw-semibold" for="map">Selecione a localização no mapa</label>
+        <div id="map" tabindex="0" aria-label="Mapa de seleção de localização"
+             style="height: 380px; border-radius: 10px; background:#e5e7eb;"></div>
+        <small class="text-muted">Use as setas do teclado para mover o marcador (±0,0005) e Enter/Espaço para gravar a posição.</small>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2 mt-4">
+      <button type="submit" class="btn btn-primary">Salvar</button>
+      <a href="{% url 'suas_empresas' %}" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+{# ---- Dependências (se a base2 já inclui, pode remover estes 3) ---- #}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+// Evita duplicar inicialização se a página for re-renderizada
+if (!window.__editarEmpresaInit){
+  window.__editarEmpresaInit = true;
+
+  (function(){
+    function ready(fn){
+      if (document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', fn, {once:true}); }
+      else { fn(); }
+    }
+
+    ready(function(){
+
+      // ===== Pré-visualização da nova imagem =====
+      (function initPreview(){
+        const input = document.querySelector('input[name="imagem"]'); // robusto com ClearableFileInput
+        const prev  = document.getElementById('img-preview');
+        if (!input || !prev) return;
+        input.addEventListener('change', function(){
+          const f = this.files && this.files[0];
+          if (!f) return;
+          const reader = new FileReader();
+          reader.onload = (e)=> { prev.src = e.target.result; };
+          reader.readAsDataURL(f);
+        });
+      })();
+
+      // ===== Mapa (Leaflet) =====
+      (function initMap(){
+        if (typeof L === 'undefined'){
+          console.warn('Leaflet não carregado');
+          return;
+        }
+        const mapEl = document.getElementById('map');
+        if (!mapEl) return;
+
+        const latInput = document.getElementById('id_latitude');
+        const lngInput = document.getElementById('id_longitude');
+
+        const DEFAULT = { lat: -28.937100, lng: -49.484000 };
+        let lat = parseFloat(latInput && latInput.value);
+        let lng = parseFloat(lngInput && lngInput.value);
+        if (Number.isNaN(lat)) lat = DEFAULT.lat;
+        if (Number.isNaN(lng)) lng = DEFAULT.lng;
+
+        const map = L.map(mapEl, { keyboard:true }).setView([lat, lng], 14);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'© OpenStreetMap' }).addTo(map);
+
+        let marker = L.marker([lat, lng], { keyboard:true }).addTo(map);
+
+        function updateHidden(ll){
+          if (latInput) latInput.value = Number(ll.lat).toFixed(6);
+          if (lngInput) lngInput.value = Number(ll.lng).toFixed(6);
+        }
+
+        map.on('click', function(e){
+          marker.setLatLng(e.latlng);
+          updateHidden(e.latlng);
+        });
+
+        // Teclado: mover marcador
+        mapEl.addEventListener('keydown', function(e){
+          const step = 0.0005;
+          const p = marker.getLatLng();
+          let handled = true;
+          if (e.key === 'ArrowUp')    marker.setLatLng([p.lat + step, p.lng]);
+          else if (e.key === 'ArrowDown')  marker.setLatLng([p.lat - step, p.lng]);
+          else if (e.key === 'ArrowLeft')  marker.setLatLng([p.lat, p.lng - step]);
+          else if (e.key === 'ArrowRight') marker.setLatLng([p.lat, p.lng + step]);
+          else if (e.key === 'Enter' || e.key === ' ') { /* fixa */ }
+          else handled = false;
+
+          if (handled){ updateHidden(marker.getLatLng()); e.preventDefault(); }
+        });
+
+        // Sincroniza se lat/lng mudarem manualmente
+        [latInput, lngInput].forEach(function(inp){
+          if (!inp) return;
+          inp.addEventListener('change', function(){
+            const newLat = parseFloat(latInput && latInput.value);
+            const newLng = parseFloat(lngInput && lngInput.value);
+            const ll = L.latLng(
+              Number.isNaN(newLat) ? DEFAULT.lat : newLat,
+              Number.isNaN(newLng) ? DEFAULT.lng : newLng
+            );
+            marker.setLatLng(ll);
+            map.setView(ll, map.getZoom());
+          });
+        });
+
+        // Garante render correto
+        setTimeout(function(){ map.invalidateSize(); }, 0);
+        window.addEventListener('resize', function(){ map.invalidateSize(); });
+        document.addEventListener('shown.bs.tab', function(){ map.invalidateSize(); });
+      })();
+
+    });
+  })();
+}
+</script>
+{% endblock %}

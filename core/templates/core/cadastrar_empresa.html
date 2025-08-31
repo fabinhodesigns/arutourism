@@ -1,46 +1,34 @@
 {% extends 'base2.html' %}
-{% block title %}Cadastrar Empresa{% endblock %}
 {% load widget_tweaks %}
 {% load form_helpers %}
+{% load static %}
+
+{% block title %}Cadastrar Empresa{% endblock %}
 
 {% block content %}
-
 <style>
   .toast-notification{position:fixed;top:80px;right:20px;background:#28a745;color:#fff;padding:1rem 1.5rem;border-radius:8px;font-weight:500;box-shadow:0 4px 15px rgba(0,0,0,.2);z-index:1060;opacity:0;transform:translateY(-20px);pointer-events:none;transition:all .4s}
   .toast-notification.show{opacity:1;transform:translateY(0);pointer-events:auto}
   .message-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);display:flex;justify-content:center;align-items:flex-start;padding-top:50px;z-index:1050}
-  .message-box{background:#fff;padding:1.5rem 2rem;border-radius:12px;width:90%;max-width:520px;box-shadow:0 5px 20px rgba(0,0,0,.25);animation:slide-down .35s ease-out}
+  .message-box{background:#fff;padding:1.5rem 2rem;border-radius:12px;width:90%;max-width:560px;box-shadow:0 5px 20px rgba(0,0,0,.25);animation:slide-down .35s ease-out}
   @keyframes slide-down{from{transform:translateY(-30px);opacity:0}to{transform:translateY(0);opacity:1}}
-
-  /* abas */
-  .nav-tabs .nav-link{font-weight:600}
-  .nav-tabs .nav-link.active{color:#1e3c72}
-  .import-drop{border:2px dashed #cbd5e1;border-radius:12px;padding:2rem;background:#f8fafc;text-align:center}
-  .import-drop.drag{background:#eef2ff;border-color:#93c5fd}
-  .spinner-lg{width:2rem;height:2rem;border:.3rem solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite}
-  @keyframes spin{to{transform:rotate(360deg)}}
-
-  /* card uniform */
   .card-clean{border-radius:14px;box-shadow:0 10px 30px rgba(2,6,23,.06)}
-
-  .import-drop{border:2px dashed #cbd5e1;border-radius:12px;padding:2rem;background:#f8fafc;text-align:center}
+  .import-drop{border:2px dashed #cbd5e1;border-radius:12px;padding:2rem;background:#f8fafc;text-align:center;transition:.2s}
   .import-drop.drag{background:#eef2ff;border-color:#93c5fd}
-  .import-drop.invalid{background:#fff5f5;border-color:#dc3545}
-
-  /* deixa borda vermelha e fundo rosado no erro */
-#import #drop.border-danger { border-color:#dc3545 !important; background:#fff5f5; }
+  .import-drop.border-danger{background:#fff5f5;border-color:#dc3545}
+  .preview-wrap{border:1px dashed #dee2e6;border-radius:10px;padding:10px;display:flex;gap:14px;align-items:center}
+  .preview-wrap img{max-height:80px;border-radius:6px;object-fit:cover}
+  .sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 </style>
 
-<div id="notification-container"></div>
+<div id="notification-container" aria-live="polite" aria-atomic="true"></div>
 
 <div class="container py-5 mt-5">
   <div class="row justify-content-center">
     <div class="col-lg-10 col-md-11 col-12">
 
-      <!-- Título -->
       <h3 class="text-center fw-bold mb-4">Cadastro de Empresas</h3>
 
-      <!-- Abas -->
       <ul class="nav nav-tabs justify-content-center mb-4" id="cadTabs" role="tablist">
         <li class="nav-item" role="presentation">
           <button class="nav-link active" id="tab-individual" data-bs-toggle="tab" data-bs-target="#pane-individual" type="button" role="tab" aria-controls="pane-individual" aria-selected="true">
@@ -56,15 +44,15 @@
 
       <div class="tab-content">
 
-        <!-- PANE 1: CADASTRO INDIVIDUAL -->
+        <!-- CADASTRO INDIVIDUAL -->
         <div class="tab-pane fade show active" id="pane-individual" role="tabpanel" aria-labelledby="tab-individual">
           <div class="card card-clean p-4 bg-white">
 
             {% if form.errors %}
-            <div id="errors-from-server" class="mb-3">
+            <div id="errors-from-server" class="mb-3" role="alert" aria-live="assertive">
               <div class="message-box">
-                <h5>Por favor, corrija os seguintes erros:</h5>
-                <ul>
+                <h5 class="mb-2">Por favor, corrija os seguintes erros:</h5>
+                <ul class="m-0">
                   {% for field, error_list in form.errors.items %}
                     {% for error in error_list %}
                       <li>{% if field != '__all__' %}<strong>{{ form|get_field_verbose_name:field }}:</strong>{% endif %} {{ error }}</li>
@@ -75,13 +63,15 @@
             </div>
             {% endif %}
 
-            <form id="empresa-form" method="POST" enctype="multipart/form-data">
+            <form id="empresa-form" method="POST" enctype="multipart/form-data" novalidate>
               {% csrf_token %}
               <div class="row g-3">
+
                 <div class="col-md-6">
                   <label for="{{ form.nome.id_for_label }}" class="form-label fw-semibold">Nome da Empresa</label>
-                  {{ form.nome|add_class:"form-control form-control-lg" }}
+                  {{ form.nome|add_class:"form-control form-control-lg"|attr:"autocomplete:organization" }}
                 </div>
+
                 <div class="col-md-6">
                   <label for="{{ form.categoria.id_for_label }}" class="form-label fw-semibold">Categoria</label>
                   {{ form.categoria|add_class:"form-select form-select-lg" }}
@@ -89,43 +79,44 @@
 
                 <div class="col-12">
                   <label for="{{ form.descricao.id_for_label }}" class="form-label fw-semibold">Descrição</label>
-                  {{ form.descricao|add_class:"form-control form-control-lg" }}
+                  {{ form.descricao|add_class:"form-control form-control-lg"|attr:"rows:3" }}
                   <small class="text-muted">Se deixar em branco, colocaremos uma descrição padrão automaticamente.</small>
                 </div>
 
                 <div class="col-md-6">
                   <label for="{{ form.rua.id_for_label }}" class="form-label fw-semibold">Rua</label>
-                  {{ form.rua|add_class:"form-control form-control-lg" }}
+                  {{ form.rua|add_class:"form-control form-control-lg"|attr:"autocomplete:address-line1" }}
                 </div>
                 <div class="col-md-6">
                   <label for="{{ form.bairro.id_for_label }}" class="form-label fw-semibold">Bairro</label>
-                  {{ form.bairro|add_class:"form-control form-control-lg" }}
+                  {{ form.bairro|add_class:"form-control form-control-lg"|attr:"autocomplete:address-level3" }}
                 </div>
 
                 <div class="col-md-6">
                   <label for="{{ form.cidade.id_for_label }}" class="form-label fw-semibold">Cidade</label>
-                  {{ form.cidade|add_class:"form-control form-control-lg" }}
+                  {{ form.cidade|add_class:"form-control form-control-lg"|attr:"autocomplete:address-level2" }}
                 </div>
                 <div class="col-md-3">
                   <label for="{{ form.numero.id_for_label }}" class="form-label fw-semibold">Número</label>
-                  {{ form.numero|add_class:"form-control form-control-lg" }}
+                  {{ form.numero|add_class:"form-control form-control-lg"|attr:"inputmode:numeric" }}
                 </div>
                 <div class="col-md-3">
                   <label for="{{ form.cep.id_for_label }}" class="form-label fw-semibold">CEP</label>
-                  {{ form.cep|add_class:"form-control form-control-lg" }}
+                  {{ form.cep|add_class:"form-control form-control-lg"|attr:"inputmode:numeric" }}
                 </div>
 
                 <div class="col-md-6">
                   <label for="{{ form.telefone.id_for_label }}" class="form-label fw-semibold">Telefone</label>
-                  {{ form.telefone|add_class:"form-control form-control-lg" }}
+                  {{ form.telefone|add_class:"form-control form-control-lg"|attr:"inputmode:tel" }}
                   <div class="form-check form-check-inline mt-1">
                     {{ form.sem_telefone|add_class:"form-check-input" }}
                     <label class="form-check-label" for="{{ form.sem_telefone.id_for_label }}">Sem Telefone</label>
                   </div>
                 </div>
+
                 <div class="col-md-6">
                   <label for="{{ form.email.id_for_label }}" class="form-label fw-semibold">Email de Contato</label>
-                  {{ form.email|add_class:"form-control form-control-lg" }}
+                  {{ form.email|add_class:"form-control form-control-lg"|attr:"inputmode:email" }}
                   <div class="form-check form-check-inline mt-1">
                     {{ form.sem_email|add_class:"form-check-input" }}
                     <label class="form-check-label" for="{{ form.sem_email.id_for_label }}">Sem Email</label>
@@ -134,25 +125,72 @@
 
                 <div class="col-12">
                   <label for="{{ form.site.id_for_label }}" class="form-label fw-semibold">Site (opcional)</label>
-                  {{ form.site|add_class:"form-control form-control-lg" }}
+                  {{ form.site|add_class:"form-control form-control-lg"|attr:"inputmode:url" }}
                 </div>
 
                 <div class="col-12">
                   <label for="{{ form.imagem.id_for_label }}" class="form-label fw-semibold">Imagem da Empresa</label>
-                  {{ form.imagem|add_class:"form-control form-control-sm" }}
-                  <small class="form-text text-muted fst-italic mt-1">Você pode enviar uma imagem da empresa.</small>
+                  <div class="preview-wrap">
+                    <img id="img-preview" src="{% static 'images/sem_imagem.png' %}" alt="Pré-visualização da imagem" />
+                    {{ form.imagem|add_class:"form-control form-control-sm" }}
+                  </div>
+                  <small class="form-text text-muted fst-italic mt-1">Pré-visualize a imagem antes de salvar.</small>
                 </div>
 
                 {{ form.latitude }} {{ form.longitude }}
 
                 <div class="col-md-6">
-                  <label for="{{ form.facebook.id_for_label }}" class="form-label fw-semibold">Facebook</label>
-                  {{ form.facebook|add_class:"form-control form-control-lg" }}
+                  <label for="{{ form.facebook.id_for_label }}" class="form-label fw-semibold">Facebook (opcional)</label>
+                  {{ form.facebook|add_class:"form-control form-control-lg"|attr:"inputmode:url" }}
                 </div>
                 <div class="col-md-6">
-                  <label for="{{ form.instagram.id_for_label }}" class="form-label fw-semibold">Instagram</label>
-                  {{ form.instagram|add_class:"form-control form-control-lg" }}
+                  <label for="{{ form.instagram.id_for_label }}" class="form-label fw-semibold">Instagram (opcional)</label>
+                  {{ form.instagram|add_class:"form-control form-control-lg"|attr:"inputmode:url" }}
                 </div>
+
+                <!-- bloco avançado (mostra todos os campos adicionais do form, se existirem) -->
+                {% if form.fields.cnpj or form.fields.cadastrur or form.fields.digital or form.fields.maps_url or form.fields.app_url or form.fields.endereco_full %}
+                <div class="col-12">
+                  <hr class="my-3" aria-hidden="true">
+                  <h5 class="fw-semibold mb-2">Dados avançados</h5>
+                </div>
+                {% if form.fields.cnpj %}
+                <div class="col-md-4">
+                  <label for="{{ form.cnpj.id_for_label }}" class="form-label fw-semibold">CNPJ</label>
+                  {{ form.cnpj|add_class:"form-control form-control-lg"|attr:"inputmode:numeric" }}
+                </div>
+                {% endif %}
+                {% if form.fields.cadastrur %}
+                <div class="col-md-4">
+                  <label for="{{ form.cadastrur.id_for_label }}" class="form-label fw-semibold">Cadastur</label>
+                  {{ form.cadastrur|add_class:"form-control form-control-lg" }}
+                </div>
+                {% endif %}
+                {% if form.fields.endereco_full %}
+                <div class="col-md-4">
+                  <label for="{{ form.endereco_full.id_for_label }}" class="form-label fw-semibold">Endereço completo</label>
+                  {{ form.endereco_full|add_class:"form-control form-control-lg" }}
+                </div>
+                {% endif %}
+                {% if form.fields.digital %}
+                <div class="col-md-6">
+                  <label for="{{ form.digital.id_for_label }}" class="form-label fw-semibold">Digital (site/redes)</label>
+                  {{ form.digital|add_class:"form-control form-control-lg"|attr:"inputmode:url" }}
+                </div>
+                {% endif %}
+                {% if form.fields.maps_url %}
+                <div class="col-md-6">
+                  <label for="{{ form.maps_url.id_for_label }}" class="form-label fw-semibold">Google Maps (link)</label>
+                  {{ form.maps_url|add_class:"form-control form-control-lg"|attr:"inputmode:url" }}
+                </div>
+                {% endif %}
+                {% if form.fields.app_url %}
+                <div class="col-md-6">
+                  <label for="{{ form.app_url.id_for_label }}" class="form-label fw-semibold">App (link)</label>
+                  {{ form.app_url|add_class:"form-control form-control-lg"|attr:"inputmode:url" }}
+                </div>
+                {% endif %}
+                {% endif %}
 
                 <div class="col-12 mt-3">
                   <label class="form-label fw-semibold">Selecione a localização no mapa</label>
@@ -168,14 +206,14 @@
           </div>
         </div>
 
-        <!-- PANE 2: CADASTRO COM ARQUIVO -->
+        <!-- CADASTRO COM ARQUIVO -->
         <div class="tab-pane fade" id="pane-arquivo" role="tabpanel" aria-labelledby="tab-arquivo">
           <div class="card card-clean p-4 bg-white">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
               <h5 class="mb-0 fw-bold">Importar empresas por arquivo (.xlsx / .csv)</h5>
               <a class="btn btn-outline-secondary btn-sm" href="{% url 'download_template_empresas' %}">
                 Baixar modelo (.xlsx)
-            </a>
+              </a>
             </div>
 
             <p class="text-muted mb-3">
@@ -184,14 +222,15 @@
             </p>
 
             <form id="form-import" method="post" enctype="multipart/form-data" action="{% url 'importar_empresas_arquivo' %}">
-              <div id="import-errors" class="alert alert-danger mt-3 d-none"></div>
               {% csrf_token %}
-              <div id="drop" class="import-drop">
+              <div id="drop" class="import-drop" role="region" aria-label="Envio de arquivo por arrastar e soltar">
                 <input id="arquivo" name="arquivo" type="file" accept=".xlsx,.csv" hidden>
                 <p class="mb-2">Arraste e solte seu arquivo aqui, ou</p>
                 <button type="button" id="btn-select" class="btn btn-secondary">Selecionar arquivo</button>
-                <div id="fn" class="mt-2 small text-muted"></div>
+                <div id="fn" class="mt-2 small text-muted" aria-live="polite"></div>
               </div>
+
+              <div id="import-errors" class="alert alert-danger mt-3 d-none" role="alert" aria-live="assertive"></div>
 
               <div class="d-flex justify-content-end mt-3">
                 <button type="submit" class="btn btn-success">
@@ -207,11 +246,11 @@
   </div>
 </div>
 
-<!-- Loading fullscreen (reutilizável) -->
+<!-- Loading fullscreen -->
 <div id="loading-overlay" class="message-overlay" style="display:none;">
   <div class="message-box text-center">
     <div class="d-flex justify-content-center mb-3">
-      <div class="spinner-lg"></div>
+      <div class="spinner-border" role="status" aria-hidden="true"></div>
     </div>
     <h5 class="mb-2">Importando empresas…</h5>
     <p class="text-muted mb-0">Isso pode levar alguns segundos. Não feche a página.</p>
@@ -223,19 +262,31 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <script>
-
 (function(){
   // ====== MAPA ======
   let map, marker;
   const $map = $('#map');
   if ($map.length){
     map = L.map('map').setView([-28.9371, -49.4840], 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'&copy; OpenStreetMap' }).addTo(map);
     map.on('click', function(e){
       if (marker) map.removeLayer(marker);
-      marker = L.marker(e.latlng).addTo(map);
+      marker = L.marker(e.latlng, {keyboard:true}).addTo(map);
       $('#id_latitude').val(e.latlng.lat.toFixed(6));
       $('#id_longitude').val(e.latlng.lng.toFixed(6));
+    });
+  }
+
+  // ====== IMAGEM: preview ======
+  const inputImg = document.getElementById('id_imagem');
+  const imgPrev  = document.getElementById('img-preview');
+  if (inputImg && imgPrev){
+    inputImg.addEventListener('change', () => {
+      const f = inputImg.files && inputImg.files[0];
+      if (!f) return;
+      const url = URL.createObjectURL(f);
+      imgPrev.src = url;
+      imgPrev.onload = () => URL.revokeObjectURL(url);
     });
   }
 
@@ -253,35 +304,41 @@
     e.preventDefault();
     const form = this;
     const fd = new FormData(form);
-    const submitter = e.originalEvent.submitter; if (submitter){ fd.append(submitter.name, submitter.value); }
+    const submitter = e.originalEvent && e.originalEvent.submitter;
+    if (submitter) fd.append(submitter.name, submitter.value);
 
     let resp;
     try{
       resp = await fetch(form.action || window.location.pathname, {
-        method:'POST', body:fd, headers:{ 'X-CSRFToken':'{{ csrf_token }}', 'Accept':'application/json' }
+        method:'POST',
+        body:fd,
+        headers:{ 'X-CSRFToken':'{{ csrf_token }}', 'Accept':'application/json' }
       });
     }catch(err){
       return toast('Falha de conexão com o servidor. Tente novamente.', true);
     }
 
-    $('#notification-container').innerHTML = '';
+    document.getElementById('notification-container').innerHTML = '';
 
     if (resp.ok){
       const data = await resp.json();
       toast(data.message || 'Salvo com sucesso!');
       if (data.action === 'redirect'){
-        setTimeout(()=>location.href = data.redirect_url || '{% url "listar_empresas" %}', 1200);
+        setTimeout(()=>location.href = data.redirect_url || '{% url "listar_empresas" %}', 1000);
       } else {
-        form.reset(); if (marker){ map.removeLayer(marker); marker=null; }
+        form.reset();
+        if (marker){ map.removeLayer(marker); marker=null; }
+        if (imgPrev) imgPrev.src = "{% static 'images/sem_imagem.png' %}";
       }
     }else{
-      // mostra erros do form que vierem como HTML, ou mensagem padrão
+      // tenta pegar JSON amigável
       try{
         const payload = await resp.json();
         if (payload && payload.error){
           return toast(payload.error, true);
         }
       }catch(_){}
+      // se veio HTML (form com erros), mostramos bloco de erros
       const html = await resp.text();
       const doc = new DOMParser().parseFromString(html, 'text/html');
       const src = doc.querySelector('#errors-from-server');
@@ -296,6 +353,7 @@
   const btnSelect  = document.getElementById('btn-select');
   const fileNameEl = document.getElementById('fn');
   const loading    = document.getElementById('loading-overlay');
+  const importErrors = document.getElementById('import-errors');
 
   if (btnSelect) btnSelect.addEventListener('click', ()=> fileInput && fileInput.click());
   if (fileInput) fileInput.addEventListener('change', ()=> { fileNameEl.textContent = fileInput.files[0] ? fileInput.files[0].name : ''; });
@@ -311,7 +369,11 @@
 
   $('#form-import').on('submit', async function(e){
     e.preventDefault();
-    if (!fileInput || !fileInput.files.length){ toast('Selecione um arquivo primeiro.', true); return; }
+    if (!fileInput || !fileInput.files.length){
+      drop && drop.classList.add('border-danger');
+      showErrors(['Selecione um arquivo primeiro.']);
+      return;
+    }
 
     loading.style.display = 'flex';
     let resp;
@@ -320,59 +382,53 @@
       resp = await fetch(this.action, { method:'POST', body:fd, headers:{ 'X-CSRFToken':'{{ csrf_token }}', 'Accept':'application/json' } });
     }catch(err){
       loading.style.display = 'none';
-      drop && drop.classList.add('border-danger'); 
-      return toast('Falha de conexão com o servidor. Tente novamente.', true);
+      drop && drop.classList.add('border-danger');
+      showErrors(['Falha de conexão com o servidor. Tente novamente.']);
+      return;
     }
     loading.style.display = 'none';
 
-    // limpa estado visual
     drop && drop.classList.remove('border-danger');
+    hideErrors();
 
     if (resp.ok){
       const data = await resp.json();
       toast(`Importação concluída: ${data.importados} registro(s).`);
-      if (data.redirect){ setTimeout(()=> location.href = data.redirect_url || '{% url "listar_empresas" %}', 1200); }
+      if (data.redirect){ setTimeout(()=> location.href = data.redirect_url || '{% url "listar_empresas" %}', 1000); }
     }else{
-      // NÃO redireciona. Mostra lista de erros e marca o drop em vermelho.
       drop && drop.classList.add('border-danger');
       let payload = null;
       try{ payload = await resp.json(); }catch(_){}
-      if (payload && (payload.mensagens || payload.error)){
-        const msgs = payload.mensagens && payload.mensagens.length
-          ? `<ul>${payload.mensagens.slice(0,50).map(m=>`<li>${m}</li>`).join('')}</ul>`
-          : `<p>${payload.error}</p>`;
-        showModal('Ocorreram erros na importação', msgs + '<p class="mt-2 text-muted">Se o problema persistir, contate o suporte.</p>');
+      if (payload){
+        const msgs = payload.mensagens && payload.mensagens.length ? payload.mensagens : [payload.error || 'Falha ao importar.'];
+        showErrors(msgs);
       }else{
-        toast('Falha ao importar. Verifique o arquivo e tente novamente.', true);
+        showErrors(['Falha ao importar. Verifique o arquivo e tente novamente.']);
       }
     }
   });
 
-  // ====== util: toast + modal rápido ======
+  function showErrors(list){
+    if (!importErrors) return;
+    importErrors.classList.remove('d-none');
+    importErrors.innerHTML = `<strong>Ocorreram erros na importação:</strong><ul class="mt-2 mb-0">${list.slice(0,100).map(m=>`<li>${m}</li>`).join('')}</ul><p class="mt-2 mb-0 text-muted">Se o problema persistir, contate o suporte.</p>`;
+    importErrors.focus();
+  }
+  function hideErrors(){
+    if (!importErrors) return;
+    importErrors.classList.add('d-none');
+    importErrors.innerHTML = '';
+  }
+
+  // ====== util: toast ======
   function toast(message, danger){
     const t = document.createElement('div');
     t.className = 'toast-notification' + (danger?' bg-danger':'');
     t.textContent = message;
     document.getElementById('notification-container').appendChild(t);
-    setTimeout(()=> t.classList.add('show'), 50);
-    setTimeout(()=> { t.classList.remove('show'); setTimeout(()=> t.remove(), 400); }, 4500);
-  }
-
-  function showModal(title, html){
-    const wrap = document.createElement('div');
-    wrap.className = 'message-overlay';
-    wrap.innerHTML = `
-      <div class="message-box">
-        <h5 class="mb-3">${title}</h5>
-        <div class="small">${html}</div>
-        <div class="text-end mt-3">
-          <button type="button" class="btn btn-secondary" id="close-modal-imp">Fechar</button>
-        </div>
-      </div>`;
-    document.body.appendChild(wrap);
-    document.getElementById('close-modal-imp').addEventListener('click', ()=> wrap.remove());
+    setTimeout(()=> t.classList.add('show'), 30);
+    setTimeout(()=> { t.classList.remove('show'); setTimeout(()=> t.remove(), 300); }, 4200);
   }
 })();
-
 </script>
 {% endblock %}

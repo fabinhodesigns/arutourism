@@ -1,0 +1,19 @@
+{% if form.errors %}
+<div class="message-overlay">
+  <div class="message-box" role="alert" aria-live="assertive">
+    <h5 class="mb-2">Por favor, corrija os seguintes erros:</h5>
+    <ul>
+      {% for field, error_list in form.errors.items %}
+        {% for error in error_list %}
+          <li>
+            {% if field != '__all__' %}
+              <strong>{{ form[field].label }}:</strong>
+            {% endif %}
+            {{ error }}
+          </li>
+        {% endfor %}
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endif %}

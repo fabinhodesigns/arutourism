@@ -27,17 +27,27 @@
 
   {% if filtros_aplicados.q or filtros_aplicados.categoria or filtros_aplicados.cidade or filtros_aplicados.com_imagem_real or filtros_aplicados.meus %}
     <div class="d-flex align-items-center gap-2 mb-3">
-      <span class="fw-semibold">Filtros:</span>
-      <div class="d-flex flex-wrap gap-2">
-        {% if filtros_aplicados.q %}<span class="badge rounded-pill filter-pill">termo: {{ filtros_aplicados.q }}</span>{% endif %}
-        {% if filtros_aplicados.categoria %}<span class="badge rounded-pill filter-pill">categoria: {{ filtros_aplicados.categoria }}</span>{% endif %}
-        {% if filtros_aplicados.cidade %}<span class="badge rounded-pill filter-pill">cidade: {{ filtros_aplicados.cidade }}</span>{% endif %}
-        {% if filtros_aplicados.com_imagem_real %}<span class="badge rounded-pill filter-pill">com imagem</span>{% endif %}
-        {% if filtros_aplicados.meus %}<span class="badge rounded-pill filter-pill">minhas</span>{% endif %}
-      </div>
-      <button class="btn btn-sm btn-outline-secondary ms-2"
-              onclick="const b=document.getElementById('open-search'); b && b.click()">Editar filtros</button>
-    </div>
+  <span class="fw-semibold">Filtros:</span>
+  <div class="d-flex flex-wrap gap-2">
+    {% if filtros_legiveis.q %}
+      <span class="badge rounded-pill filter-pill">termo: {{ filtros_legiveis.q }}</span>
+    {% endif %}
+    {% if filtros_legiveis.categoria %}
+      <span class="badge rounded-pill filter-pill">categoria: {{ filtros_legiveis.categoria }}</span>
+    {% endif %}
+    {% if filtros_legiveis.cidade %}
+      <span class="badge rounded-pill filter-pill">cidade: {{ filtros_legiveis.cidade }}</span>
+    {% endif %}
+    {% if filtros_legiveis.com_imagem_real %}
+      <span class="badge rounded-pill filter-pill">com imagem</span>
+    {% endif %}
+    {% if filtros_legiveis.meus %}
+      <span class="badge rounded-pill filter-pill">minhas empresas</span>
+    {% endif %}
+  </div>
+  <button class="btn btn-sm btn-outline-secondary ms-2"
+          onclick="const b=document.getElementById('open-search'); b && b.click()">Editar filtros</button>
+</div>
   {% endif %}
 
   {% if page_obj.paginator.count == 0 %}

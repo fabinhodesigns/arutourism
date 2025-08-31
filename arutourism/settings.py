@@ -1,9 +1,18 @@
-from pathlib import Path
-import os
 from urllib.parse import urlparse
-
 import dj_database_url
 from dotenv import load_dotenv
+import os, sys
+from pathlib import Path
+import environ
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Inicializa django-environ
+env = environ.Env(
+    DEBUG=(bool, True),
+)
+# Lê o .env se existir
+environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 
 # --- Paths / .env ---
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -140,3 +149,31 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
     X_FRAME_OPTIONS = "DENY"
+
+# === DEBUG / HOSTS ===
+DEBUG = env("DEBUG")
+ALLOWED_HOSTS = [h.strip() for h in env("ALLOWED_HOSTS", default="").split(",") if h.strip()]
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in env("CSRF_TRUSTED_ORIGINS", default="").split(",") if o.strip()]
+
+# === Email ===
+EMAIL_BACKEND       = env("EMAIL_BACKEND", default="django.core.mail.backends.smtp.EmailBackend")
+EMAIL_HOST          = env("EMAIL_HOST", default="smtp.gmail.com")
+EMAIL_PORT          = env.int("EMAIL_PORT", default=587)
+EMAIL_USE_TLS       = env.bool("EMAIL_USE_TLS", default=True)
+EMAIL_USE_SSL       = env.bool("EMAIL_USE_SSL", default=False)  # Gmail: TLS em 587
+EMAIL_HOST_USER     = env("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
+DEFAULT_FROM_EMAIL  = env("DEFAULT_FROM_EMAIL", default=EMAIL_HOST_USER)
+SERVER_EMAIL        = env("SERVER_EMAIL", default=EMAIL_HOST_USER)
+EMAIL_TIMEOUT       = 20
+
+# Tempo de validade do link (em segundos) – ex.: 24h
+PASSWORD_RESET_TIMEOUT = 60 * 60 * 24
+
+# Para construir URLs absolutas corretamente nos e-mails
+DEFAULT_DOMAIN = "127.0.0.1:8000"  # em produção coloque seu domínio real
+DEFAULT_PROTOCOL = "http"          # ou "https" se tiver TLS
+
+TESTING = 'test' in sys.argv
+if TESTING:
+    STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'

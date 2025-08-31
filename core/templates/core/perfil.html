@@ -1,0 +1,96 @@
+{% extends 'base2.html' %}
+{% load static %}
+
+{% block title %}Meu Perfil{% endblock %}
+
+{% block content %}
+<style>
+  .profile-hero{ background:linear-gradient(135deg,#1e3c72,#2a5298); color:#fff; border-radius:18px; }
+  .avatar-lg{ width:104px; height:104px; object-fit:cover; border-radius:999px; border:3px solid #fff; }
+  .metric-card{ border-radius:14px; box-shadow:0 8px 24px rgba(0,0,0,.06); }
+</style>
+
+<div class="container py-5 mt-5">
+  <div class="profile-hero p-4 p-md-5 mb-4 d-flex align-items-center gap-3">
+    <img id="avatar-preview" class="avatar-lg"
+         src="{% if request.user.perfil and request.user.perfil.avatar %}{{ request.user.perfil.avatar.url }}{% else %}{% static 'images/user-placeholder.png' %}{% endif %}"
+         alt="Avatar do usuário">
+    <div>
+      <h3 class="mb-1">Olá, {{ request.user.first_name|default:request.user.username }}!</h3>
+      <div class="opacity-75">Entrou em {{ entrou_fmt }}</div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-md-4">
+      <div class="metric-card p-4 bg-white h-100">
+        <div class="d-flex align-items-center gap-3">
+          <i class="bi bi-building fs-3 text-primary"></i>
+          <div>
+            <div class="fw-semibold">Suas empresas</div>
+            <div class="fs-4 fw-bold">{{ empresas_qtd }}</div>
+          </div>
+        </div>
+        <a class="btn btn-outline-primary w-100 mt-3" href="{% url 'suas_empresas' %}">
+          Ver empresas
+        </a>
+      </div>
+    </div>
+
+    <div class="col-md-8">
+      <div class="metric-card p-4 bg-white h-100">
+        <h5 class="fw-bold mb-3">Editar Informações</h5>
+        {% if messages %}
+          {% for m in messages %}
+            <div class="alert alert-{{ m.tags }} mb-3">{{ m }}</div>
+          {% endfor %}
+        {% endif %}
+        <form method="post" enctype="multipart/form-data" class="row g-3" novalidate>
+          {% csrf_token %}
+          <div class="col-md-6">
+            <label class="form-label">Nome completo</label>
+            {{ form.full_name }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Nome de exibição</label>
+            {{ form.first_name }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">E-mail</label>
+            {{ form.email }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Telefone</label>
+            {{ form.telefone }}
+          </div>
+          <div class="col-12">
+            <label class="form-label">Foto/Avatar</label>
+            {{ form.avatar }}
+            <div class="form-text">Formatos comuns (JPG/PNG). Tamanho moderado recomendado.</div>
+          </div>
+          <div class="d-flex gap-2 mt-2">
+            <button class="btn btn-primary" type="submit">Salvar alterações</button>
+            <a class="btn btn-outline-secondary" href="{% url 'trocar_senha' %}">Trocar senha</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const file = document.querySelector('input[name="avatar"]');
+  const prev = document.getElementById('avatar-preview');
+  if (file && prev){
+    file.addEventListener('change', function(){
+      const f = this.files && this.files[0];
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = e => prev.src = e.target.result;
+      reader.readAsDataURL(f);
+    });
+  }
+})();
+</script>
+{% endblock %}
