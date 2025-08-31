@@ -31,6 +31,59 @@ from .forms import CustomLoginForm, EmpresaForm, UserRegistrationForm
 # Constantes / Mapeamentos
 # ============================================================
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# nomes aceitos (mantém os seus sinônimos)
+COLUMN_ALIASES = {
+    "cnpj":        ["cnpj"],
+    "categoria":   ["ramo atividade", "ramo de atividade", "categoria", "ramo"],
+    "nome":        ["nome", "razão social", "razao social"],
+    "bairro":      ["bairro", "endereço 2", "endereco 2"],
+    "endereco":    ["endereço", "endereco", "logradouro", "endereço completo", "endereco completo", "rua"],
+    "numero":      ["número", "numero", "nº", "nro"],
+    "cidade":      ["cidade", "municipio", "município"],
+    "cep":         ["cep", "c.e.p."],
+    "telefone":    ["telefone", "fone", "whatsapp"],
+    "contato":     ["contato direto", "contato"],
+    "digital":     ["digital", "site / redes", "redes sociais", "site", "instagram", "facebook"],
+    "cadastrur":   ["cadastur", "cadas tur", "cadastro tur"],
+    "maps":        ["maps", "google maps", "mapa", "link mapa"],
+    "app":         ["app", "aplicativo"],
+    "descricao":   ["descrição", "descricao", "observacao", "observação", "obs"],
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 COLUMN_ALIASES = {
     "cnpj":      ["cnpj"],
     "categoria": [
@@ -120,19 +173,16 @@ def _norm_text(s: str | None) -> str:
 def _digits(s: str | None) -> str:
     return re.sub(r"\D", "", s or "")
 
-def _extract_latlng_from_maps(url: str | None):
-    """Extrai lat/lng de links do Google Maps quando possível (opcional)."""
+def _extract_latlng_from_maps(url):
     try:
-        if not url:
-            return None, None
+        if not url: return None, None
         u = urlparse(url)
         qs = parse_qs(u.query)
         if "q" in qs and "," in qs["q"][0]:
             lat, lng = qs["q"][0].split(",")[:2]
             return float(lat), float(lng)
         m = re.search(r"@(-?\d+\.\d+),(-?\d+\.\d+)", url)
-        if m:
-            return float(m.group(1)), float(m.group(2))
+        if m: return float(m.group(1)), float(m.group(2))
     except Exception:
         pass
     return None, None
@@ -143,30 +193,37 @@ def _alias_match(key_norm: str, alias: str) -> bool:
     k = key_norm.split()
     return all(t in k for t in a) or key_norm == _norm_text(alias)
 
-def _build_header_map(raw_headers: list[str]) -> dict[int, str]:
-    """index_coluna -> chave_canônica (ordem livre, aceita variações)."""
+def _build_header_map(raw_headers):
     mapping = {}
     for idx, raw in enumerate(raw_headers or []):
-        key_norm = _norm_text(raw)
+        key = _norm_text(raw)
         for canon, alts in COLUMN_ALIASES.items():
-            if any(_alias_match(key_norm, alt) for alt in alts):
+            if key in (_norm_text(a) for a in alts):
                 mapping[idx] = canon
                 break
     return mapping
 
-def _read_rows_from_upload(file_obj, filename: str):
-    """Lê .xlsx (openpyxl) ou .csv (utf-8). Retorna: (headers, body)"""
+def _read_rows_from_upload(file_obj, filename):
     name = (filename or "").lower()
     if name.endswith(".csv"):
-        import csv, io
         data = file_obj.read().decode("utf-8", errors="ignore")
-        reader = csv.reader(io.StringIO(data))
+        reader = csv.reader(StringIO(data))
         rows = list(reader)
-        if not rows:
-            return [], []
-        headers = [str(c).strip() for c in rows[0]]
-        body = [[str(c).strip() for c in r] for r in rows[1:]]
-        return headers, body
+    else:
+        from openpyxl import load_workbook
+        wb = load_workbook(file_obj, data_only=True)
+        ws = wb.active
+        rows = []
+        for row in ws.iter_rows(values_only=True):
+            rows.append([(c if c is not None else "") for c in row])
+    if not rows: 
+        return [], []
+    headers = [str(c).strip() for c in rows[0]]
+    body    = [[str(c).strip() for c in r] for r in rows[1:]]
+    return headers, body
+
+def _norm_text(s): 
+    return re.sub(r"[\W_]+"," ",(s or "")).strip().lower()
 
     # XLSX
     from openpyxl import load_workbook
@@ -264,6 +321,15 @@ def _strip_parens(s: str | None) -> str:
 
 def _has_field(model_class, field_name: str) -> bool:
     return any(getattr(f, "name", None) == field_name for f in model_class._meta.get_fields())
+
+def _looks_url(s):
+    s = (s or "").strip()
+    return s.startswith("http://") or s.startswith("https://")
+
+def _first_url_in_text(s):
+    s = (s or "")
+    m = re.search(r'(https?://\S+)', s)
+    return m.group(1) if m else None
 
 
 
@@ -553,140 +619,180 @@ def download_template_empresas(request):
 
 @login_required
 @require_POST
+@transaction.atomic
 def importar_empresas_arquivo(request):
-    up = request.FILES.get("arquivo")
-    if not up:
-        return JsonResponse({"ok": False, "error": "Envie um arquivo .xlsx ou .csv."}, status=400)
-
     try:
+        up = request.FILES.get("arquivo")
+        if not up:
+            return JsonResponse({"ok": False, "error": "Envie um arquivo .xlsx ou .csv."}, status=400)
+
+        # Lê planilha/CSV
         headers_raw, rows = _read_rows_from_upload(up, up.name)
-    except Exception as e:
-        return JsonResponse({"ok": False, "error": f"Falha ao ler arquivo: {e}"}, status=400)
+        if not rows:
+            return JsonResponse({"ok": False, "error": "Arquivo vazio."}, status=400)
 
-    if not rows:
-        return JsonResponse({"ok": False, "error": "Arquivo vazio."}, status=400)
+        header_map = _build_header_map(headers_raw)
+        if not header_map:
+            return JsonResponse({"ok": False, "error": "Não reconheci nenhum cabeçalho na 1ª linha."}, status=400)
 
-    header_map = _build_header_map(headers_raw)
-    if not header_map:
-        return JsonResponse({"ok": False, "error": "Nenhum cabeçalho reconhecido."}, status=400)
+        created, errors = 0, 0
+        msgs = []
 
-    # Coordenadas default (evita NOT NULL em produção)
-    DEFAULT_LAT = -28.9371
-    DEFAULT_LNG = -49.4840
+        # Limites coerentes com core/models.py
+        MAX_NOME = 255
+        MAX_RUA = 255
+        MAX_BAIRRO = 100
+        MAX_CIDADE = 100
+        MAX_NUMERO = 10
+        MAX_CEP = 8
+        MAX_TEL = 20
+        MAX_CONTATO = 255
+        MAX_CADASTUR = 50
+        MAX_CNPJ = 18
+        MAX_URL = 10000  # teus URLFields aceitarão até o limite do banco; cortamos por segurança
 
-    created, errors = 0, 0
-    msgs = []
+        def clip(s, n): return (s or "")[:n]
+        def digits(s):  return re.sub(r"\D", "", s or "")
 
-    for line_no, r in enumerate(rows, start=2):  # 2 por causa do header
-        # coleta valores por chave canônica
-        data = {k: "" for k in COLUMN_ALIASES.keys()}
-        for idx, canon in header_map.items():
-            if idx < len(r):
-                data[canon] = (r[idx] or "").strip()
+        def looks_url(s: str) -> bool:
+            s = (s or "").strip().lower()
+            return s.startswith("http://") or s.startswith("https://")
 
-        # normalizações e defaults
-        nome       = (data.get("nome") or "").strip()
-        if not nome:
-            errors += 1
-            msgs.append(f"Linha {line_no}: NOME é obrigatório.")
-            continue
+        def first_url(text: str):
+            if not text:
+                return None
+            m = re.search(r'(https?://\S+)', text)
+            return m.group(1) if m else None
 
-        cat_name   = (data.get("categoria") or "Sem Categoria").strip()
-        bairro     = data.get("bairro") or ""
-        endereco   = data.get("endereco") or ""   # seu model usa 'rua'
-        numero     = data.get("numero") or ""
-        cidade     = (data.get("cidade") or "Araranguá").strip()
+        def extract_latlng_from_maps(url: str):
+            if not url:
+                return None, None
+            try:
+                # tenta ?q=-28.93,-49.48
+                from urllib.parse import urlparse, parse_qs
+                u = urlparse(url)
+                qs = parse_qs(u.query)
+                if "q" in qs and "," in qs["q"][0]:
+                    lat, lng = qs["q"][0].split(",")[:2]
+                    return float(lat), float(lng)
+                # tenta @-28.93,-49.48
+                m = re.search(r"@(-?\d+\.\d+),(-?\d+\.\d+)", url)
+                if m:
+                    return float(m.group(1)), float(m.group(2))
+            except Exception:
+                pass
+            return None, None
 
-        cep_raw    = _digits(data.get("cep"))
-        telefone   = (data.get("telefone") or "").strip()
-        contato    = (data.get("contato") or "").strip()
-        digital    = (data.get("digital") or "").strip()
-        cadastrur  = (data.get("cadastrur") or "").strip()
-        app_val    = (data.get("app") or "").strip()   # só atribui se existir no model
-        descricao  = (data.get("descricao") or LOREM_DEFAULT).strip()
-        cnpj       = _digits(data.get("cnpj"))
+        from core.models import Empresa, Categoria
 
-        # tenta lat/lng via link do Maps
-        lat, lng = _extract_latlng_from_maps(data.get("maps") or "")
-        if lat is None or lng is None:
-            lat, lng = DEFAULT_LAT, DEFAULT_LNG
+        for line_no, r in enumerate(rows, start=2):  # começa na linha 2 por causa do header
+            # Mapeia valores por chave canônica
+            data = {
+                'cnpj': '', 'categoria': '', 'nome': '', 'bairro': '', 'endereco': '', 'numero': '',
+                'cidade': '', 'cep': '', 'telefone': '', 'contato': '', 'digital': '', 'cadastrur': '',
+                'maps': '', 'app': '', 'descricao': ''
+            }
+            for idx, canon in header_map.items():
+                if idx < len(r):
+                    data[canon] = (r[idx] or "").strip()
 
-        # sanity: truncar para não estourar VARCHAR (ajuste tamanhos conforme o seu model)
-        cep       = (cep_raw or "")[:20]
-        telefone  = telefone[:50]
-        contato   = contato[:100]
-        digital   = digital[:200]
-        cadastrur = cadastrur[:50]
-        app_val   = app_val[:50]
-        bairro    = bairro[:100]
-        endereco  = endereco[:120]
-        numero    = numero[:20]
-        cidade    = cidade[:80]
-        descricao = descricao[:2000]
-        cnpj      = cnpj[:20]
+            # Campos básicos + cortes
+            nome      = clip(data.get("nome"), MAX_NOME)
+            if not nome:
+                errors += 1
+                msgs.append(f"Linha {line_no}: Nome ausente.")
+                continue
 
-        try:
-            # cada linha com seu savepoint — se falhar, não suja a transação das próximas
-            with transaction.atomic():
-                categoria, _ = Categoria.objects.get_or_create(nome=cat_name)
+            cat_name  = clip((data.get("categoria") or "Sem Categoria"), 100)
+            categoria, _ = Categoria.objects.get_or_create(nome=cat_name)
 
-                emp_kwargs = dict(
+            bairro    = clip(data.get("bairro"), MAX_BAIRRO)
+            endereco  = clip(data.get("endereco"), MAX_RUA)
+            numero    = clip(data.get("numero"), MAX_NUMERO)
+            cidade    = clip((data.get("cidade") or "Araranguá"), MAX_CIDADE)
+            cep       = clip(digits(data.get("cep")), MAX_CEP)
+
+            telefone  = clip(data.get("telefone"), MAX_TEL)
+            contato   = clip(data.get("contato"), MAX_CONTATO)
+            cadastrur = clip(data.get("cadastrur"), MAX_CADASTUR)
+            cnpj      = clip(digits(data.get("cnpj")), MAX_CNPJ)
+            descricao = (data.get("descricao") or
+                        "Descrição ainda não informada. Este estabelecimento está em "
+                        "processo de complementação de dados. Se você é o responsável, "
+                        "atualize as informações.")
+
+            # URLs
+            digital_txt = (data.get("digital") or "").strip()
+            site_url    = digital_txt if looks_url(digital_txt) else first_url(digital_txt)
+            site_url    = clip(site_url, MAX_URL) if site_url else None
+
+            maps_txt   = (data.get("maps") or "").strip()
+            maps_url   = clip(maps_txt, MAX_URL) if looks_url(maps_txt) else None
+
+            app_txt    = (data.get("app") or "").strip()
+            app_url    = clip(app_txt, MAX_URL) if looks_url(app_txt) else None
+
+            # Lat/Lng a partir do MAPS (ou default)
+            lat, lng = extract_latlng_from_maps(maps_txt)
+            lat = str(lat) if lat is not None else "-28.937100"
+            lng = str(lng) if lng is not None else "-49.484000"
+
+            # Grava com savepoint – se 1 falhar, continua as outras
+            sid = transaction.savepoint()
+            try:
+                emp = Empresa(
                     user=request.user,
                     nome=nome,
                     categoria=categoria,
                     descricao=descricao,
+                    rua=endereco,
                     bairro=bairro,
-                    rua=endereco,          # ajuste se seu campo tiver outro nome
-                    numero=numero,
                     cidade=cidade,
+                    numero=numero,
                     cep=cep,
+                    latitude=lat,          # CharField no model
+                    longitude=lng,         # idem
                     telefone=telefone,
-                    site=digital,
-                    latitude=lat,
-                    longitude=lng,
+                    contato_direto=contato,
+                    cadastrur=cadastrur,
                     cnpj=cnpj,
-                    contato_direto=contato if hasattr(Empresa, "contato_direto") else "",
-                    cadastrur=cadastrur if hasattr(Empresa, "cadastrur") else "",
+                    site=site_url,
+                    digital=site_url,      # se preferir não duplicar, remova esta linha
+                    maps_url=maps_url,
+                    app_url=app_url,
+                    # imagem usa o default do model
                 )
-                if hasattr(Empresa, "app"):
-                    emp_kwargs["app"] = app_val
-
-                emp = Empresa(**emp_kwargs)
                 emp.save()
+                transaction.savepoint_commit(sid)
+                created += 1
+            except Exception as e:
+                transaction.savepoint_rollback(sid)
+                errors += 1
+                msgs.append(f"Linha {line_no}: {e}")
 
-            created += 1
-
-        except IntegrityError as e:
-            errors += 1
-            msgs.append(f"Linha {line_no}: {e.__class__.__name__}: {e}")
-        except Exception as e:
-            errors += 1
-            msgs.append(f"Linha {line_no}: {e}")
-
-    # Se houver QUALQUER erro, devolve 400 para seu JS pintar em vermelho e NÃO redirecionar
-    if errors > 0 and created == 0:
-        return JsonResponse(
-            {"ok": False, "error": "Falha ao importar.", "mensagens": msgs[:50]},
-            status=400
-        )
-
-    # Parcialmente ok (algumas com erro): também devolvo 400 para você corrigir na hora
-    if errors > 0 and created > 0:
-        return JsonResponse(
-            {
+        # Se houve qualquer erro, devolve 400 para a UI pintar a caixa de upload em vermelho e NÃO redirecionar
+        if errors:
+            return JsonResponse({
                 "ok": False,
-                "error": f"Importação parcial: {created} ok • {errors} com erro.",
-                "mensagens": msgs[:50]
-            },
-            status=400
-        )
+                "importados": created,
+                "erros": errors,
+                "mensagens": msgs[:100],
+            }, status=400)
 
-    # Tudo ok
-    return JsonResponse({
-        "ok": True,
-        "importados": created,
-        "erros": 0,
-        "mensagens": [],
-        "redirect": True,
-        "redirect_url": "/empresas/",
-    })
+        # Tudo certo -> 200 e pode redirecionar
+        return JsonResponse({
+            "ok": True,
+            "importados": created,
+            "erros": 0,
+            "mensagens": [],
+            "redirect": True,
+            "redirect_url": "/empresas/",
+        })
+
+    except Exception as e:
+        # Nunca devolve 500 “mudo”: sempre explica
+        return JsonResponse({
+            "ok": False,
+            "error": "Erro inesperado ao importar. Tente novamente ou contate o suporte.",
+            "detalhe": str(e),
+        }, status=500)

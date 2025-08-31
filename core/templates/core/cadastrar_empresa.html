@@ -26,6 +26,9 @@
   .import-drop{border:2px dashed #cbd5e1;border-radius:12px;padding:2rem;background:#f8fafc;text-align:center}
   .import-drop.drag{background:#eef2ff;border-color:#93c5fd}
   .import-drop.invalid{background:#fff5f5;border-color:#dc3545}
+
+  /* deixa borda vermelha e fundo rosado no erro */
+#import #drop.border-danger { border-color:#dc3545 !important; background:#fff5f5; }
 </style>
 
 <div id="notification-container"></div>
@@ -218,229 +221,158 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 <script>
+
 (function(){
-
-  // ===== Util: toast =====
-  function toast(message, danger){
-    const t = document.createElement('div');
-    t.className = 'toast-notification' + (danger ? ' bg-danger' : '');
-    t.textContent = message;
-    document.getElementById('notification-container')?.appendChild(t);
-    setTimeout(()=> t.classList.add('show'), 30);
-    setTimeout(()=> { t.classList.remove('show'); setTimeout(()=> t.remove(), 350); }, 3500);
-  }
-
-  // ===== MAPA (só liga se existir) =====
+  // ====== MAPA ======
   let map, marker;
-  const $map = document.getElementById('map');
-  if ($map){
-    // Leaflet precisa estar carregado nessa página
-    try{
-      map = L.map('map').setView([-28.9371, -49.4840], 13);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-      map.on('click', function(e){
-        if (marker) map.removeLayer(marker);
-        marker = L.marker(e.latlng).addTo(map);
-        const lat = document.getElementById('id_latitude');
-        const lng = document.getElementById('id_longitude');
-        if (lat) lat.value = e.latlng.lat.toFixed(6);
-        if (lng) lng.value = e.latlng.lng.toFixed(6);
-      });
-    }catch(_e){ /* Leaflet não carregado nesta view; ignora */ }
-  }
-
-  // ===== Máscara simples de CEP =====
-  const cep = document.getElementById('id_cep');
-  if (cep){
-    cep.addEventListener('input', function(){
-      this.value = this.value.replace(/\D/g,'').slice(0,8);
+  const $map = $('#map');
+  if ($map.length){
+    map = L.map('map').setView([-28.9371, -49.4840], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    map.on('click', function(e){
+      if (marker) map.removeLayer(marker);
+      marker = L.marker(e.latlng).addTo(map);
+      $('#id_latitude').val(e.latlng.lat.toFixed(6));
+      $('#id_longitude').val(e.latlng.lng.toFixed(6));
     });
   }
 
-  // ===== Habilita/desabilita telefone/e-mail =====
+  // ====== máscaras simples ======
+  $('#id_cep').on('input', function(){ $(this).val($(this).val().replace(/\D/g,'').slice(0,8)); });
+
   function toggleFields(){
-    const tel = document.getElementById('id_telefone');
-    const semTel = document.getElementById('id_sem_telefone');
-    if (tel && semTel) tel.disabled = semTel.checked;
-
-    const em = document.getElementById('id_email');
-    const semEm = document.getElementById('id_sem_email');
-    if (em && semEm) em.disabled = semEm.checked;
+    $('#id_telefone').prop('disabled', $('#id_sem_telefone').is(':checked'));
+    $('#id_email').prop('disabled', $('#id_sem_email').is(':checked'));
   }
-  const semTel = document.getElementById('id_sem_telefone');
-  const semEm = document.getElementById('id_sem_email');
-  if (semTel) semTel.addEventListener('change', toggleFields);
-  if (semEm) semEm.addEventListener('change', toggleFields);
-  toggleFields();
+  $('#id_sem_telefone,#id_sem_email').on('change', toggleFields); toggleFields();
 
-  // ===== Cadastro Individual (AJAX) =====
-  const formEmpresa = document.getElementById('empresa-form');
-  if (formEmpresa){
-    formEmpresa.addEventListener('submit', async function(e){
-      e.preventDefault();
-      const fd = new FormData(formEmpresa);
-      const submitter = e.submitter;
-      if (submitter && submitter.name) fd.append(submitter.name, submitter.value);
+  // ====== SUBMIT AJAX (individual) ======
+  $('#empresa-form').on('submit', async function(e){
+    e.preventDefault();
+    const form = this;
+    const fd = new FormData(form);
+    const submitter = e.originalEvent.submitter; if (submitter){ fd.append(submitter.name, submitter.value); }
 
-      // limpa notificações
-      const notif = document.getElementById('notification-container');
-      if (notif) notif.innerHTML = '';
+    let resp;
+    try{
+      resp = await fetch(form.action || window.location.pathname, {
+        method:'POST', body:fd, headers:{ 'X-CSRFToken':'{{ csrf_token }}', 'Accept':'application/json' }
+      });
+    }catch(err){
+      return toast('Falha de conexão com o servidor. Tente novamente.', true);
+    }
 
-      try{
-        const resp = await fetch(formEmpresa.action || window.location.pathname, {
-          method:'POST',
-          body: fd,
-          headers: { 'X-CSRFToken': '{{ csrf_token }}' }
-        });
+    $('#notification-container').innerHTML = '';
 
-        if (resp.ok){
-          // deve vir JSON
-          const data = await resp.json();
-          toast(data.message || 'Salvo com sucesso!');
-          if (data.action === 'redirect'){
-            setTimeout(()=> location.href = data.redirect_url || "{% url 'listar_empresas' %}", 1200);
-          }else{
-            formEmpresa.reset();
-            if (marker && map){ map.removeLayer(marker); marker = null; }
-          }
-        }else{
-          // pode vir HTML (template com erros) ou JSON
-          const text = await resp.text();
-          try{
-            const asJson = JSON.parse(text);
-            toast(asJson.error || 'Erro ao salvar.', true);
-          }catch{
-            const doc = new DOMParser().parseFromString(text, 'text/html');
-            const src = doc.querySelector('#errors-from-server');
-            const container = document.getElementById('notification-container');
-            if (src && container){
-              container.innerHTML = src.innerHTML;
-            }else{
-              toast('Erro inesperado ao salvar.', true);
-            }
-          }
-        }
-      }catch(err){
-        toast('Falha de conexão. Tente novamente.', true);
+    if (resp.ok){
+      const data = await resp.json();
+      toast(data.message || 'Salvo com sucesso!');
+      if (data.action === 'redirect'){
+        setTimeout(()=>location.href = data.redirect_url || '{% url "listar_empresas" %}', 1200);
+      } else {
+        form.reset(); if (marker){ map.removeLayer(marker); marker=null; }
       }
-    });
-  }
+    }else{
+      // mostra erros do form que vierem como HTML, ou mensagem padrão
+      try{
+        const payload = await resp.json();
+        if (payload && payload.error){
+          return toast(payload.error, true);
+        }
+      }catch(_){}
+      const html = await resp.text();
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const src = doc.querySelector('#errors-from-server');
+      document.getElementById('notification-container').innerHTML = src ? src.innerHTML :
+        '<div class="message-overlay"><div class="message-box"><h5>Erro Inesperado</h5><p>Ocorreu um problema ao salvar.</p></div></div>';
+    }
+  });
 
-  // ===== Importação por arquivo (.xlsx/.csv) =====
+  // ====== IMPORTAÇÃO (arquivo) ======
   const drop = document.getElementById('drop');
-  const inp  = document.getElementById('arquivo');
-  const btn  = document.getElementById('btn-select');
-  const fn   = document.getElementById('fn');
-  const loading = document.getElementById('loading-overlay');
-  const formImport = document.getElementById('form-import');
+  const fileInput  = document.getElementById('arquivo');
+  const btnSelect  = document.getElementById('btn-select');
+  const fileNameEl = document.getElementById('fn');
+  const loading    = document.getElementById('loading-overlay');
 
-  // só liga tudo se os elementos existem nesta página
-  if (drop && inp && btn && fn && formImport){
+  if (btnSelect) btnSelect.addEventListener('click', ()=> fileInput && fileInput.click());
+  if (fileInput) fileInput.addEventListener('change', ()=> { fileNameEl.textContent = fileInput.files[0] ? fileInput.files[0].name : ''; });
 
-    function clearErrorBox(){
-      drop.classList.remove('drag');
-      drop.classList.remove('has-error');
-      drop.style.borderColor = '';
-      drop.style.background = '';
-    }
-    function markErrorBox(){
-      drop.classList.add('has-error');
-      // fallback visual imediato mesmo sem CSS extra:
-      drop.style.borderColor = '#dc3545';
-      drop.style.background = '#fff5f5';
-    }
-
-    btn.addEventListener('click', ()=> inp.click());
-    inp.addEventListener('change', ()=>{
-      fn.textContent = inp.files[0] ? inp.files[0].name : '';
-      clearErrorBox();
-    });
-
-    ['dragenter','dragover'].forEach(evt=>{
-      drop.addEventListener(evt, e=>{
-        e.preventDefault(); e.stopPropagation();
-        drop.classList.add('drag');
-      });
-    });
-    ['dragleave','drop'].forEach(evt=>{
-      drop.addEventListener(evt, e=>{
-        e.preventDefault(); e.stopPropagation();
-        drop.classList.remove('drag');
-      });
-    });
+  if (drop){
+    ['dragenter','dragover'].forEach(evt=> drop.addEventListener(evt, e=>{ e.preventDefault(); e.stopPropagation(); drop.classList.add('drag'); }));
+    ['dragleave','drop'].forEach(evt=> drop.addEventListener(evt, e=>{ e.preventDefault(); e.stopPropagation(); drop.classList.remove('drag'); }));
     drop.addEventListener('drop', e=>{
       const file = e.dataTransfer.files && e.dataTransfer.files[0];
-      if (file){
-        inp.files = e.dataTransfer.files;
-        fn.textContent = file.name;
-        clearErrorBox();
-      }
-    });
-
-    formImport.addEventListener('submit', async function(e){
-      e.preventDefault();
-      if (!inp.files.length){
-        markErrorBox();
-        toast('Selecione um arquivo primeiro.', true);
-        return;
-      }
-
-      if (loading) loading.style.display = 'flex';
-      try{
-        const fd = new FormData(formImport);
-        const resp = await fetch(formImport.action, {
-          method:'POST',
-          body: fd,
-          headers: { 'X-CSRFToken': '{{ csrf_token }}' }
-        });
-
-        if (loading) loading.style.display = 'none';
-
-        // Tenta JSON sempre; se não der, pega texto
-        let payload, raw = null;
-        try{
-          payload = await resp.json();
-        }catch(_e){
-          raw = await resp.text();
-        }
-
-        if (resp.ok && payload && (payload.ok === true || payload.importados !== undefined)){
-          const ok = payload.importados ?? 0;
-          const err = payload.erros ?? 0;
-          const msgs = payload.mensagens ?? [];
-          if (err > 0){
-            // não redireciona; mostra erros
-            markErrorBox();
-            const top = msgs.slice(0, 10).join(' | ');
-            toast(`Ocorreram erros (${err}). ${top}`, true);
-            return; // ← não redireciona em caso de erro
-          }
-          // sucesso: pode redirecionar
-          toast(`Importação concluída: ${ok} registro(s).`);
-          if (payload.redirect){
-            setTimeout(()=> location.href = payload.redirect_url || "{% url 'listar_empresas' %}", 1200);
-          }
-        }else{
-          // Falhou (400/500). Mostra mensagem vinda do servidor ou fallback
-          markErrorBox();
-          if (payload && (payload.error || payload.msg)){
-            toast(payload.error || payload.msg, true);
-          }else if (raw){
-            toast('Falha ao importar (servidor retornou erro).', true);
-            console.error('Import error raw response:', raw);
-          }else{
-            toast('Falha ao importar.', true);
-          }
-        }
-      }catch(err){
-        if (loading) loading.style.display = 'none';
-        markErrorBox();
-        toast('Falha de conexão ao importar.', true);
-      }
+      if (file && fileInput){ fileInput.files = e.dataTransfer.files; fileNameEl.textContent = file.name; }
     });
   }
 
+  $('#form-import').on('submit', async function(e){
+    e.preventDefault();
+    if (!fileInput || !fileInput.files.length){ toast('Selecione um arquivo primeiro.', true); return; }
+
+    loading.style.display = 'flex';
+    let resp;
+    try{
+      const fd = new FormData(this);
+      resp = await fetch(this.action, { method:'POST', body:fd, headers:{ 'X-CSRFToken':'{{ csrf_token }}', 'Accept':'application/json' } });
+    }catch(err){
+      loading.style.display = 'none';
+      drop && drop.classList.add('border-danger'); 
+      return toast('Falha de conexão com o servidor. Tente novamente.', true);
+    }
+    loading.style.display = 'none';
+
+    // limpa estado visual
+    drop && drop.classList.remove('border-danger');
+
+    if (resp.ok){
+      const data = await resp.json();
+      toast(`Importação concluída: ${data.importados} registro(s).`);
+      if (data.redirect){ setTimeout(()=> location.href = data.redirect_url || '{% url "listar_empresas" %}', 1200); }
+    }else{
+      // NÃO redireciona. Mostra lista de erros e marca o drop em vermelho.
+      drop && drop.classList.add('border-danger');
+      let payload = null;
+      try{ payload = await resp.json(); }catch(_){}
+      if (payload && (payload.mensagens || payload.error)){
+        const msgs = payload.mensagens && payload.mensagens.length
+          ? `<ul>${payload.mensagens.slice(0,50).map(m=>`<li>${m}</li>`).join('')}</ul>`
+          : `<p>${payload.error}</p>`;
+        showModal('Ocorreram erros na importação', msgs + '<p class="mt-2 text-muted">Se o problema persistir, contate o suporte.</p>');
+      }else{
+        toast('Falha ao importar. Verifique o arquivo e tente novamente.', true);
+      }
+    }
+  });
+
+  // ====== util: toast + modal rápido ======
+  function toast(message, danger){
+    const t = document.createElement('div');
+    t.className = 'toast-notification' + (danger?' bg-danger':'');
+    t.textContent = message;
+    document.getElementById('notification-container').appendChild(t);
+    setTimeout(()=> t.classList.add('show'), 50);
+    setTimeout(()=> { t.classList.remove('show'); setTimeout(()=> t.remove(), 400); }, 4500);
+  }
+
+  function showModal(title, html){
+    const wrap = document.createElement('div');
+    wrap.className = 'message-overlay';
+    wrap.innerHTML = `
+      <div class="message-box">
+        <h5 class="mb-3">${title}</h5>
+        <div class="small">${html}</div>
+        <div class="text-end mt-3">
+          <button type="button" class="btn btn-secondary" id="close-modal-imp">Fechar</button>
+        </div>
+      </div>`;
+    document.body.appendChild(wrap);
+    document.getElementById('close-modal-imp').addEventListener('click', ()=> wrap.remove());
+  }
 })();
+
 </script>
 {% endblock %}

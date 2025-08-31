@@ -10,7 +10,7 @@ class PerfilUsuario(models.Model):
         return self.user.username
 
 class Categoria(models.Model):
-    nome = models.CharField(max_length=100, unique=True)
+    nome = models.CharField(max_length=150, unique=True)  # + espaço p/ nomes longos
     def nome_limpo(self):
         return self.nome.split('(')[0].strip()
     def __str__(self):
@@ -25,37 +25,42 @@ class Empresa(models.Model):
 
     # identificação
     cnpj = models.CharField(max_length=18, blank=True, null=True, db_index=True)
-    cadastrur = models.CharField(max_length=50, blank=True, null=True)
+    cadastrur = models.CharField(max_length=80, blank=True, null=True)  # ↑ de 50 -> 80
 
     # descrição / endereço granular
-    descricao = models.TextField(blank=True, default='')
+    descricao = models.TextField(blank=True, default='')                 # já é “infinito” na prática
     rua = models.CharField(max_length=255, blank=True, default='')
-    bairro = models.CharField(max_length=100, blank=True, default='')
-    cidade = models.CharField(max_length=100, blank=True, default='')
-    numero = models.CharField(max_length=10, blank=True, default='')
-    cep = models.CharField(max_length=8, blank=True, default='')
-    endereco_full = models.CharField(max_length=255, blank=True, default='')  # caso venha endereço completo no arquivo
+    bairro = models.CharField(max_length=150, blank=True, default='')    # ↑ de 100 -> 150
+    cidade = models.CharField(max_length=150, blank=True, default='')    # ↑ de 100 -> 150
+    numero = models.CharField(max_length=20, blank=True, default='')     # ↑ de 10 -> 20 (ex.: “1500 Bloco B”)
+    cep = models.CharField(max_length=10, blank=True, default='')        # ↑ de 8 -> 10 (com hífen)
+    endereco_full = models.CharField(max_length=300, blank=True, default='')  # ↑ de 255 -> 300
 
-    # localização: obrigatória com default (centro de Araranguá)
-    latitude = models.CharField(max_length=50, null=False, blank=False, default='-28.937100')
-    longitude = models.CharField(max_length=50, null=False, blank=False, default='-49.484000')
+    # localização
+    # IMPORTANTE: deixe NULL permitido + default para evitar erro “NOT NULL” quando a importação vier sem lat/lng
+    latitude = models.CharField(max_length=50, null=True, blank=True, default='-28.937100')
+    longitude = models.CharField(max_length=50, null=True, blank=True, default='-49.484000')
 
     # contatos
-    telefone = models.CharField(max_length=20, blank=True, null=True)
+    telefone = models.CharField(max_length=60, blank=True, null=True)    # ↑ de 20 -> 60 (vários números)
     email = models.EmailField(blank=True, null=True)
-    contato_direto = models.CharField(max_length=255, blank=True, null=True)  # pessoa de contato
+    contato_direto = models.CharField(max_length=255, blank=True, null=True)
 
     # presença digital
-    site = models.URLField(blank=True, null=True)
-    digital = models.URLField(blank=True, null=True)     # link “Digital” (se vier na planilha)
-    maps_url = models.URLField(blank=True, null=True)    # link Google Maps (se vier na planilha “MAPS”)
-    app_url = models.URLField(blank=True, null=True)     # link de App (se vier na planilha “APP”)
-    facebook = models.URLField(blank=True, null=True)
-    instagram = models.URLField(blank=True, null=True)
+    # URLField corta em 200 chars por padrão — seus links do Maps podem estourar.
+    # Troque para TextField para não limitar, OU aumente max_length do URLField.
+    site = models.TextField(blank=True, null=True)        # antes URLField
+    digital = models.TextField(blank=True, null=True)     # antes URLField
+    maps_url = models.TextField(blank=True, null=True)    # antes URLField
+    app_url = models.TextField(blank=True, null=True)     # antes URLField
+    facebook = models.TextField(blank=True, null=True)    # antes URLField
+    instagram = models.TextField(blank=True, null=True)   # antes URLField
 
-    # imagem: OBRIGATÓRIA com default (arquivo local ou Cloudinary em prod)
-    imagem = models.ImageField(upload_to='empresas/', null=False, blank=False,
-                               default='placeholders/sem_imagem.png')
+    # imagem
+    imagem = models.ImageField(
+        upload_to='empresas/', null=False, blank=False,
+        default='placeholders/sem_imagem.png'
+    )
 
     # flags existentes
     sem_telefone = models.BooleanField(default=False)
@@ -69,8 +74,6 @@ class Empresa(models.Model):
             models.Index(fields=['cidade', 'bairro']),
             models.Index(fields=['cnpj']),
         ]
-        # evita nomes exatamente iguais do mesmo usuário (se quiser)
-        # unique_together = (('user', 'nome'),)
 
     def __str__(self):
         return self.nome
