@@ -421,24 +421,25 @@ def editar_empresa(request, empresa_id):
 
     wants_json = (
         'application/json' in (request.headers.get('Accept') or '')
-            or (request.headers.get('x-requested-with') == 'XMLHttpRequest')
+        or (request.headers.get('x-requested-with') == 'XMLHttpRequest')
     )
 
     if request.method == 'GET':
         form = EmpresaForm(instance=empresa)
-        return render(request, 'core/empresa_editar.html', {'form': form, 'empresa': empresa, 'is_editing': True})
+        # ✅ Garanta que este template exista no seu projeto
+        return render(request, 'core/empresa_editar.html', {
+            'form': form, 'empresa': empresa, 'is_editing': True
+        })
 
     form = EmpresaForm(request.POST, request.FILES, instance=empresa)
     if form.is_valid():
         form.save()
-
         if wants_json:
             return JsonResponse({
                 'status': 'success',
                 'message': f"A empresa '{empresa.nome}' foi atualizada com sucesso!",
                 'redirect_url': '/suas_empresas/'
             })
-
         messages.success(request, f"A empresa '{empresa.nome}' foi atualizada com sucesso!")
         return redirect('suas_empresas')
 
@@ -446,43 +447,9 @@ def editar_empresa(request, empresa_id):
         html = render_to_string('core/partials/form_errors.html', {'form': form}, request=request)
         return JsonResponse({'ok': False, 'error': 'Erros de validação no formulário.', 'html': html}, status=400)
 
-    return render(request, 'core/empresa_editar.html', {'form': form, 'empresa': empresa, 'is_editing': True}, status=400)
-    
-@login_required(login_url='/login/')
-def editar_empresa(request, empresa_id):
-    empresa = get_object_or_404(Empresa, id=empresa_id)
-    if empresa.user != request.user:
-        raise Http404("Você não tem permissão para editar esta empresa.")
-
-    if request.method == 'POST':
-        form = EmpresaForm(request.POST, request.FILES, instance=empresa)
-        if form.is_valid():
-            form.save()
-            # Se a requisição espera JSON, devolve JSON; senão redireciona clássico
-            if request.headers.get('accept','').lower().find('application/json') >= 0:
-                return JsonResponse({
-                    'status':'success',
-                    'message': f"A empresa '{empresa.nome}' foi atualizada com sucesso!",
-                    'action': 'redirect',
-                    'redirect_url': '/suas_empresas/'
-                })
-            messages.success(request, f"A empresa '{empresa.nome}' foi atualizada com sucesso!")
-            return redirect('suas_empresas')
-        else:
-            if request.headers.get('accept','').lower().find('application/json') >= 0:
-                # opcional: sumariza erros
-                errs = []
-                for f, lst in form.errors.items():
-                    for e in lst: errs.append(f"{f}: {e}")
-                return JsonResponse({'ok': False, 'error': "Erros de validação.", 'mensagens': errs}, status=400)
-
-    else:
-        form = EmpresaForm(instance=empresa)
-
-    # use o template dedicado de edição se criou (passo 3)
-    return render(request, 'core/editar_empresa.html', {'form': form, 'empresa': empresa})
-
-    return render(request, 'core/cadastrar_empresa.html', {'form': form, 'is_editing': True})
+    return render(request, 'core/templates/core/editar_empresa.html', {
+        'form': form, 'empresa': empresa, 'is_editing': True
+    }, status=400)
 
 @login_required(login_url='/login/')
 def suas_empresas(request):
@@ -833,13 +800,17 @@ def importar_empresas_arquivo(request):
     # ========== PERFIL DO USUÁRIO ==========
 @login_required
 def perfil(request):
-    perfil = getattr(request.user, 'perfil', None)
-    if perfil is None:
-        # cria se não existir
-        perfil = PerfilUsuario.objects.create(user=request.user, cpf_cnpj='')
+    # Garante que exista exatamente um PerfilUsuario para este user
+    perfil, _created = PerfilUsuario.objects.get_or_create(
+        user=request.user,
+        defaults={
+            "cpf_cnpj": "",
+            "full_name": request.user.get_full_name() or request.user.username,
+        },
+    )
 
     empresas_qtd = Empresa.objects.filter(user=request.user).count()
-    entrou_em = request.user.date_joined  # DateTimeField
+    entrou_em = request.user.date_joined
     entrou_fmt = timezone.localtime(entrou_em).strftime("%m/%Y")
 
     if request.method == 'POST':

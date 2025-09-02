@@ -73,9 +73,9 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "widget_tweaks",
     "cloudinary",
-    "cloudinary_storage",
-    "core",
-]
+    'core.apps.CoreConfig',
+    "cloudinary_storage"
+    ]
 
 # ===========================
 # Middleware
