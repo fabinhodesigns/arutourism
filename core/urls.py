@@ -45,6 +45,9 @@ urlpatterns = [
     # Reset por e-mail (padrão Django, páginas custom)
     path('senha/esqueci/', views.esqueci_senha_email, name='esqueci_senha_email'),
     path('senha/esqueci-cpf/', views.esqueci_senha_cpf, name='esqueci_senha_cpf'),
+    # core/urls.py
+    
+    path('perfil/alterar-cpf/', views.perfil_alterar_cpf, name='perfil_alterar_cpf'),
 ]
 
 # servir mídia local quando DEBUG=True

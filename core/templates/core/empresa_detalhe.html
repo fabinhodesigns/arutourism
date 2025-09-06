@@ -5,7 +5,7 @@
 
 {% block content %}
 <div class="container-fluid p-0 mb-5 mt-5"
-    style="position: relative; height: 500px; background-image: url('{{ empresa.imagem.url }}'); background-size: cover; background-position: center;">
+     style="position: relative; height: 500px; background-image: url('{% if empresa.imagem and empresa.imagem.name %}{{ empresa.imagem.url }}{% else %}{% static 'images/sem_imagem.png' %}{% endif %}'); background-size: cover; background-position: center;">
     <div class="d-flex justify-content-center align-items-center text-center"
         style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7);">
         <h1 class="text-white display-3 fw-bold">{{ empresa.nome }}</h1>
@@ -15,8 +15,11 @@
 <div class="container py-2">
     <div class="row">
         <div class="col-md-6 mr-2 mb-5">
-            <img src="{{ empresa.imagem.url }}" alt="{{ empresa.nome }}" class="img-fluid rounded mb-4"
-                style="object-fit: cover;">
+            {% if empresa.imagem %}
+                <img src="{{ empresa.imagem.url }}" alt="{{ empresa.nome }}" style="object-fit: cover;">
+            {% else %}
+                <img src="{% static 'core/images/sem_imagem.png' %}" alt="{{ empresa.nome }}" style="object-fit: cover;">
+            {% endif %}
             <div class="mb-4">
                 <span class="badge bg-primary">{{ empresa.categoria.nome }}</span>
 

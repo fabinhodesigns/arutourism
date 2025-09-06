@@ -11,6 +11,7 @@
 </style>
 
 <div class="container py-5 mt-5">
+  <!-- hero -->
   <div class="profile-hero p-4 p-md-5 mb-4 d-flex align-items-center gap-3">
     <img id="avatar-preview" class="avatar-lg"
          src="{% if request.user.perfil and request.user.perfil.avatar %}{{ request.user.perfil.avatar.url }}{% else %}{% static 'images/user-placeholder.png' %}{% endif %}"
@@ -22,10 +23,12 @@
   </div>
 
   <div class="row g-4">
+    <!-- COL ESQUERDA -->
     <div class="col-md-4">
-      <div class="metric-card p-4 bg-white h-100">
+      <!-- Métrica -->
+      <div class="metric-card p-4 bg-white mb-4">
         <div class="d-flex align-items-center gap-3">
-          <i class="bi bi-building fs-3 text-primary"></i>
+          <i class="bi bi-building fs-3 text-primary" aria-hidden="true"></i>
           <div>
             <div class="fw-semibold">Suas empresas</div>
             <div class="fs-4 fw-bold">{{ empresas_qtd }}</div>
@@ -35,42 +38,143 @@
           Ver empresas
         </a>
       </div>
+
+      <!-- RESUMO DOS DADOS -->
+      <div class="metric-card p-4 bg-white">
+        <h5 class="fw-bold mb-3">Seus dados</h5>
+        <dl class="row small mb-0">
+          <dt class="col-5 text-muted">Usuário</dt>
+          <dd class="col-7">{{ request.user.username }}</dd>
+
+          <dt class="col-5 text-muted">Nome completo</dt>
+          <dd class="col-7">{{ request.user.perfil.full_name|default:"—" }}</dd>
+
+          <dt class="col-5 text-muted">Nome de exibição</dt>
+          <dd class="col-7">{{ request.user.first_name|default:"—" }}</dd>
+
+          <dt class="col-5 text-muted">E-mail</dt>
+          <dd class="col-7">{{ request.user.email|default:"—" }}</dd>
+
+          <dt class="col-5 text-muted">Telefone</dt>
+          <dd class="col-7">{{ request.user.perfil.telefone|default:"—" }}</dd>
+
+          <dt class="col-5 text-muted">CPF</dt>
+          <dd class="col-7"><span data-cpf="{{ request.user.perfil.cpf_cnpj|default:'' }}"></span></dd>
+
+          <dt class="col-5 text-muted">Entrou em</dt>
+          <dd class="col-7">{{ entrou_fmt }}</dd>
+
+          <dt class="col-5 text-muted">Último login</dt>
+          <dd class="col-7">{{ request.user.last_login|date:"d/m/Y H:i"|default:"—" }}</dd>
+        </dl>
+      </div>
     </div>
 
+    <!-- COL DIREITA -->
     <div class="col-md-8">
-      <div class="metric-card p-4 bg-white h-100">
+      <!-- Form principal -->
+      <div class="metric-card p-4 bg-white mb-4">
         <h5 class="fw-bold mb-3">Editar Informações</h5>
         {% if messages %}
           {% for m in messages %}
-            <div class="alert alert-{{ m.tags }} mb-3">{{ m }}</div>
+            <div class="alert alert-{{ m.tags }} mb-3" role="alert">{{ m }}</div>
           {% endfor %}
         {% endif %}
+
         <form method="post" enctype="multipart/form-data" class="row g-3" novalidate>
           {% csrf_token %}
+
           <div class="col-md-6">
-            <label class="form-label">Nome completo</label>
+            <label class="form-label" for="{{ form.full_name.id_for_label }}">Nome completo</label>
             {{ form.full_name }}
           </div>
+
           <div class="col-md-6">
-            <label class="form-label">Nome de exibição</label>
+            <label class="form-label" for="{{ form.first_name.id_for_label }}">Nome de exibição</label>
             {{ form.first_name }}
           </div>
+
           <div class="col-md-6">
-            <label class="form-label">E-mail</label>
+            <label class="form-label" for="{{ form.email.id_for_label }}">E-mail</label>
             {{ form.email }}
           </div>
+
           <div class="col-md-6">
-            <label class="form-label">Telefone</label>
+            <label class="form-label" for="{{ form.telefone.id_for_label }}">Telefone</label>
             {{ form.telefone }}
           </div>
+
+          <!-- CPF somente leitura -->
+          <div class="col-md-6">
+            <label class="form-label" for="cpf_ro">CPF</label>
+            <input type="text" id="cpf_ro" class="form-control" value="{{ request.user.perfil.cpf_cnpj|default:'' }}" disabled aria-describedby="cpfReadHelp">
+            <div id="cpfReadHelp" class="form-text">Para alterar, use a seção “Dados sensíveis” abaixo.</div>
+          </div>
+
           <div class="col-12">
-            <label class="form-label">Foto/Avatar</label>
+            <label class="form-label" for="{{ form.avatar.id_for_label }}">Foto/Avatar</label>
             {{ form.avatar }}
             <div class="form-text">Formatos comuns (JPG/PNG). Tamanho moderado recomendado.</div>
           </div>
+
           <div class="d-flex gap-2 mt-2">
             <button class="btn btn-primary" type="submit">Salvar alterações</button>
             <a class="btn btn-outline-secondary" href="{% url 'trocar_senha' %}">Trocar senha</a>
+          </div>
+        </form>
+      </div>
+
+      <!-- Sub-form CPF -->
+      <div class="metric-card p-4 bg-white">
+        <h5 class="fw-bold mb-3">Dados sensíveis</h5>
+        <p class="text-muted mb-3" id="cpfHelp">Para alterar o CPF, confirme sua senha.</p>
+
+        <form method="post" action="{% url 'perfil_alterar_cpf' %}" class="row g-3" novalidate aria-describedby="cpfHelp">
+          {% csrf_token %}
+
+          <div class="col-md-6">
+            <label class="form-label" for="id_cpf_cnpj">Novo CPF</label>
+            {% if cpf_form %}
+              {{ cpf_form.cpf_cnpj }}
+              {% if cpf_form.cpf_cnpj.errors %}
+                <div class="invalid-feedback d-block">{{ cpf_form.cpf_cnpj.errors|join:", " }}</div>
+              {% endif %}
+            {% else %}
+              <input type="text" name="cpf_cnpj" id="id_cpf_cnpj" maxlength="14" class="form-control" placeholder="000.000.000-00" inputmode="numeric">
+            {% endif %}
+            <div class="form-text">Use apenas o seu CPF.</div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label" for="id_password">Senha atual</label>
+            <div class="input-group">
+              {% if cpf_form %}
+                {{ cpf_form.password }}
+              {% else %}
+                <input type="password" name="password" id="id_password" class="form-control" placeholder="Digite sua senha atual" autocomplete="current-password">
+              {% endif %}
+              <button class="btn btn-outline-secondary" type="button" data-toggle="pw" aria-label="Mostrar/ocultar senha">
+                <i class="bi bi-eye" aria-hidden="true"></i>
+              </button>
+            </div>
+            {% if cpf_form and cpf_form.password.errors %}
+              <div class="invalid-feedback d-block">{{ cpf_form.password.errors|join:", " }}</div>
+            {% endif %}
+            <div id="cpf-pass-help" class="form-text">
+              Esqueceu? <a href="{% url 'esqueci_senha_email' %}">Recuperar por e-mail</a> ou
+              <a href="{% url 'esqueci_senha_cpf' %}">pelo CPF</a>.
+            </div>
+          </div>
+
+          {% if cpf_form and cpf_form.non_field_errors %}
+            <div class="col-12">
+              <div class="alert alert-danger" role="alert">{{ cpf_form.non_field_errors }}</div>
+            </div>
+          {% endif %}
+
+          <div class="d-flex gap-2">
+            <button class="btn btn-primary" type="submit">Atualizar CPF</button>
+            <a class="btn btn-outline-secondary" href="{% url 'perfil' %}">Cancelar</a>
           </div>
         </form>
       </div>
@@ -78,8 +182,11 @@
   </div>
 </div>
 
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
 <script>
 (function(){
+  // Preview avatar
   const file = document.querySelector('input[name="avatar"]');
   const prev = document.getElementById('avatar-preview');
   if (file && prev){
@@ -89,6 +196,43 @@
       const reader = new FileReader();
       reader.onload = e => prev.src = e.target.result;
       reader.readAsDataURL(f);
+    });
+  }
+
+  // Mostrar/ocultar senha
+  document.querySelectorAll('button[data-toggle="pw"]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const input = btn.previousElementSibling;
+      if (!input) return;
+      const isText = input.getAttribute('type') === 'text';
+      input.setAttribute('type', isText ? 'password' : 'text');
+      btn.innerHTML = isText ? '<i class="bi bi-eye" aria-hidden="true"></i>'
+                             : '<i class="bi bi-eye-slash" aria-hidden="true"></i>';
+    });
+  });
+
+  // Formatar CPF (exibe bonito no resumo e no campo readonly)
+  function fmtCpf(v){
+    v = (v||'').toString().replace(/\D/g,'').slice(0,11);
+    return v.length===11 ? v.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/,'$1.$2.$3-$4') : v;
+  }
+  const cpfRo = document.getElementById('cpf_ro');
+  if (cpfRo) cpfRo.value = fmtCpf(cpfRo.value);
+
+  document.querySelectorAll('[data-cpf]').forEach(span=>{
+    const raw = span.getAttribute('data-cpf')||'';
+    span.textContent = fmtCpf(raw) || '—';
+  });
+
+  // Máscara no input "novo CPF"
+  const cpfInput = document.getElementById('id_cpf_cnpj');
+  if (cpfInput){
+    cpfInput.addEventListener('input', function(){
+      let v = this.value.replace(/\D/g,'').slice(0,11);
+      if (v.length > 9)  v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/, '$1.$2.$3-$4');
+      else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{0,3})/, '$1.$2.$3');
+      else if (v.length > 3) v = v.replace(/(\d{3})(\d{0,3})/, '$1.$2');
+      this.value = v;
     });
   }
 })();

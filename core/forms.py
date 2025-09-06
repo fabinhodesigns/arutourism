@@ -5,9 +5,10 @@ from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from django.core.exceptions import ValidationError
-
+from django.utils.translation import gettext_lazy as _
+from .models import PerfilUsuario
+from .utils.cpf import is_valid_cpf, only_digits
 from .models import Categoria, PerfilUsuario, Empresa
-
 
 # ---------------------------------------------------------
 # Helpers de normalização/limites (evitam erros no banco)
@@ -27,6 +28,21 @@ def _clip_model(model_cls, field_name: str, value):
     if maxlen and isinstance(value, str):
         return value[:maxlen]
     return value
+
+def _only_digits(s: str) -> str:
+    import re
+    return re.sub(r"\D", "", s or "")
+
+def _cpf_is_valid(cpf_digits: str) -> bool:
+    # Valida CPF (11 dígitos) com dígitos verificadores
+    d = _only_digits(cpf_digits)
+    if len(d) != 11 or d == d[0] * 11:
+        return False
+    def dv(nums):
+        s = sum(int(n) * w for n, w in zip(nums, range(len(nums)+1, 1, -1)))
+        r = (s * 10) % 11
+        return 0 if r == 10 else r
+    return dv(d[:9]) == int(d[9]) and dv(d[:10]) == int(d[10])
 
 
 # =========================================================
@@ -441,4 +457,48 @@ class EmpresaFullForm(forms.ModelForm):
         ]:
             cleaned[field] = _clip_model(Empresa, field, cleaned.get(field))
 
+        return cleaned
+    
+class CpfUpdateForm(forms.Form):
+    cpf_cnpj = forms.CharField(
+        label="CPF",
+        max_length=14,  # com máscara
+        widget=forms.TextInput(attrs={
+            "class": "form-control",
+            "placeholder": "000.000.000-00",
+            "inputmode": "numeric",
+            "autocomplete": "off",
+            "aria-describedby": "cpfHelp",
+        }),
+    )
+    password = forms.CharField(
+        label="Senha atual",
+        widget=forms.PasswordInput(attrs={
+            "class": "form-control",
+            "placeholder": "Digite sua senha atual",
+            "autocomplete": "current-password",
+        }),
+    )
+
+    def __init__(self, user, *args, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+
+    def clean_cpf_cnpj(self):
+        raw = self.cleaned_data.get("cpf_cnpj", "")
+        digits = _only_digits(raw)
+        if len(digits) != 11 or not _cpf_is_valid(digits):
+            raise forms.ValidationError("CPF inválido.")
+        # unicidade amigável (além da constraint do banco)
+        qs = PerfilUsuario.objects.filter(cpf_cnpj=digits).exclude(user=self.user)
+        if qs.exists():
+            raise forms.ValidationError("Este CPF já está em uso por outra conta.")
+        return digits
+
+    def clean(self):
+        cleaned = super().clean()
+        pwd = cleaned.get("password")
+        if not pwd or not self.user.check_password(pwd):
+            # mensagem neutra para não vazar se a conta existe
+            raise forms.ValidationError("Não foi possível validar sua senha.")
         return cleaned

@@ -6,6 +6,8 @@ import io
 import re
 from io import BytesIO, StringIO
 from urllib.parse import urlparse, parse_qs
+from .forms import ProfileForm, CpfUpdateForm
+from .models import PerfilUsuario, Empresa
 
 from django.views.decorators.http import require_http_methods
 from django.contrib import messages
@@ -14,7 +16,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm  # (mantido se você usar em outro lugar)
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from django.db.models import Q
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -24,6 +26,8 @@ from django.views.decorators.http import require_GET, require_POST
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
 import csv, io
+
+
 
 # core/views.py (imports)
 
@@ -251,7 +255,8 @@ def _get_reader(file_obj, filename: str):
     return rows
 
 
-def _digits(s: str) -> str:
+def _only_digits(s: str) -> str:
+    import re
     return re.sub(r"\D", "", s or "")
 
 def _to_float(val, default=None):
@@ -415,40 +420,53 @@ def cadastrar_empresa(request):
 @login_required(login_url='/login/')
 @require_http_methods(["GET", "POST"])
 def editar_empresa(request, empresa_id):
-    empresa = get_object_or_404(Empresa, id=empresa_id)
-    if empresa.user != request.user:
+    empresa = get_object_or_404(Empresa, pk=empresa_id)
+
+    # Permissão: apenas o dono edita
+    if empresa.user_id != request.user.id:
         raise Http404("Você não tem permissão para editar esta empresa.")
 
+    # Suporte a AJAX/JSON
     wants_json = (
         'application/json' in (request.headers.get('Accept') or '')
-        or (request.headers.get('x-requested-with') == 'XMLHttpRequest')
+        or request.headers.get('x-requested-with') == 'XMLHttpRequest'
     )
 
     if request.method == 'GET':
         form = EmpresaForm(instance=empresa)
-        # ✅ Garanta que este template exista no seu projeto
-        return render(request, 'core/empresa_editar.html', {
-            'form': form, 'empresa': empresa, 'is_editing': True
+        # Reutiliza o template que já existe para cadastro/edição
+        return render(request, 'core/cadastrar_empresa.html', {
+            'form': form,
+            'empresa': empresa,
+            'is_editing': True
         })
 
+    # POST
     form = EmpresaForm(request.POST, request.FILES, instance=empresa)
     if form.is_valid():
-        form.save()
+        empresa = form.save()
         if wants_json:
             return JsonResponse({
                 'status': 'success',
-                'message': f"A empresa '{empresa.nome}' foi atualizada com sucesso!",
-                'redirect_url': '/suas_empresas/'
+                'message': f"A empresa “{empresa.nome}” foi atualizada com sucesso!",
+                'redirect_url': reverse('suas_empresas')
             })
-        messages.success(request, f"A empresa '{empresa.nome}' foi atualizada com sucesso!")
+        messages.success(request, f"A empresa “{empresa.nome}” foi atualizada com sucesso!")
         return redirect('suas_empresas')
 
+    # Erros de validação
     if wants_json:
         html = render_to_string('core/partials/form_errors.html', {'form': form}, request=request)
-        return JsonResponse({'ok': False, 'error': 'Erros de validação no formulário.', 'html': html}, status=400)
+        return JsonResponse(
+            {'ok': False, 'error': 'Erros de validação no formulário.', 'html': html},
+            status=400
+        )
 
-    return render(request, 'core/templates/core/editar_empresa.html', {
-        'form': form, 'empresa': empresa, 'is_editing': True
+    # Fallback HTML com status 400
+    return render(request, 'core/cadastrar_empresa.html', {
+        'form': form,
+        'empresa': empresa,
+        'is_editing': True
     }, status=400)
 
 @login_required(login_url='/login/')
@@ -800,18 +818,13 @@ def importar_empresas_arquivo(request):
     # ========== PERFIL DO USUÁRIO ==========
 @login_required
 def perfil(request):
-    # Garante que exista exatamente um PerfilUsuario para este user
-    perfil, _created = PerfilUsuario.objects.get_or_create(
+    perfil, _ = PerfilUsuario.objects.get_or_create(
         user=request.user,
-        defaults={
-            "cpf_cnpj": "",
-            "full_name": request.user.get_full_name() or request.user.username,
-        },
+        defaults={"cpf_cnpj": "", "full_name": request.user.get_full_name() or request.user.username},
     )
 
     empresas_qtd = Empresa.objects.filter(user=request.user).count()
-    entrou_em = request.user.date_joined
-    entrou_fmt = timezone.localtime(entrou_em).strftime("%m/%Y")
+    entrou_fmt = timezone.localtime(request.user.date_joined).strftime("%m/%Y")
 
     if request.method == 'POST':
         form = ProfileForm(request.POST, request.FILES, instance=perfil, user=request.user)
@@ -822,12 +835,14 @@ def perfil(request):
     else:
         form = ProfileForm(instance=perfil, user=request.user)
 
+    cpf_form = CpfUpdateForm(request.user)  # <<< importante
+
     return render(request, 'core/perfil.html', {
         'form': form,
+        'cpf_form': cpf_form,
         'empresas_qtd': empresas_qtd,
         'entrou_fmt': entrou_fmt,
     })
-
 
 # ========== TROCAR SENHA (AUTENTICADO) ==========
 @login_required
@@ -896,3 +911,42 @@ def esqueci_senha_cpf(request):
         form = StartResetByCpfForm()
 
     return render(request, 'core/password_reset_cpf.html', {'form': form})
+
+@login_required
+@require_POST
+def perfil_alterar_cpf(request):
+    # bloqueia a linha do perfil para evitar race (Postgres)
+    with transaction.atomic():
+        perfil = (PerfilUsuario.objects
+                  .select_for_update()
+                  .select_related('user')
+                  .get(user=request.user))
+
+        form = CpfUpdateForm(request.user, request.POST)
+        if not form.is_valid():
+            # volta para a tela de perfil com os erros do sub-form
+            form_profile = ProfileForm(instance=perfil, user=request.user)
+            empresas_qtd = Empresa.objects.filter(user=request.user).count()
+            entrou_fmt = timezone.localtime(request.user.date_joined).strftime("%m/%Y")
+            return render(request, 'core/perfil.html', {
+                'form': form_profile,
+                'cpf_form': form,
+                'empresas_qtd': empresas_qtd,
+                'entrou_fmt': entrou_fmt,
+            }, status=400)
+
+        novo_cpf = form.cleaned_data["cpf_cnpj"]
+        if _only_digits(perfil.cpf_cnpj) == novo_cpf:
+            messages.info(request, "O CPF informado é igual ao atual.")
+            return redirect('perfil')
+
+        try:
+            perfil.cpf_cnpj = novo_cpf  # armazenamos apenas dígitos
+            perfil.save(update_fields=["cpf_cnpj"])
+        except IntegrityError:
+            # proteção dupla caso passe da validação (condição de corrida)
+            messages.error(request, "Este CPF já está em uso por outra conta.")
+            return redirect('perfil')
+
+    messages.success(request, "CPF atualizado com sucesso!")
+    return redirect('perfil')
