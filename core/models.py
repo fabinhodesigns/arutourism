@@ -59,10 +59,8 @@ class Empresa(models.Model):
     instagram = models.TextField(blank=True, null=True)   # antes URLField
 
     # imagem
-    imagem = models.ImageField(
-        upload_to='empresas/', null=False, blank=False,
-        default='placeholders/sem_imagem.png'
-    )
+    imagem = models.ImageField(upload_to='empresas/', null=True, blank=True)
+
 
     # flags existentes
     sem_telefone = models.BooleanField(default=False)
