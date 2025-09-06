@@ -1,0 +1,11 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+{% block content %}
+  <h1>{{ title }}</h1>
+  <form method="post" style="margin-top:1rem">{% csrf_token %}
+    <input type="hidden" name="confirm" value="yes">
+    <input type="hidden" name="action" value="{{ action }}">
+    <button type="submit" class="deletelink">Sim, apagar tudo</button>
+    <a href=".." class="button cancel-link">Cancelar</a>
+  </form>
+{% endblock %}

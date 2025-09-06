@@ -634,7 +634,6 @@ def importar_empresas_arquivo(request):
         if not up:
             return JsonResponse({"ok": False, "error": "Envie um arquivo .xlsx ou .csv."}, status=400)
 
-        # Lê planilha/CSV
         headers_raw, rows = _read_rows_from_upload(up, up.name)
         if not rows:
             return JsonResponse({"ok": False, "error": "Arquivo vazio."}, status=400)
@@ -643,22 +642,10 @@ def importar_empresas_arquivo(request):
         if not header_map:
             return JsonResponse({"ok": False, "error": "Não reconheci nenhum cabeçalho na 1ª linha."}, status=400)
 
-        created, errors = 0, 0
-        msgs = []
+        from core.models import Empresa, Categoria
+        import re
 
-        # Limites coerentes com core/models.py
-        MAX_NOME = 255
-        MAX_RUA = 255
-        MAX_BAIRRO = 100
-        MAX_CIDADE = 100
-        MAX_NUMERO = 10
-        MAX_CEP = 8
-        MAX_TEL = 20
-        MAX_CONTATO = 255
-        MAX_CADASTUR = 50
-        MAX_CNPJ = 18
-        MAX_URL = 10000  # teus URLFields aceitarão até o limite do banco; cortamos por segurança
-
+        # ---------- helpers ----------
         def clip(s, n): return (s or "")[:n]
         def digits(s):  return re.sub(r"\D", "", s or "")
 
@@ -676,14 +663,12 @@ def importar_empresas_arquivo(request):
             if not url:
                 return None, None
             try:
-                # tenta ?q=-28.93,-49.48
                 from urllib.parse import urlparse, parse_qs
                 u = urlparse(url)
                 qs = parse_qs(u.query)
                 if "q" in qs and "," in qs["q"][0]:
                     lat, lng = qs["q"][0].split(",")[:2]
                     return float(lat), float(lng)
-                # tenta @-28.93,-49.48
                 m = re.search(r"@(-?\d+\.\d+),(-?\d+\.\d+)", url)
                 if m:
                     return float(m.group(1)), float(m.group(2))
@@ -691,10 +676,58 @@ def importar_empresas_arquivo(request):
                 pass
             return None, None
 
-        from core.models import Empresa, Categoria
+        def norm_cat_name(s: str) -> str:
+            s = (s or "").strip()
+            s = re.sub(r"\s+", " ", s)
+            return s
 
-        for line_no, r in enumerate(rows, start=2):  # começa na linha 2 por causa do header
-            # Mapeia valores por chave canônica
+        # ---------- limites (espelham o model) ----------
+        MAX_NOME = 255
+        MAX_RUA = 255
+        MAX_BAIRRO = 100
+        MAX_CIDADE = 100
+        MAX_NUMERO = 10
+        MAX_CEP = 8
+        MAX_TEL = 20
+        MAX_CONTATO = 255
+        MAX_CADASTUR = 50
+        MAX_CNPJ = 18
+        MAX_URL = 10000
+
+        created, errors = 0, 0
+        msgs = []
+
+        # ---------- cache de categorias ----------
+        default_cat, _ = Categoria.objects.get_or_create(nome="Sem Categoria")
+        cat_cache = {norm_cat_name(c.nome).casefold(): c.id for c in Categoria.objects.all()}
+
+        def resolve_categoria_id(raw_value: str | None) -> int:
+            """Aceita ID numérico ou nome; cria se não existir; devolve ID."""
+            if raw_value:
+                raw = raw_value.strip()
+                # Se veio um ID numérico válido
+                if raw.isdigit():
+                    try:
+                        c = Categoria.objects.get(pk=int(raw))
+                        return c.id
+                    except Categoria.DoesNotExist:
+                        pass
+                # Nome
+                name = norm_cat_name(raw)
+                if name:
+                    key = name.casefold()
+                    cid = cat_cache.get(key)
+                    if cid:
+                        return cid
+                    # cria e coloca no cache
+                    c = Categoria.objects.create(nome=name)
+                    cat_cache[key] = c.id
+                    return c.id
+            # fallback
+            return default_cat.id
+
+        # ---------- loop das linhas ----------
+        for line_no, r in enumerate(rows, start=2):
             data = {
                 'cnpj': '', 'categoria': '', 'nome': '', 'bairro': '', 'endereco': '', 'numero': '',
                 'cidade': '', 'cep': '', 'telefone': '', 'contato': '', 'digital': '', 'cadastrur': '',
@@ -704,15 +737,15 @@ def importar_empresas_arquivo(request):
                 if idx < len(r):
                     data[canon] = (r[idx] or "").strip()
 
-            # Campos básicos + cortes
-            nome      = clip(data.get("nome"), MAX_NOME)
+            nome = clip(data.get("nome"), MAX_NOME)
             if not nome:
                 errors += 1
                 msgs.append(f"Linha {line_no}: Nome ausente.")
                 continue
 
-            cat_name  = clip((data.get("categoria") or "Sem Categoria"), 100)
-            categoria, _ = Categoria.objects.get_or_create(nome=cat_name)
+            # categoria (robusta)
+            cat_raw = data.get("categoria") or "Sem Categoria"
+            categoria_id = resolve_categoria_id(clip(cat_raw, 100))
 
             bairro    = clip(data.get("bairro"), MAX_BAIRRO)
             endereco  = clip(data.get("endereco"), MAX_RUA)
@@ -725,9 +758,9 @@ def importar_empresas_arquivo(request):
             cadastrur = clip(data.get("cadastrur"), MAX_CADASTUR)
             cnpj      = clip(digits(data.get("cnpj")), MAX_CNPJ)
             descricao = (data.get("descricao") or
-                        "Descrição ainda não informada. Este estabelecimento está em "
-                        "processo de complementação de dados. Se você é o responsável, "
-                        "atualize as informações.")
+                         "Descrição ainda não informada. Este estabelecimento está em "
+                         "processo de complementação de dados. Se você é o responsável, "
+                         "atualize as informações.")
 
             # URLs
             digital_txt = (data.get("digital") or "").strip()
@@ -740,35 +773,33 @@ def importar_empresas_arquivo(request):
             app_txt    = (data.get("app") or "").strip()
             app_url    = clip(app_txt, MAX_URL) if looks_url(app_txt) else None
 
-            # Lat/Lng a partir do MAPS (ou default)
+            # Lat/Lng
             lat, lng = extract_latlng_from_maps(maps_txt)
             lat = str(lat) if lat is not None else "-28.937100"
             lng = str(lng) if lng is not None else "-49.484000"
 
-            # Grava com savepoint – se 1 falhar, continua as outras
             sid = transaction.savepoint()
             try:
                 emp = Empresa(
                     user=request.user,
                     nome=nome,
-                    categoria=categoria,
+                    categoria_id=categoria_id,     # <— vínculo direto, sem chance de ficar nulo
                     descricao=descricao,
                     rua=endereco,
                     bairro=bairro,
                     cidade=cidade,
                     numero=numero,
                     cep=cep,
-                    latitude=lat,          # CharField no model
-                    longitude=lng,         # idem
+                    latitude=lat,
+                    longitude=lng,
                     telefone=telefone,
                     contato_direto=contato,
                     cadastrur=cadastrur,
                     cnpj=cnpj,
                     site=site_url,
-                    digital=site_url,      # se preferir não duplicar, remova esta linha
+                    digital=site_url,              # remova se não quiser espelhar
                     maps_url=maps_url,
                     app_url=app_url,
-                    # imagem usa o default do model
                 )
                 emp.save()
                 transaction.savepoint_commit(sid)
@@ -778,7 +809,6 @@ def importar_empresas_arquivo(request):
                 errors += 1
                 msgs.append(f"Linha {line_no}: {e}")
 
-        # Se houve qualquer erro, devolve 400 para a UI pintar a caixa de upload em vermelho e NÃO redirecionar
         if errors:
             return JsonResponse({
                 "ok": False,
@@ -787,7 +817,6 @@ def importar_empresas_arquivo(request):
                 "mensagens": msgs[:100],
             }, status=400)
 
-        # Tudo certo -> 200 e pode redirecionar
         return JsonResponse({
             "ok": True,
             "importados": created,
@@ -798,7 +827,6 @@ def importar_empresas_arquivo(request):
         })
 
     except Exception as e:
-        # Nunca devolve 500 “mudo”: sempre explica
         return JsonResponse({
             "ok": False,
             "error": "Erro inesperado ao importar. Tente novamente ou contate o suporte.",
