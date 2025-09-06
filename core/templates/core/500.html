@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <title>Erro interno (500)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    html,body{height:100%;margin:0}
+    body{display:flex;align-items:center;justify-content:center;
+         background:linear-gradient(135deg,#2E3192,#1b8dff);color:#111;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+    .card{background:#fff;max-width:640px;margin:16px;border-radius:14px;padding:28px;box-shadow:0 10px 30px rgba(0,0,0,.15);text-align:center}
+    .code{font-size:72px;line-height:1;margin:0;color:#1b8dff;font-weight:800}
+    .h{margin:.5rem 0 0;font-size:1.5rem}
+    .p{color:#6c757d;margin:8px 0 20px}
+    .row{display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap}
+    .btn{display:inline-block;padding:10px 16px;border-radius:8px;text-decoration:none}
+    .btn-primary{background:#1e3c72;color:#fff}
+    .btn-outline{border:1px solid #ced4da;color:#333;background:#fff}
+  </style>
+</head>
+<body>
+  <div class="card" role="document" aria-labelledby="err-title">
+    <div class="code">500</div>
+    <h1 id="err-title" class="h">Opa! Algo deu errado por aqui</h1>
+    <p class="p">Nosso time já foi notificado. Tente novamente em instantes.</p>
+    <div class="row">
+      <a class="btn btn-primary" href="/">Voltar à Home</a>
+      <a class="btn btn-outline" href="javascript:location.reload()">Tentar novamente</a>
+    </div>
+  </div>
+</body>
+</html>
