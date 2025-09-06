@@ -1,17 +1,18 @@
+{# core/partials/form_errors.html #}
 {% if form.errors %}
-<div class="message-overlay">
-  <div class="message-box" role="alert" aria-live="assertive">
+<div id="errors-from-server" class="message-overlay" role="alert" aria-live="assertive">
+  <div class="message-box">
     <h5 class="mb-2">Por favor, corrija os seguintes erros:</h5>
-    <ul>
-      {% for field, error_list in form.errors.items %}
-        {% for error in error_list %}
-          <li>
-            {% if field != '__all__' %}
-              <strong>{{ form[field].label }}:</strong>
-            {% endif %}
-            {{ error }}
-          </li>
-        {% endfor %}
+    <ul class="m-0">
+      {# erros de campo #}
+      {% for field in form.visible_fields %}
+        {% if field.errors %}
+          <li><strong>{{ field.label }}:</strong> {{ field.errors|join:", " }}</li>
+        {% endif %}
+      {% endfor %}
+      {# erros gerais (non field) #}
+      {% for err in form.non_field_errors %}
+        <li>{{ err }}</li>
       {% endfor %}
     </ul>
   </div>

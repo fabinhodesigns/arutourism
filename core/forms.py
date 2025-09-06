@@ -203,6 +203,10 @@ class CustomLoginForm(forms.Form):
 #  - usado nas suas telas atuais de cadastrar/editar
 # =========================================================
 class EmpresaForm(forms.ModelForm):
+    # imagem opcional na edição
+    imagem = forms.ImageField(required=False, label="Imagem da Empresa")
+
+    # flags amigáveis
     sem_telefone = forms.BooleanField(required=False, label="Sem Telefone")
     sem_email = forms.BooleanField(required=False, label="Sem Email")
 
@@ -211,26 +215,27 @@ class EmpresaForm(forms.ModelForm):
         fields = [
             'nome', 'categoria', 'descricao',
             'rua', 'bairro', 'cidade', 'numero', 'cep',
-            'telefone', 'email', 'site', 'imagem',
+            'telefone', 'email',
+            'site', 'facebook', 'instagram',
+            'imagem',
             'latitude', 'longitude',
-            'facebook', 'instagram',
             'sem_telefone', 'sem_email',
         ]
         widgets = {
             'nome': forms.TextInput(attrs={'placeholder': 'Digite o nome da empresa'}),
             'categoria': forms.Select(),
-            'descricao': forms.Textarea(attrs={'placeholder': 'Digite a descrição da empresa', 'rows': 4}),
-            'rua': forms.TextInput(attrs={'placeholder': 'Digite a rua'}),
-            'bairro': forms.TextInput(attrs={'placeholder': 'Digite o bairro'}),
-            'cidade': forms.TextInput(attrs={'placeholder': 'Digite a cidade'}),
-            'numero': forms.TextInput(attrs={'placeholder': 'Digite o número'}),
+            'descricao': forms.Textarea(attrs={'placeholder': 'Descreva a empresa', 'rows': 4}),
+            'rua': forms.TextInput(attrs={'placeholder': 'Rua'}),
+            'bairro': forms.TextInput(attrs={'placeholder': 'Bairro'}),
+            'cidade': forms.TextInput(attrs={'placeholder': 'Cidade'}),
+            'numero': forms.TextInput(attrs={'placeholder': 'Número'}),
             'cep': forms.TextInput(attrs={'placeholder': 'Apenas números'}),
             'telefone': forms.TextInput(attrs={'placeholder': 'Ex: 48912345678'}),
             'email': forms.EmailInput(attrs={'placeholder': 'contato@empresa.com'}),
             'site': forms.URLInput(attrs={'placeholder': 'https://suaempresa.com'}),
-            'imagem': forms.ClearableFileInput(),
             'facebook': forms.URLInput(attrs={'placeholder': 'https://facebook.com/suaempresa'}),
             'instagram': forms.URLInput(attrs={'placeholder': 'https://instagram.com/suaempresa'}),
+            'imagem': forms.ClearableFileInput(),
             'latitude': forms.HiddenInput(),
             'longitude': forms.HiddenInput(),
         }
@@ -244,38 +249,38 @@ class EmpresaForm(forms.ModelForm):
             'numero': 'Número',
             'cep': 'CEP',
             'telefone': 'Telefone',
-            'email': 'Email de Contato',
-            'site': 'Site (opcional)',
-            'imagem': 'Imagem da Empresa',
-            'facebook': 'Facebook (opcional)',
-            'instagram': 'Instagram (opcional)',
+            'email': 'E-mail de contato',
+            'site': 'Site',
+            'facebook': 'Facebook',
+            'instagram': 'Instagram',
+            'imagem': 'Imagem',
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # ordena categorias alfabeticamente e mostra opção vazia
+
+        # Categorias em ordem alfabética + opção vazia
         self.fields['categoria'].queryset = Categoria.objects.all().order_by('nome')
         self.fields['categoria'].empty_label = "Selecione uma categoria"
 
-        # classes padrão (mantendo compat com seu template)
+        # Classes padrão (combina com seu template)
         for name, field in self.fields.items():
             if isinstance(field.widget, forms.Select):
-                field.widget.attrs.update({'class': 'form-select form-select-lg'})
+                field.widget.attrs.setdefault('class', 'form-select form-select-lg')
             elif not isinstance(field.widget, (forms.CheckboxInput, forms.HiddenInput, forms.ClearableFileInput)):
-                field.widget.attrs.update({'class': 'form-control form-control-lg'})
+                field.widget.attrs.setdefault('class', 'form-control form-control-lg')
 
-        # se não vier lat/lng no GET/Instance, aplica default do model (evita NOT NULL)
+        # Defaults para lat/lng (evita 400 por campo vazio)
         if not self.initial.get('latitude'):
             self.initial['latitude'] = Empresa._meta.get_field('latitude').default
         if not self.initial.get('longitude'):
             self.initial['longitude'] = Empresa._meta.get_field('longitude').default
 
-    # ------------ Validações pontuais ------------
+    # ------------ validações de campos isolados ------------
     def clean_numero(self):
         numero = self.cleaned_data.get('numero')
         if numero and not numero.isdigit():
             raise ValidationError("O número deve conter apenas dígitos.")
-        # garante que cabe no banco
         return _clip_model(Empresa, 'numero', numero)
 
     def clean_cep(self):
@@ -286,57 +291,61 @@ class EmpresaForm(forms.ModelForm):
         telefone = self.cleaned_data.get('telefone')
         if telefone:
             tel = _digits(telefone)
-            # aceita 10 ou 11 (com DDD)
+            # aceita 10 ou 11 dígitos (com DDD)
             if len(tel) not in (10, 11):
                 raise ValidationError("O telefone deve ter 10 ou 11 dígitos (com DDD).")
             return _clip_model(Empresa, 'telefone', tel)
         return telefone
 
+    def clean_site(self):
+        return _clip_model(Empresa, 'site', self.cleaned_data.get('site'))
+
     def clean_facebook(self):
         url = self.cleaned_data.get('facebook')
         if url and 'facebook.com' not in url.lower():
-            raise ValidationError("Por favor, insira um link válido do Facebook.")
+            raise ValidationError("Informe uma URL válida do Facebook.")
         return _clip_model(Empresa, 'facebook', url)
 
     def clean_instagram(self):
         url = self.cleaned_data.get('instagram')
         if url and 'instagram.com' not in url.lower():
-            raise ValidationError("Por favor, insira um link válido do Instagram.")
+            raise ValidationError("Informe uma URL válida do Instagram.")
         return _clip_model(Empresa, 'instagram', url)
 
-    def clean_site(self):
-        url = self.cleaned_data.get('site')
-        # sem exigir http/https — quem valida é o URLField; só corta
-        return _clip_model(Empresa, 'site', url)
-
+    # ----------------------- clean global -------------------
     def clean(self):
         cleaned = super().clean()
 
-        # defaults de latitude/longitude se vierem vazios
+        # latitude/longitude default se vazias
         if not cleaned.get('latitude'):
             cleaned['latitude'] = Empresa._meta.get_field('latitude').default
         if not cleaned.get('longitude'):
             cleaned['longitude'] = Empresa._meta.get_field('longitude').default
 
-        sem_telefone = cleaned.get('sem_telefone')
-        sem_email = cleaned.get('sem_email')
-        telefone = cleaned.get('telefone')
-        email = cleaned.get('email')
+        # Regras "sem_*"
+        telefone = (cleaned.get('telefone') or '').strip()
+        email = (cleaned.get('email') or '').strip()
+        sem_tel = cleaned.get('sem_telefone')
+        sem_mail = cleaned.get('sem_email')
 
-        # Regras suaves: exige telefone/email somente se a flag correspondente NÃO estiver marcada
-        if not sem_telefone and not telefone:
-            self.add_error('telefone', 'Este campo é obrigatório ou marque "Sem Telefone".')
+        if not sem_tel and not telefone:
+            self.add_error('telefone', 'Obrigatório ou marque "Sem Telefone".')
+        if not sem_mail and not email:
+            self.add_error('email', 'Obrigatório ou marque "Sem Email".')
 
-        if not sem_email and not email:
-            self.add_error('email', 'Este campo é obrigatório ou marque "Sem Email".')
-
-        # se marcar “sem_*”, garante que salvaremos vazio
-        if sem_telefone:
-            cleaned['telefone'] = ''
-        if sem_email:
+        if sem_tel:
+            cleaned['telefone'] = ''  # garante vazio no save
+        if sem_mail:
             cleaned['email'] = ''
 
-        # clipping extra para garantir limites do banco
+        # Descrição opcional com fallback (se quiser)
+        if not cleaned.get('descricao'):
+            cleaned['descricao'] = _clip_model(
+                Empresa, 'descricao',
+                'Estabelecimento cadastrado no sistema.'
+            )
+
+        # clipping extra para caber no banco
         for field in ['nome', 'rua', 'bairro', 'cidade', 'descricao', 'facebook', 'instagram']:
             cleaned[field] = _clip_model(Empresa, field, cleaned.get(field))
 

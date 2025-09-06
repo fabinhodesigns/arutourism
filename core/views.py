@@ -379,82 +379,41 @@ def excluir_usuario(request, id):
 @require_http_methods(["GET", "POST"])
 def cadastrar_empresa(request):
     initial = {"latitude": "-28.937100", "longitude": "-49.484000"}
+
+    # Detecta se o cliente quer JSON (fetch/AJAX)
+    wants_json = (
+        'application/json' in (request.headers.get('Accept') or '')
+        or (request.headers.get('x-requested-with') == 'XMLHttpRequest')
+    )
+
     if request.method == 'GET':
         form = EmpresaForm(initial=initial)
-        return render(request, 'core/cadastrar_empresa.html', {'form': form, 'is_editing': False})
+        return render(request, 'core/cadastrar_empresa.html', {
+            'form': form,
+            'is_editing': False
+        })
 
     # POST
     form = EmpresaForm(request.POST, request.FILES)
-    wants_json = (
-        'application/json' in (request.headers.get('Accept') or '')
-            or (request.headers.get('x-requested-with') == 'XMLHttpRequest')
-    )
-
     if form.is_valid():
         empresa = form.save(commit=False)
         empresa.user = request.user
         empresa.save()
 
-        # Resposta JSON para o JS atual
         if wants_json:
             action = 'reset' if 'save_and_add' in request.POST else 'redirect'
             return JsonResponse({
+                'ok': True,
                 'status': 'success',
                 'message': f"Empresa '{empresa.nome}' cadastrada com sucesso!",
                 'action': action,
-                'redirect_url': '/suas_empresas/' if action == 'redirect' else ''
+                'redirect_url': reverse('suas_empresas') if action == 'redirect' else ''
             })
 
-        # Fallback para POST sem JS
         messages.success(request, f"Empresa '{empresa.nome}' cadastrada com sucesso!")
         return redirect('suas_empresas')
 
-    # Erros de validação
-    if wants_json:
-        # devolve o bloco de erros renderizado para o JS mostrar
-        html = render_to_string('core/partials/form_errors.html', {'form': form}, request=request)
-        return JsonResponse({'ok': False, 'error': 'Erros de validação no formulário.', 'html': html}, status=400)
-
-    return render(request, 'core/cadastrar_empresa.html', {'form': form, 'is_editing': False}, status=400)
-
-@login_required(login_url='/login/')
-@require_http_methods(["GET", "POST"])
-def editar_empresa(request, empresa_id):
-    empresa = get_object_or_404(Empresa, pk=empresa_id)
-
-    # Permissão: apenas o dono edita
-    if empresa.user_id != request.user.id:
-        raise Http404("Você não tem permissão para editar esta empresa.")
-
-    # Suporte a AJAX/JSON
-    wants_json = (
-        'application/json' in (request.headers.get('Accept') or '')
-        or request.headers.get('x-requested-with') == 'XMLHttpRequest'
-    )
-
-    if request.method == 'GET':
-        form = EmpresaForm(instance=empresa)
-        # Reutiliza o template que já existe para cadastro/edição
-        return render(request, 'core/cadastrar_empresa.html', {
-            'form': form,
-            'empresa': empresa,
-            'is_editing': True
-        })
-
-    # POST
-    form = EmpresaForm(request.POST, request.FILES, instance=empresa)
-    if form.is_valid():
-        empresa = form.save()
-        if wants_json:
-            return JsonResponse({
-                'status': 'success',
-                'message': f"A empresa “{empresa.nome}” foi atualizada com sucesso!",
-                'redirect_url': reverse('suas_empresas')
-            })
-        messages.success(request, f"A empresa “{empresa.nome}” foi atualizada com sucesso!")
-        return redirect('suas_empresas')
-
-    # Erros de validação
+    # inválido
     if wants_json:
         html = render_to_string('core/partials/form_errors.html', {'form': form}, request=request)
         return JsonResponse(
@@ -462,12 +421,44 @@ def editar_empresa(request, empresa_id):
             status=400
         )
 
-    # Fallback HTML com status 400
     return render(request, 'core/cadastrar_empresa.html', {
         'form': form,
-        'empresa': empresa,
-        'is_editing': True
+        'is_editing': False
     }, status=400)
+
+@login_required(login_url='/login/')
+@require_http_methods(["GET", "POST"])
+def editar_empresa(request, empresa_id):
+    empresa = get_object_or_404(Empresa, pk=empresa_id)
+
+    # dono ou superuser
+    if empresa.user_id != request.user.id and not request.user.is_superuser:
+        raise Http404("Você não tem permissão para editar esta empresa.")
+
+    wants_json = (
+        'application/json' in (request.headers.get('Accept') or '')
+        or request.headers.get('x-requested-with') == 'XMLHttpRequest'
+    )
+
+    if request.method == 'GET':
+        form = EmpresaForm(instance=empresa)
+    else:
+        form = EmpresaForm(request.POST, request.FILES, instance=empresa)
+        if form.is_valid():
+            form.save()
+            if wants_json:
+                return JsonResponse({'ok': True, 'redirect_url': reverse('suas_empresas')})
+            messages.success(request, f"A empresa “{empresa.nome}” foi atualizada com sucesso!")
+            return redirect('suas_empresas')
+
+        if wants_json:
+            html = render_to_string('core/partials/form_errors.html', {'form': form}, request=request)
+            return JsonResponse({'ok': False, 'html': html}, status=400)
+
+    return render(request, 'core/editar_empresa.html', {
+        'form': form,
+        'empresa': empresa,
+    }, status=(400 if request.method == 'POST' else 200))
 
 @login_required(login_url='/login/')
 def suas_empresas(request):

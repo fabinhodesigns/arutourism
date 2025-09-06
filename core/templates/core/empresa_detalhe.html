@@ -4,105 +4,222 @@
 {% block title %}{{ empresa.nome }} - Detalhes{% endblock %}
 
 {% block content %}
-<div class="container-fluid p-0 mb-5 mt-5"
-     style="position: relative; height: 500px; background-image: url('{% if empresa.imagem and empresa.imagem.name %}{{ empresa.imagem.url }}{% else %}{% static 'images/sem_imagem.png' %}{% endif %}'); background-size: cover; background-position: center;">
-    <div class="d-flex justify-content-center align-items-center text-center"
-        style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7);">
-        <h1 class="text-white display-3 fw-bold">{{ empresa.nome }}</h1>
+<style>
+  .hero-cover{
+    position:relative; min-height:420px; border-radius:0 0 18px 18px; overflow:hidden;
+    background:#0b2147 url("{% if empresa.imagem and empresa.imagem.name %}{{ empresa.imagem.url }}{% else %}{% static 'images/sem_imagem.png' %}{% endif %}") center/cover no-repeat;
+  }
+  .hero-mask{position:absolute; inset:0; background:linear-gradient(180deg,rgba(0,0,0,.45),rgba(0,0,0,.65));}
+  .hero-content{position:relative; z-index:2}
+  .chip{display:inline-flex; align-items:center; gap:.5rem; padding:.5rem .75rem; border-radius:999px; background:#ffffff1a; color:#fff; backdrop-filter: blur(2px); font-weight:600}
+  .chip2{display:inline-flex; align-items:center; gap:.5rem; padding:.5rem .75rem; border-radius:999px; background:#fff; color:#000; backdrop-filter: blur(2px); font-weight:600}
+  .section-card{border:0; border-radius:18px; box-shadow:0 10px 30px rgba(0,0,0,.08)}
+  .icon-badge{width:42px; height:42px; border-radius:10px; display:inline-flex; align-items:center; justify-content:center; background:#f1f5ff}
+  .detail-dl dt{min-width:140px; color:#6c757d}
+  .detail-dl dd{margin-bottom:.5rem}
+  #map{height:380px; border-radius:14px}
+</style>
+
+<header class="hero-cover mt-5" role="img" aria-label="Foto de capa do estabelecimento">
+  <div class="hero-mask"></div>
+  <div class="container hero-content h-100 d-flex flex-column justify-content-end py-5">
+    <nav aria-label="breadcrumb" class="mb-3">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}" class="link-light">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'listar_empresas' %}" class="link-light">Pontos Turísticos</a></li>
+        <li class="breadcrumb-item active text-white" aria-current="page">{{ empresa.nome }}</li>
+      </ol>
+    </nav>
+
+    <div class="d-flex flex-wrap align-items-center gap-3 mb-2">
+      <h1 class="text-white fw-bold display-5 mb-0">{{ empresa.nome }}</h1>
+      {% if empresa.categoria %}
+        <span class="chip" aria-label="Categoria"><i class="bi bi-tag" aria-hidden="true"></i>{{ empresa.categoria.nome }}</span>
+      {% endif %}
+      {% if request.user == empresa.user or request.user.is_superuser %}
+        <a href="{% url 'editar_empresa' empresa.id %}" class="btn btn-light btn-sm fw-semibold chip2">
+          <i class="bi bi-pencil-square me-1" aria-hidden="true"></i> Editar
+        </a>
+      {% endif %}
     </div>
-</div>
 
-<div class="container py-2">
-    <div class="row">
-        <div class="col-md-6 mr-2 mb-5">
-            {% if empresa.imagem %}
-                <img src="{{ empresa.imagem.url }}" alt="{{ empresa.nome }}" style="object-fit: cover;">
-            {% else %}
-                <img src="{% static 'core/images/sem_imagem.png' %}" alt="{{ empresa.nome }}" style="object-fit: cover;">
-            {% endif %}
-            <div class="mb-4">
-                <span class="badge bg-primary">{{ empresa.categoria.nome }}</span>
+    <p class="text-white-50 mb-3">
+      {% if empresa.bairro %}{{ empresa.bairro }} · {% endif %}
+      {% if empresa.cidade %}{{ empresa.cidade }}{% endif %}
+      {% if empresa.cep %} · CEP {{ empresa.cep }}{% endif %}
+    </p>
+  </div>
+</header>
 
-                {% if request.user == empresa.user or request.user.is_superuser %}
-                    <a href="{% url 'editar_empresa' empresa.id %}" class="btn btn-secondary mb-3" title="Editar Empresa">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-fill" viewBox="0 0 16 16">
-                            <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207l6.5-6.5zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.499.499 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11l.178-.178z"/>
-                        </svg>
-                        Editar esta Empresa
+<main class="container my-5">
+  <div class="row g-4">
+    <!-- Coluna esquerda: contato + detalhes -->
+    <div class="col-12 col-lg-7">
+      <div class="card section-card p-3 p-md-4">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h2 class="h5 fw-bold mb-0">Contato</h2>
+          {% if empresa.site %}
+            <a class="btn btn-outline-primary btn-sm" href="{{ empresa.site }}" target="_blank" rel="noopener">
+              <i class="bi bi-globe2 me-1" aria-hidden="true"></i> Site
+            </a>
+          {% endif %}
+        </div>
+
+        <div class="row g-3">
+          <div class="col-12 col-md-6">
+            <div class="d-flex gap-3 align-items-start">
+              <span class="icon-badge"><i class="bi bi-telephone" aria-hidden="true"></i></span>
+              <div>
+                <div class="fw-semibold">Telefone</div>
+                {% if empresa.telefone %}
+                  <a class="link-primary" href="tel:{{ empresa.telefone }}">{{ empresa.telefone }}</a>
+                  <div class="mt-2">
+                    <a class="btn btn-sm btn-outline-secondary" href="https://wa.me/{{ empresa.telefone }}" target="_blank" rel="noopener">
+                      <i class="bi bi-whatsapp me-1" aria-hidden="true"></i> WhatsApp
                     </a>
+                  </div>
+                {% else %}
+                  <span class="text-muted">Não informado</span>
                 {% endif %}
+              </div>
             </div>
+          </div>
 
-            <ul class="list-group mb-4">
-                <li class="list-group-item">
-                    <i class="bi bi-house-door-fill"></i> <strong>Rua:</strong> {{ empresa.rua }},
-                    <strong>Número:</strong> {{ empresa.numero }}
-                </li>
-                <li class="list-group-item">
-                    <i class="bi bi-geo-alt-fill"></i> <strong>Bairro:</strong> {{ empresa.bairro }}
-                </li>
-                <li class="list-group-item">
-                    <i class="bi bi-building"></i> <strong>Cidade:</strong> {{ empresa.cidade }}
-                </li>
-                <li class="list-group-item">
-                    <i class="bi bi-zip"></i> <strong>CEP:</strong> {{ empresa.cep }}
-                </li>
-                <li class="list-group-item">
-                    <i class="bi bi-telephone-fill"></i> <strong>Telefone:</strong> {{ empresa.telefone }}
-                </li>
-                <li class="list-group-item">
-                    <i class="bi bi-envelope-fill"></i> <strong>Email:</strong> {{ empresa.email }}
-                </li>
-                {% if empresa.site %}
-                <li class="list-group-item">
-                    <i class="bi bi-link-45deg"></i> <strong>Site:</strong> <a href="{{ empresa.site }}"
-                        target="_blank">{{ empresa.site }}</a>
-                </li>
+          <div class="col-12 col-md-6">
+            <div class="d-flex gap-3 align-items-start">
+              <span class="icon-badge"><i class="bi bi-envelope" aria-hidden="true"></i></span>
+              <div>
+                <div class="fw-semibold">E-mail</div>
+                {% if empresa.email %}
+                  <a class="link-primary" href="mailto:{{ empresa.email }}">{{ empresa.email }}</a>
+                {% else %}
+                  <span class="text-muted">Não informado</span>
                 {% endif %}
-            </ul>
-
-            <div id="map" class="mt-5" style="height: 400px; border-radius: 8px;"></div>
-            <div class="d-flex justify-content-center">
-
-                <!-- Link para o Google Maps corrigido -->
-                <a href="https://www.google.com/maps?q={{ empresa.latitude }},{{ empresa.longitude }}"
-                    target="_blank" class="btn mt-3"
-                    style="display: inline-flex; align-items: center; padding: 10px 20px; background-color: #fefefe; color: rgb(0, 0, 0); border-radius: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-decoration: none; font-weight: bold; font-size: 16px; transition: all 0.3s ease-in-out;">
-
-                    <img src="{% static 'images/google-maps.png' %}" alt="Google Maps"
-                        style="width: 20px; height: 27px; margin-right: 10px;" />
-
-                    Localizar no Google Maps
-                </a>
+              </div>
             </div>
+          </div>
+
+          <div class="col-12">
+            <div class="d-flex gap-3 align-items-start">
+              <span class="icon-badge"><i class="bi bi-geo-alt" aria-hidden="true"></i></span>
+              <div class="w-100">
+                <div class="fw-semibold">Endereço</div>
+                <div class="text-muted">
+                  {% if empresa.rua %}{{ empresa.rua }}{% endif %}
+                  {% if empresa.numero %}, {{ empresa.numero }}{% endif %}
+                  {% if empresa.bairro %} – {{ empresa.bairro }}{% endif %}
+                  {% if empresa.cidade %} – {{ empresa.cidade }}{% endif %}
+                  {% if empresa.cep %} ({{ empresa.cep }}){% endif %}
+                </div>
+                <div class="d-flex flex-wrap gap-2 mt-2">
+                  <a class="btn btn-primary"
+                     href="https://www.google.com/maps/dir/?api=1&destination={{ empresa.latitude|default:'-28.9371' }},{{ empresa.longitude|default:'-49.4840' }}"
+                     target="_blank" rel="noopener"
+                     aria-label="Traçar rota no Google Maps">
+                    <i class="bi bi-pin-map me-1" aria-hidden="true"></i> Como chegar
+                  </a>
+                  {% if empresa.maps_url %}
+                    <a class="btn btn-outline-secondary" href="{{ empresa.maps_url }}" target="_blank" rel="noopener">
+                      <i class="bi bi-map me-1" aria-hidden="true"></i> Ver no Maps
+                    </a>
+                  {% endif %}
+                  {% if empresa.app_url %}
+                    <a class="btn btn-outline-secondary" href="{{ empresa.app_url }}" target="_blank" rel="noopener">
+                      <i class="bi bi-phone me-1" aria-hidden="true"></i> App
+                    </a>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="col-md-6">
-            <h2 class="fw-bold mb-3">{{ empresa.nome }}</h2>
-            <p class="mb-4">{{ empresa.descricao|linebreaksbr }}</p>
-        </div>
+
+        <hr class="my-4">
+
+        <h2 class="h5 fw-bold mb-3">Detalhes</h2>
+        <dl class="detail-dl row">
+          <dt class="col-sm-4">Categoria</dt>
+          <dd class="col-sm-8">{{ empresa.categoria.nome|default:"—" }}</dd>
+
+          <dt class="col-sm-4">CNPJ</dt>
+          <dd class="col-sm-8">{{ empresa.cnpj|default:"—" }}</dd>
+
+          <dt class="col-sm-4">CADASTUR</dt>
+          <dd class="col-sm-8">{{ empresa.cadastrur|default:"—" }}</dd>
+
+          <dt class="col-sm-4">Contato direto</dt>
+          <dd class="col-sm-8">{{ empresa.contato_direto|default:"—" }}</dd>
+
+          {% if empresa.site %}
+          <dt class="col-sm-4">Site</dt>
+          <dd class="col-sm-8">
+            <a href="{{ empresa.site }}" target="_blank" rel="noopener">{{ empresa.site }}</a>
+          </dd>
+          {% endif %}
+        </dl>
+      </div>
     </div>
-</div>
 
-<!-- Carregar o Leaflet.js para o mapa -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+    <!-- Coluna direita: descrição + mapa + foto -->
+    <aside class="col-12 col-lg-5">
+      <div class="card section-card p-3 p-md-4 mb-4">
+        <h2 class="h5 fw-bold mb-3">Sobre</h2>
+        <p class="mb-0">{{ empresa.descricao|default:"Descrição ainda não informada."|linebreaksbr }}</p>
+      </div>
+
+      {% if empresa.imagem and empresa.imagem.name %}
+        <div class="card section-card overflow-hidden mb-4" role="figure" aria-label="Imagem do estabelecimento">
+          <img src="{{ empresa.imagem.url }}" alt="Foto de {{ empresa.nome }}" class="w-100" style="object-fit:cover; max-height:360px">
+        </div>
+      {% endif %}
+
+      <div class="card section-card p-3 p-md-4">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h2 class="h5 fw-bold mb-0">Localização</h2>
+          <span class="text-muted small">Lat {{ empresa.latitude|default:"-28.9371" }}, Lng {{ empresa.longitude|default:"-49.4840" }}</span>
+        </div>
+        <div id="map" role="region" aria-label="Mapa de localização"></div>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<!-- Leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        var lat = parseFloat('{{ empresa.latitude }}');
-        var lon = parseFloat('{{ empresa.longitude }}');
+  document.addEventListener('DOMContentLoaded', function () {
+    const lat = parseFloat('{{ empresa.latitude|default:"-28.9371" }}') || -28.9371;
+    const lon = parseFloat('{{ empresa.longitude|default:"-49.4840" }}') || -49.4840;
 
-        // Criar mapa com a latitude e longitude
-        var map = L.map('map').setView([lat, lon], 15);
+    const map = L.map('map', {scrollWheelZoom: false}).setView([lat, lon], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap',
+      maxZoom: 19
+    }).addTo(map);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-            maxZoom: 19
-        }).addTo(map);
-
-        // Adicionar marcador para a empresa
-        L.marker([lat, lon]).addTo(map);
-    });
+    L.marker([lat, lon], {title: '{{ empresa.nome|escapejs }}'}).addTo(map);
+  });
 </script>
 
+<!-- JSON-LD para SEO -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "LocalBusiness",
+  "name": {{ empresa.nome|escapejs }},
+  "image": "{% if empresa.imagem and empresa.imagem.name %}{{ empresa.imagem.url }}{% else %}{% static 'images/sem_imagem.png' %}{% endif %}",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "{{ empresa.rua|default_if_none:'' }}{% if empresa.numero %}, {{ empresa.numero }}{% endif %}",
+    "addressLocality": "{{ empresa.cidade|default_if_none:'' }}",
+    "postalCode": "{{ empresa.cep|default_if_none:'' }}",
+    "addressRegion": "",
+    "addressCountry": "BR"
+  },
+  "url": "{% if empresa.site %}{{ empresa.site }}{% else %}{{ request.build_absolute_uri }}{% endif %}",
+  "telephone": "{{ empresa.telefone|default_if_none:'' }}",
+  "geo": {"@type":"GeoCoordinates","latitude":"{{ empresa.latitude|default:'-28.9371' }}","longitude":"{{ empresa.longitude|default:'-49.4840' }}"}
+}
+</script>
 {% endblock %}
