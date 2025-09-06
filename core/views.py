@@ -9,6 +9,9 @@ from urllib.parse import urlparse, parse_qs
 from .forms import ProfileForm, CpfUpdateForm
 from .models import PerfilUsuario, Empresa
 
+import logging
+logger = logging.getLogger(__name__)
+
 from django.views.decorators.http import require_http_methods
 from django.contrib import messages
 from django.contrib.auth import login as auth_login, logout
@@ -642,96 +645,75 @@ def importar_empresas_arquivo(request):
         if not header_map:
             return JsonResponse({"ok": False, "error": "Não reconheci nenhum cabeçalho na 1ª linha."}, status=400)
 
-        from core.models import Empresa, Categoria
-        import re
-
-        # ---------- helpers ----------
-        def clip(s, n): return (s or "")[:n]
-        def digits(s):  return re.sub(r"\D", "", s or "")
-
-        def looks_url(s: str) -> bool:
-            s = (s or "").strip().lower()
-            return s.startswith("http://") or s.startswith("https://")
-
-        def first_url(text: str):
-            if not text:
-                return None
-            m = re.search(r'(https?://\S+)', text)
-            return m.group(1) if m else None
-
-        def extract_latlng_from_maps(url: str):
-            if not url:
-                return None, None
-            try:
-                from urllib.parse import urlparse, parse_qs
-                u = urlparse(url)
-                qs = parse_qs(u.query)
-                if "q" in qs and "," in qs["q"][0]:
-                    lat, lng = qs["q"][0].split(",")[:2]
-                    return float(lat), float(lng)
-                m = re.search(r"@(-?\d+\.\d+),(-?\d+\.\d+)", url)
-                if m:
-                    return float(m.group(1)), float(m.group(2))
-            except Exception:
-                pass
-            return None, None
-
-        def norm_cat_name(s: str) -> str:
-            s = (s or "").strip()
-            s = re.sub(r"\s+", " ", s)
-            return s
-
-        # ---------- limites (espelham o model) ----------
-        MAX_NOME = 255
-        MAX_RUA = 255
-        MAX_BAIRRO = 100
-        MAX_CIDADE = 100
-        MAX_NUMERO = 10
-        MAX_CEP = 8
-        MAX_TEL = 20
-        MAX_CONTATO = 255
-        MAX_CADASTUR = 50
-        MAX_CNPJ = 18
-        MAX_URL = 10000
-
         created, errors = 0, 0
         msgs = []
 
-        # ---------- cache de categorias ----------
-        default_cat, _ = Categoria.objects.get_or_create(nome="Sem Categoria")
-        cat_cache = {norm_cat_name(c.nome).casefold(): c.id for c in Categoria.objects.all()}
+        # limites
+        MAX_NOME = 255; MAX_RUA = 255; MAX_BAIRRO = 100; MAX_CIDADE = 100
+        MAX_NUMERO = 10; MAX_CEP = 8; MAX_TEL = 20; MAX_CONTATO = 255
+        MAX_CADASTUR = 50; MAX_CNPJ = 18; MAX_URL = 10000
 
-        def resolve_categoria_id(raw_value: str | None) -> int:
-            """Aceita ID numérico ou nome; cria se não existir; devolve ID."""
-            if raw_value:
-                raw = raw_value.strip()
-                # Se veio um ID numérico válido
-                if raw.isdigit():
-                    try:
-                        c = Categoria.objects.get(pk=int(raw))
-                        return c.id
-                    except Categoria.DoesNotExist:
-                        pass
-                # Nome
-                name = norm_cat_name(raw)
-                if name:
-                    key = name.casefold()
-                    cid = cat_cache.get(key)
-                    if cid:
-                        return cid
-                    # cria e coloca no cache
-                    c = Categoria.objects.create(nome=name)
-                    cat_cache[key] = c.id
-                    return c.id
-            # fallback
-            return default_cat.id
+        def clip(s, n): return (s or "")[:n]
+        def digits(s):  return re.sub(r"\D", "", s or "")
+        def looks_url(s): s=(s or "").strip().lower(); return s.startswith("http://") or s.startswith("https://")
+        def first_url(text):
+            if not text: return None
+            m = re.search(r'(https?://\S+)', text); return m.group(1) if m else None
+        def extract_latlng_from_maps(url: str):
+            if not url: return (None, None)
+            try:
+                from urllib.parse import urlparse, parse_qs
+                u = urlparse(url); qs = parse_qs(u.query)
+                if "q" in qs and "," in qs["q"][0]:
+                    lat, lng = qs["q"][0].split(",")[:2]; return float(lat), float(lng)
+                m = re.search(r"@(-?\d+\.\d+),(-?\d+\.\d+)", url)
+                if m: return float(m.group(1)), float(m.group(2))
+            except Exception:
+                pass
+            return (None, None)
 
-        # ---------- loop das linhas ----------
+        # -------- Categoria: normalização + cache (case/acentos/espacos) --------
+        from core.models import Empresa, Categoria
+
+        def _norm_key(s: str) -> str:
+            s = (s or "").strip()
+            s = re.sub(r"\s+", " ", s)  # colapsa espaços
+            s_ascii = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode("ascii")
+            return s_ascii.lower()
+
+        _cat_cache = {}  # key normalizada -> Categoria
+
+        def get_or_create_categoria(name: str) -> Categoria:
+            name = (name or "").strip() or "Sem Categoria"
+            key = _norm_key(name)
+            hit = _cat_cache.get(key)
+            if hit:
+                return hit
+
+            # 1) tenta nome exato (case-insensitive)
+            obj = Categoria.objects.filter(nome__iexact=name).first()
+
+            # 2) se não achou, tenta por chave normalizada (p/ lidar com acentos)
+            if not obj:
+                for c in Categoria.objects.all().only("id", "nome"):
+                    if _norm_key(c.nome) == key:
+                        obj = c
+                        break
+
+            # 3) cria se não houver
+            if not obj:
+                obj = Categoria.objects.create(nome=name)
+
+            _cat_cache[key] = obj
+            return obj
+
+        # -----------------------------------------------------------------------
+
         for line_no, r in enumerate(rows, start=2):
             data = {
                 'cnpj': '', 'categoria': '', 'nome': '', 'bairro': '', 'endereco': '', 'numero': '',
-                'cidade': '', 'cep': '', 'telefone': '', 'contato': '', 'digital': '', 'cadastrur': '',
-                'maps': '', 'app': '', 'descricao': ''
+                'cidade': '', 'cep': '', 'telefone': '', 'contato': '', 'digital': '',
+                'cadastrur': '', 'maps': '', 'app': '', 'descricao': ''
             }
             for idx, canon in header_map.items():
                 if idx < len(r):
@@ -743,9 +725,9 @@ def importar_empresas_arquivo(request):
                 msgs.append(f"Linha {line_no}: Nome ausente.")
                 continue
 
-            # categoria (robusta)
-            cat_raw = data.get("categoria") or "Sem Categoria"
-            categoria_id = resolve_categoria_id(clip(cat_raw, 100))
+            # === Categoria (agora robusta) ===
+            cat_name = clip(data.get("categoria"), 100) or "Sem Categoria"
+            categoria_obj = get_or_create_categoria(cat_name)
 
             bairro    = clip(data.get("bairro"), MAX_BAIRRO)
             endereco  = clip(data.get("endereco"), MAX_RUA)
@@ -753,7 +735,7 @@ def importar_empresas_arquivo(request):
             cidade    = clip((data.get("cidade") or "Araranguá"), MAX_CIDADE)
             cep       = clip(digits(data.get("cep")), MAX_CEP)
 
-            telefone  = clip(data.get("telefone"), MAX_TEL)
+            telefone  = clip(digits(data.get("telefone")), MAX_TEL)
             contato   = clip(data.get("contato"), MAX_CONTATO)
             cadastrur = clip(data.get("cadastrur"), MAX_CADASTUR)
             cnpj      = clip(digits(data.get("cnpj")), MAX_CNPJ)
@@ -762,18 +744,16 @@ def importar_empresas_arquivo(request):
                          "processo de complementação de dados. Se você é o responsável, "
                          "atualize as informações.")
 
-            # URLs
             digital_txt = (data.get("digital") or "").strip()
             site_url    = digital_txt if looks_url(digital_txt) else first_url(digital_txt)
             site_url    = clip(site_url, MAX_URL) if site_url else None
 
-            maps_txt   = (data.get("maps") or "").strip()
-            maps_url   = clip(maps_txt, MAX_URL) if looks_url(maps_txt) else None
+            maps_txt = (data.get("maps") or "").strip()
+            maps_url = clip(maps_txt, MAX_URL) if looks_url(maps_txt) else None
 
-            app_txt    = (data.get("app") or "").strip()
-            app_url    = clip(app_txt, MAX_URL) if looks_url(app_txt) else None
+            app_txt  = (data.get("app") or "").strip()
+            app_url  = clip(app_txt, MAX_URL) if looks_url(app_txt) else None
 
-            # Lat/Lng
             lat, lng = extract_latlng_from_maps(maps_txt)
             lat = str(lat) if lat is not None else "-28.937100"
             lng = str(lng) if lng is not None else "-49.484000"
@@ -783,7 +763,7 @@ def importar_empresas_arquivo(request):
                 emp = Empresa(
                     user=request.user,
                     nome=nome,
-                    categoria_id=categoria_id,     # <— vínculo direto, sem chance de ficar nulo
+                    categoria=categoria_obj,   # <<< vincula a categoria encontrada/criada
                     descricao=descricao,
                     rua=endereco,
                     bairro=bairro,
@@ -797,7 +777,7 @@ def importar_empresas_arquivo(request):
                     cadastrur=cadastrur,
                     cnpj=cnpj,
                     site=site_url,
-                    digital=site_url,              # remova se não quiser espelhar
+                    digital=site_url,
                     maps_url=maps_url,
                     app_url=app_url,
                 )
@@ -810,28 +790,11 @@ def importar_empresas_arquivo(request):
                 msgs.append(f"Linha {line_no}: {e}")
 
         if errors:
-            return JsonResponse({
-                "ok": False,
-                "importados": created,
-                "erros": errors,
-                "mensagens": msgs[:100],
-            }, status=400)
+            return JsonResponse({"ok": False, "importados": created, "erros": errors, "mensagens": msgs[:100]}, status=400)
 
-        return JsonResponse({
-            "ok": True,
-            "importados": created,
-            "erros": 0,
-            "mensagens": [],
-            "redirect": True,
-            "redirect_url": "/empresas/",
-        })
-
+        return JsonResponse({"ok": True, "importados": created, "erros": 0, "mensagens": [], "redirect": True, "redirect_url": "/empresas/"})
     except Exception as e:
-        return JsonResponse({
-            "ok": False,
-            "error": "Erro inesperado ao importar. Tente novamente ou contate o suporte.",
-            "detalhe": str(e),
-        }, status=500)
+        return JsonResponse({"ok": False, "error": "Erro inesperado ao importar. Tente novamente ou contate o suporte.", "detalhe": str(e)}, status=500)
     
 
     # ========== PERFIL DO USUÁRIO ==========
@@ -901,31 +864,37 @@ def esqueci_senha_email(request):
 
 def esqueci_senha_cpf(request):
     msg_privacidade = (
-        "Por segurança, se o CPF existir e estiver vinculado a um e-mail, "
+        "Por segurança, se o CPF/CNPJ existir e estiver vinculado a um e-mail, "
         "enviaremos um link de redefinição para esse e-mail."
     )
     if request.method == 'POST':
         form = StartResetByCpfForm(request.POST)
         if form.is_valid():
-            cpf = form.cleaned_data['cpf_cnpj']
-            try:
-                perfil = PerfilUsuario.objects.select_related('user').get(cpf_cnpj=cpf)
-                if perfil.user.email:
-                    prf = PasswordResetForm({'email': perfil.user.email})
-                    if prf.is_valid():
-                        prf.save(
-                            request=request,
-                            use_https=request.is_secure(),
-                            email_template_name='core/email_password_reset.txt',
-                            html_email_template_name='core/email_password_reset.html',  # <-- ADICIONE
-                            subject_template_name='core/email_password_reset_subject.txt',
-                            from_email=None
-                        )
-                messages.success(request, msg_privacidade)
-                return redirect('login')
-            except PerfilUsuario.DoesNotExist:
-                messages.success(request, msg_privacidade)
-                return redirect('login')
+            cpf_digits = form.cleaned_data['cpf_cnpj']  # já vem só dígitos pelo form
+            perfil = (PerfilUsuario.objects
+                      .select_related('user')
+                      .filter(cpf_cnpj=cpf_digits)
+                      .first())
+
+            if perfil and perfil.user.email:
+                prf = PasswordResetForm({'email': perfil.user.email})
+                if prf.is_valid():
+                    prf.save(
+                        request=request,
+                        use_https=request.is_secure(),
+                        email_template_name='core/email_password_reset.txt',
+                        html_email_template_name='core/email_password_reset.html',
+                        subject_template_name='core/email_password_reset_subject.txt',
+                        from_email=None
+                    )
+                    logger.info("Password reset enviado por CPF %s → %s", cpf_digits, perfil.user.email)
+                else:
+                    logger.warning("PasswordResetForm inválido para e-mail %s (CPF %s)", perfil.user.email, cpf_digits)
+            else:
+                logger.info("CPF/CNPJ não localizado ou sem e-mail cadastrado: %s", cpf_digits)
+
+            messages.success(request, msg_privacidade)
+            return redirect('perfil')
     else:
         form = StartResetByCpfForm()
 

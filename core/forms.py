@@ -162,7 +162,13 @@ class StartResetByCpfForm(forms.Form):
     cpf_cnpj = forms.CharField(label="CPF/CNPJ", max_length=18)
 
     def clean_cpf_cnpj(self):
-        return (self.cleaned_data.get('cpf_cnpj') or '').strip()
+        raw = (self.cleaned_data.get('cpf_cnpj') or '').strip()
+        digits = _only_digits(raw)  # <= só dígitos
+        if not digits:
+            raise forms.ValidationError("Informe o CPF ou CNPJ.")
+        if len(digits) not in (11, 14):
+            raise forms.ValidationError("Digite um CPF (11) ou CNPJ (14) válido.")
+        return digits
 
 class CustomLoginForm(forms.Form):
     identificador = forms.CharField(label="Usuário ou CPF", max_length=100)
