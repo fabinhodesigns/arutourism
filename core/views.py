@@ -941,3 +941,10 @@ def perfil_alterar_cpf(request):
 
     messages.success(request, "CPF atualizado com sucesso!")
     return redirect('perfil')
+
+
+def page_not_found(request, exception):
+    return render(request, 'core/404.html', status=500)
+
+def server_error(request):
+    return render(request, 'core/500.html', status=500)

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>Erro Interno do Servidor (500)</title>
+
+  <style>
+    body{
+      font-family: 'Poppins', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      height:100vh; margin:0; overflow:hidden;
+      background: linear-gradient(-45deg, #2E3192, #1b8dff);
+      background-size: 400% 400%;
+      animation: gradient-animation 10s ease infinite;
+      display:flex; justify-content:center; align-items:center; color:#333;
+    }
+    @keyframes gradient-animation{
+      0%{background-position:0% 50%}
+      50%{background-position:100% 50%}
+      100%{background-position:0% 50%}
+    }
+    .error-container{ text-align:center; max-width:90% }
+    .error-card{
+      background:#fff; padding:2rem 3rem; border-radius:1rem;
+      box-shadow:0 5px 15px rgba(0,0,0,.1); display:inline-block; max-width:640px;
+    }
+    .error-code{ font-size:8rem; font-weight:700; color:#1b8dff; line-height:1; margin:0 }
+    .error-heading{ font-weight:600; font-size:2rem; margin:.75rem 0 .5rem }
+    .error-message{ font-size:1rem; color:#6c757d; margin-bottom:1.5rem }
+    .actions{ display:flex; gap:.75rem; justify-content:center; flex-wrap:wrap }
+    .btn{
+      display:inline-flex; align-items:center; gap:.5rem; padding:12px 20px;
+      font-size:1rem; font-weight:500; border-radius:8px; text-decoration:none; cursor:pointer; border:0;
+      transition: filter .2s ease;
+    }
+    .btn-primary{ background:#007bff; color:#fff }
+    .btn-primary:hover{ filter:brightness(0.92) }
+    .btn-light{ background:#f1f3f5; color:#111 }
+    .btn-light:hover{ filter:brightness(0.95) }
+    .sr-only{
+      position:absolute!important; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden;
+      clip:rect(0,0,0,0); white-space:nowrap; border:0;
+    }
+
+    @media (max-width:576px){
+      body{ align-items:flex-start; padding-top:5vh }
+      .error-card{ padding:1.5rem 1rem; box-shadow:none; border-radius:0; height:auto }
+      .error-code{ font-size:6rem }
+      .error-heading{ font-size:1.5rem }
+      .error-message{ font-size:.95rem }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="error-container" role="alert" aria-live="assertive">
+    <div class="error-card">
+      <h1 class="error-code">500</h1>
+      <h2 class="error-heading">Erro Interno do Servidor</h2>
+      <p class="error-message">
+        Ocorreu um problema ao processar sua solicitação. <br />
+        Tente novamente em instantes. Se o erro persistir, entre em contato com o suporte.
+      </p>
+
+      <!-- Se você quiser exibir um ID de erro gerado no backend:
+      <p class="error-message"><small>ID do erro: {{ error_id }}</small></p>
+      -->
+
+      <div class="actions">
+        <button class="btn btn-primary" onclick="location.reload()" aria-label="Tentar novamente">
+          <!-- ícone refresh -->
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor"
+               viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 1 1 .908-.418A6 6 0 1 1 8 2v1z"/>
+            <path d="M8 0a.5.5 0 0 1 .5.5v3.793l1.146-1.147a.5.5 0 1 1 .708.708L8.354 6.854a.5.5 0 0 1-.708 0L5.646 3.854a.5.5 0 1 1 .708-.708L7.5 4.293V.5A.5.5 0 0 1 8 0z"/>
+          </svg>
+          Tentar novamente
+        </button>
+
+        <a class="btn btn-light" href="/" aria-label="Voltar para a página inicial">
+          <!-- ícone home -->
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor"
+               viewBox="0 0 16 16" aria-hidden="true">
+            <path d="m8 .5 6.5 6.5V15a1 1 0 0 1-1 1h-3.5v-4H6V16H2.5a1 1 0 0 1-1-1V7L8 .5z"/>
+          </svg>
+          Página inicial
+        </a>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
