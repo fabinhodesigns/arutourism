@@ -43,10 +43,19 @@
                 <div id="login-error" class="mt-3 text-danger text-center"></div>
             </form>
 
-            <p class="mt-3 text-center">Não tem uma conta? <a href="{% url 'register' %}">Cadastre-se</a></p>  
-        </div>
-    </div>
+            <hr class="my-4">
 
+<div class="text-center">
+  <div class="mb-2 fw-semibold">Esqueceu sua senha?</div>
+  <div class="d-inline-flex align-items-center gap-2" role="group" aria-label="Opções de recuperação de senha">
+    <a href="{% url 'esqueci_senha_email' %}" class="btn btn-outline-primary btn-sm">Recuperar por e-mail</a>
+    <span class="text-muted">ou</span>
+    <a href="{% url 'esqueci_senha_cpf' %}" class="btn btn-outline-primary btn-sm">Recuperar pelo CPF</a>
+  </div>
+</div>
+
+<p class="mt-4 text-center">Não tem uma conta? <a href="{% url 'register' %}">Cadastre-se</a></p>
+    </div>
 {% endblock %}
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
