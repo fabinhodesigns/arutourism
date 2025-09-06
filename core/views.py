@@ -632,170 +632,108 @@ def download_template_empresas(request):
 @require_POST
 @transaction.atomic
 def importar_empresas_arquivo(request):
-    try:
-        up = request.FILES.get("arquivo")
-        if not up:
-            return JsonResponse({"ok": False, "error": "Envie um arquivo .xlsx ou .csv."}, status=400)
+    up = request.FILES.get("arquivo")
+    if not up:
+        return JsonResponse({"ok": False, "error": "Envie um arquivo .xlsx ou .csv."}, status=400)
 
+    try:
         headers_raw, rows = _read_rows_from_upload(up, up.name)
         if not rows:
-            return JsonResponse({"ok": False, "error": "Arquivo vazio."}, status=400)
+            return JsonResponse({"ok": False, "error": "Arquivo vazio ou ilegível."}, status=400)
 
         header_map = _build_header_map(headers_raw)
         if not header_map:
-            return JsonResponse({"ok": False, "error": "Não reconheci nenhum cabeçalho na 1ª linha."}, status=400)
+            return JsonResponse({"ok": False, "error": "Não foi possível reconhecer os cabeçalhos do arquivo. Use o modelo para garantir a formatação correta."}, status=400)
+        
+        # Limpa o cache de categorias a cada nova importação
+        _cat_cache.clear()
 
-        created, errors = 0, 0
-        msgs = []
+        created_count, error_count = 0, 0
+        error_msgs = []
+        
+        for line_no, row_data in enumerate(rows, start=2):
+            data = {canon: (row_data[idx] or "").strip() for idx, canon in header_map.items() if idx < len(row_data)}
 
-        # limites
-        MAX_NOME = 255; MAX_RUA = 255; MAX_BAIRRO = 100; MAX_CIDADE = 100
-        MAX_NUMERO = 10; MAX_CEP = 8; MAX_TEL = 20; MAX_CONTATO = 255
-        MAX_CADASTUR = 50; MAX_CNPJ = 18; MAX_URL = 10000
-
-        def clip(s, n): return (s or "")[:n]
-        def digits(s):  return re.sub(r"\D", "", s or "")
-        def looks_url(s): s=(s or "").strip().lower(); return s.startswith("http://") or s.startswith("https://")
-        def first_url(text):
-            if not text: return None
-            m = re.search(r'(https?://\S+)', text); return m.group(1) if m else None
-        def extract_latlng_from_maps(url: str):
-            if not url: return (None, None)
-            try:
-                from urllib.parse import urlparse, parse_qs
-                u = urlparse(url); qs = parse_qs(u.query)
-                if "q" in qs and "," in qs["q"][0]:
-                    lat, lng = qs["q"][0].split(",")[:2]; return float(lat), float(lng)
-                m = re.search(r"@(-?\d+\.\d+),(-?\d+\.\d+)", url)
-                if m: return float(m.group(1)), float(m.group(2))
-            except Exception:
-                pass
-            return (None, None)
-
-        # -------- Categoria: normalização + cache (case/acentos/espacos) --------
-        from core.models import Empresa, Categoria
-
-        def _norm_key(s: str) -> str:
-            s = (s or "").strip()
-            s = re.sub(r"\s+", " ", s)  # colapsa espaços
-            s_ascii = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode("ascii")
-            return s_ascii.lower()
-
-        _cat_cache = {}  # key normalizada -> Categoria
-
-        def get_or_create_categoria(name: str) -> Categoria:
-            name = (name or "").strip() or "Sem Categoria"
-            key = _norm_key(name)
-            hit = _cat_cache.get(key)
-            if hit:
-                return hit
-
-            # 1) tenta nome exato (case-insensitive)
-            obj = Categoria.objects.filter(nome__iexact=name).first()
-
-            # 2) se não achou, tenta por chave normalizada (p/ lidar com acentos)
-            if not obj:
-                for c in Categoria.objects.all().only("id", "nome"):
-                    if _norm_key(c.nome) == key:
-                        obj = c
-                        break
-
-            # 3) cria se não houver
-            if not obj:
-                obj = Categoria.objects.create(nome=name)
-
-            _cat_cache[key] = obj
-            return obj
-
-        # -----------------------------------------------------------------------
-
-        for line_no, r in enumerate(rows, start=2):
-            data = {
-                'cnpj': '', 'categoria': '', 'nome': '', 'bairro': '', 'endereco': '', 'numero': '',
-                'cidade': '', 'cep': '', 'telefone': '', 'contato': '', 'digital': '',
-                'cadastrur': '', 'maps': '', 'app': '', 'descricao': ''
-            }
-            for idx, canon in header_map.items():
-                if idx < len(r):
-                    data[canon] = (r[idx] or "").strip()
-
-            nome = clip(data.get("nome"), MAX_NOME)
+            nome = data.get("nome", "")[:255]
             if not nome:
-                errors += 1
-                msgs.append(f"Linha {line_no}: Nome ausente.")
+                error_count += 1
+                error_msgs.append(f"Linha {line_no}: Nome da empresa é obrigatório.")
                 continue
 
-            # === Categoria (agora robusta) ===
-            cat_name = clip(data.get("categoria"), 100) or "Sem Categoria"
-            categoria_obj = get_or_create_categoria(cat_name)
+            # --- Lógica de Categoria (usando a função de ajuda) ---
+            cat_name = data.get("categoria", "Sem Categoria")[:150]
+            categoria_obj = _get_or_create_categoria(cat_name)
+            # --------------------------------------------------------
 
-            bairro    = clip(data.get("bairro"), MAX_BAIRRO)
-            endereco  = clip(data.get("endereco"), MAX_RUA)
-            numero    = clip(data.get("numero"), MAX_NUMERO)
-            cidade    = clip((data.get("cidade") or "Araranguá"), MAX_CIDADE)
-            cep       = clip(digits(data.get("cep")), MAX_CEP)
+            # Preparação dos outros campos
+            cnpj = _digits(data.get("cnpj", ""))[:18]
+            rua = data.get("endereco", "")[:255]
+            bairro = data.get("bairro", "")[:150]
+            cidade = data.get("cidade", "Araranguá")[:150]
+            numero = data.get("numero", "")[:20]
+            cep = _digits(data.get("cep", ""))[:10]
+            telefone = _digits(data.get("telefone", ""))[:60]
+            
+            maps_url = data.get("maps", "")
+            lat, lng = _extract_latlng_from_maps(maps_url)
 
-            telefone  = clip(digits(data.get("telefone")), MAX_TEL)
-            contato   = clip(data.get("contato"), MAX_CONTATO)
-            cadastrur = clip(data.get("cadastrur"), MAX_CADASTUR)
-            cnpj      = clip(digits(data.get("cnpj")), MAX_CNPJ)
-            descricao = (data.get("descricao") or
-                         "Descrição ainda não informada. Este estabelecimento está em "
-                         "processo de complementação de dados. Se você é o responsável, "
-                         "atualize as informações.")
+            # Usando .get() com um valor padrão para evitar KeyErrors
+            empresa_data = {
+                'user': request.user,
+                'nome': nome,
+                'categoria': categoria_obj, # <<< AQUI ESTÁ A VINCULAÇÃO CORRETA
+                'descricao': data.get("descricao") or "Descrição ainda não informada.",
+                'rua': rua,
+                'bairro': bairro,
+                'cidade': cidade,
+                'numero': numero,
+                'cep': cep,
+                'latitude': str(lat) if lat else "-28.937100",
+                'longitude': str(lng) if lng else "-49.484000",
+                'telefone': telefone,
+                'contato_direto': data.get("contato", "")[:255],
+                'cadastrur': data.get("cadastrur", "")[:80],
+                'cnpj': cnpj,
+                'maps_url': maps_url[:2048] if _looks_url(maps_url) else None,
+            }
+            
+            # Adiciona URLs de site/digital somente se parecerem com uma URL
+            digital_url = data.get("digital", "")
+            if _looks_url(digital_url):
+                empresa_data['digital'] = digital_url[:2048]
+                empresa_data['site'] = digital_url[:2048]
 
-            digital_txt = (data.get("digital") or "").strip()
-            site_url    = digital_txt if looks_url(digital_txt) else first_url(digital_txt)
-            site_url    = clip(site_url, MAX_URL) if site_url else None
+            app_url = data.get("app", "")
+            if _looks_url(app_url):
+                empresa_data['app_url'] = app_url[:2048]
 
-            maps_txt = (data.get("maps") or "").strip()
-            maps_url = clip(maps_txt, MAX_URL) if looks_url(maps_txt) else None
-
-            app_txt  = (data.get("app") or "").strip()
-            app_url  = clip(app_txt, MAX_URL) if looks_url(app_txt) else None
-
-            lat, lng = extract_latlng_from_maps(maps_txt)
-            lat = str(lat) if lat is not None else "-28.937100"
-            lng = str(lng) if lng is not None else "-49.484000"
-
-            sid = transaction.savepoint()
             try:
-                emp = Empresa(
-                    user=request.user,
-                    nome=nome,
-                    categoria=categoria_obj,   # <<< vincula a categoria encontrada/criada
-                    descricao=descricao,
-                    rua=endereco,
-                    bairro=bairro,
-                    cidade=cidade,
-                    numero=numero,
-                    cep=cep,
-                    latitude=lat,
-                    longitude=lng,
-                    telefone=telefone,
-                    contato_direto=contato,
-                    cadastrur=cadastrur,
-                    cnpj=cnpj,
-                    site=site_url,
-                    digital=site_url,
-                    maps_url=maps_url,
-                    app_url=app_url,
-                )
-                emp.save()
-                transaction.savepoint_commit(sid)
-                created += 1
+                Empresa.objects.create(**empresa_data)
+                created_count += 1
             except Exception as e:
-                transaction.savepoint_rollback(sid)
-                errors += 1
-                msgs.append(f"Linha {line_no}: {e}")
+                error_count += 1
+                error_msgs.append(f"Linha {line_no} ('{nome}'): Erro ao salvar no banco de dados. Detalhe: {e}")
 
-        if errors:
-            return JsonResponse({"ok": False, "importados": created, "erros": errors, "mensagens": msgs[:100]}, status=400)
+        if error_count > 0:
+            return JsonResponse({
+                "ok": False, 
+                "importados": created_count, 
+                "erros": error_count, 
+                "mensagens": error_msgs[:100] # Limita o número de mensagens de erro
+            }, status=400)
 
-        return JsonResponse({"ok": True, "importados": created, "erros": 0, "mensagens": [], "redirect": True, "redirect_url": "/empresas/"})
+        return JsonResponse({
+            "ok": True, 
+            "importados": created_count, 
+            "erros": 0, 
+            "mensagens": [], 
+            "redirect": True, 
+            "redirect_url": reverse('listar_empresas') # Use reverse para segurança
+        })
+
     except Exception as e:
-        return JsonResponse({"ok": False, "error": "Erro inesperado ao importar. Tente novamente ou contate o suporte.", "detalhe": str(e)}, status=500)
-    
+        # Pega erros na leitura do arquivo ou outros erros inesperados
+        return JsonResponse({"ok": False, "error": f"Erro inesperado no processamento do arquivo. Verifique se o formato está correto. Detalhe: {e}"}, status=500)
 
     # ========== PERFIL DO USUÁRIO ==========
 @login_required

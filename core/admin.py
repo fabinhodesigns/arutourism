@@ -1,20 +1,22 @@
-from django.contrib import admin
-from django.contrib import admin
-from .models import Categoria, Empresa, PerfilUsuario
+# core/admin.py
+
 from django.contrib import admin, messages
 from django.template.response import TemplateResponse
-from django.urls import path
-
+from .models import Categoria, Empresa, PerfilUsuario
 
 @admin.register(Categoria)
 class CategoriaAdmin(admin.ModelAdmin):
     list_display = ['nome']
     ordering = ['nome']
+    search_fields = ['nome'] # Adicionado para facilitar a busca
 
 @admin.register(Empresa)
 class EmpresaAdmin(admin.ModelAdmin):
-    list_display  = ('nome', 'categoria', 'cidade', 'user')
-    actions       = ['delete_selected', 'apagar_todas_action']
+    list_display = ('nome', 'categoria', 'cidade', 'user')
+    list_filter = ('categoria', 'cidade', 'user') # Adicionado para filtragem
+    search_fields = ('nome', 'cnpj', 'descricao')
+    raw_id_fields = ('user', 'categoria') # Melhora a performance
+    actions = ['delete_selected', 'apagar_todas_action']
 
     @admin.action(description="APAGAR TODAS as empresas…")
     def apagar_todas_action(self, request, queryset):
@@ -37,9 +39,11 @@ class EmpresaAdmin(admin.ModelAdmin):
         }
         return TemplateResponse(request, "admin/confirm_delete_all.html", context)
 
+# --- CORREÇÃO ESTÁ AQUI ---
 @admin.register(PerfilUsuario)
 class PerfilUsuarioAdmin(admin.ModelAdmin):
-    list_display  = ('nome', 'categoria', 'cidade', 'user')
-    search_fields = ('nome', 'cidade', 'descricao', 'categoria__nome')
-    list_filter   = ('categoria', 'cidade', 'user')
-    actions       = ['delete_selected']  # garante que o action padrão apareça
+    # Usando os campos que REALMENTE existem no modelo PerfilUsuario
+    list_display = ('user', 'full_name', 'cpf_cnpj', 'telefone')
+    search_fields = ('user__username', 'full_name', 'cpf_cnpj')
+    list_filter = ('user__is_staff', 'user__is_superuser', 'user__date_joined')
+    raw_id_fields = ('user',) # Melhora performance ao selecionar o usuário
