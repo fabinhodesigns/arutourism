@@ -1,37 +1,23 @@
+# Em core/management/commands/limpartabela.py
+
 from django.core.management.base import BaseCommand
-from django.conf import settings
-import os
+from django.db import transaction
+# Substitua 'core' pelo nome do seu app e 'Empresa' pelo nome do seu modelo
+from core.models import Empresa
 
 class Command(BaseCommand):
-    help = "APAGA TODAS as empresas. Use com extremo cuidado."
+    help = 'Apaga todos os dados da tabela de Empresas de forma forçada e segura.'
 
-    def add_arguments(self, parser):
-        parser.add_argument("--confirm", choices=["YES"], help="Confirme com YES para executar")
-        parser.add_argument("--also-cloud", action="store_true",
-                            help="Também remove os arquivos/imagens (se o campo suportar .delete()).")
-
-    def handle(self, *args, **opts):
-        allowed = os.environ.get("WIPE_EMPRESAS_ALLOWED") == "1"
-        if not allowed:
-            self.stderr.write(self.style.ERROR("Bloqueado. Defina WIPE_EMPRESAS_ALLOWED=1 no ambiente para autorizar."))
-            return
-
-        if opts.get("confirm") != "YES":
-            self.stderr.write(self.style.ERROR("Passe --confirm YES para executar."))
-            return
-
-        from core.models import Empresa
-        qs = Empresa.objects.all()
-        total = qs.count()
-
-        if opts.get("also_cloud"):
-            for e in qs.iterator():
-                try:
-                    if getattr(e, "imagem", None):
-                        # se for CloudinaryStorage/ImageField compatível
-                        e.imagem.delete(save=False)
-                except Exception:
-                    pass
-
-        qs.delete()
-        self.stdout.write(self.style.SUCCESS(f"Empresas apagadas: {total}"))
+    def handle(self, *args, **options):
+        self.stdout.write(self.style.WARNING('INICIANDO PROCESSO DE EXCLUSÃO DE DADOS...'))
+        
+        try:
+            # Usar uma transação atômica garante que ou tudo funciona, ou nada é alterado.
+            with transaction.atomic():
+                total_apagado, _ = Empresa.objects.all().delete()
+            
+            self.stdout.write(self.style.SUCCESS(
+                f'SUCESSO: {total_apagado} registros foram apagados da tabela de Empresas.'
+            ))
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f'ERRO: A operação falhou. Nenhum dado foi apagado. Erro: {e}'))
