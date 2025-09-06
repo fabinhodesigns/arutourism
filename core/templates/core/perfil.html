@@ -14,8 +14,13 @@
   <!-- hero -->
   <div class="profile-hero p-4 p-md-5 mb-4 d-flex align-items-center gap-3">
     <img id="avatar-preview" class="avatar-lg"
-         src="{% if request.user.perfil and request.user.perfil.avatar %}{{ request.user.perfil.avatar.url }}{% else %}{% static 'images/user-placeholder.png' %}{% endif %}"
-         alt="Avatar do usuário">
+     src="{% if request.user.perfil and request.user.perfil.avatar and request.user.perfil.avatar.name %}
+              {{ request.user.perfil.avatar.url }}
+          {% else %}
+              {% static 'core/images/user-placeholder.png' %}
+          {% endif %}"
+     alt="Avatar do usuário">
+
     <div>
       <h3 class="mb-1">Olá, {{ request.user.first_name|default:request.user.username }}!</h3>
       <div class="opacity-75">Entrou em {{ entrou_fmt }}</div>

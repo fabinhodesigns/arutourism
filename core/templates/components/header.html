@@ -94,12 +94,12 @@
           <li class="nav-item dropdown">
             {% if user.is_authenticated %}
                 <a class="nav-link dropdown-toggle text-light d-flex align-items-center gap-2" href="{% url 'perfil' %}" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                {% if user.perfil and user.perfil.avatar %}
-                  <img src="{{ user.perfil.avatar.url }}" alt="Avatar" style="width:28px;height:28px;border-radius:999px;object-fit:cover;">
-                {% else %}
-                  <i class="bi bi-person-circle" style="font-size:1.3rem;"></i>
-                {% endif %}
-                {{ user.username }}
+                {% if user.perfil and user.perfil.avatar and user.perfil.avatar.name %}
+  <img src="{{ user.perfil.avatar.url }}" alt="Avatar" style="width:28px;height:28px;border-radius:999px;object-fit:cover;">
+{% else %}
+  <i class="bi bi-person-circle" style="font-size:1.3rem;"></i>
+{% endif %}
+
               </a>
               <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                 <li><a class="dropdown-item d-flex align-items-center" href="{% url 'perfil' %}"><i class="bi bi-person-circle" style="font-size:1.3rem;"></i></i> Meu Perfil</a></li>

@@ -1,25 +1,22 @@
 from pathlib import Path
 from urllib.parse import urlparse
-import os
-import sys
+import os, sys
 import dj_database_url
 import environ
 
-# ===========================
-# Paths / env
-# ===========================
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# .env
 env = environ.Env(
     DEBUG=(bool, False),
+    ENVIRONMENT=(str, "development"),
 )
-# Carrega .env localmente (em produção, Render injeta via env)
 environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 
-# ===========================
 # Flags básicas
-# ===========================
 DEBUG = env.bool("DEBUG", default=False)
+ENVIRONMENT = env.str("ENVIRONMENT", default=("production" if not DEBUG else "development"))
+IS_PROD = (ENVIRONMENT == "production") or (not DEBUG)
 
 SECRET_KEY = env("SECRET_KEY", default=None)
 if not SECRET_KEY:
@@ -162,49 +159,47 @@ LOGOUT_REDIRECT_URL = "/login/"
 # Media (local dev / Cloudinary prod se configurado)
 # ===========================
 cloud_name = env("CLOUDINARY_CLOUD_NAME", default="")
-api_key = env("CLOUDINARY_API_KEY", default="")
+api_key    = env("CLOUDINARY_API_KEY", default="")
 api_secret = env("CLOUDINARY_API_SECRET", default="")
 
-if not DEBUG and cloud_name and api_key and api_secret:
+USE_CLOUDINARY = IS_PROD and cloud_name and api_key and api_secret
+
+if USE_CLOUDINARY:
     import cloudinary
     cloudinary.config(cloud_name=cloud_name, api_key=api_key, api_secret=api_secret)
     DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
-    MEDIA_URL = f"https://res.cloudinary.com/{cloud_name}/image/upload/"
+    # NÃO force MEDIA_URL aqui; o storage do Cloudinary já gera URL pública com versão
 else:
     DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
-    MEDIA_URL = "/media/"
+    MEDIA_URL  = "/media/"
     MEDIA_ROOT = BASE_DIR / "media"
 
 # ===========================
-# E-mail (robusto)
+# E-mail (SMTP real em prod; console em dev)
 # ===========================
-EMAIL_ENABLED = env.bool("EMAIL_ENABLED", default=False)
+EMAIL_ENABLED = env.bool("EMAIL_ENABLED", default=IS_PROD)
 
 if EMAIL_ENABLED:
-    EMAIL_BACKEND = env(
-        "EMAIL_BACKEND",
-        default="django.core.mail.backends.smtp.EmailBackend",
-    )
-    EMAIL_HOST = env("EMAIL_HOST", default="smtp.gmail.com")
-    EMAIL_PORT = env.int("EMAIL_PORT", default=587)
-    EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
-    EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL", default=False)
+    EMAIL_BACKEND   = env("EMAIL_BACKEND", default="django.core.mail.backends.smtp.EmailBackend")
+    EMAIL_HOST      = env("EMAIL_HOST", default="smtp.gmail.com")
+    EMAIL_PORT      = env.int("EMAIL_PORT", default=587)
+    EMAIL_USE_TLS   = env.bool("EMAIL_USE_TLS", default=True)
+    EMAIL_USE_SSL   = env.bool("EMAIL_USE_SSL", default=False)
     EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
     EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
+    # Remetente padrão: use endereço verificado no provedor (p/ Gmail, o mesmo da conta)
+    DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default=EMAIL_HOST_USER or "no-reply@localhost")
+    SERVER_EMAIL       = env("SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
 
-    # Se faltarem credenciais, cai automaticamente para console (não quebra o deploy)
+    # Sem credenciais → cai p/ console (evita quebrar deploy)
     if not EMAIL_HOST_USER or not EMAIL_HOST_PASSWORD:
-        EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-        DEFAULT_FROM_EMAIL = "no-reply@localhost"
-        SERVER_EMAIL = "server@localhost"
-    else:
-        DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default=EMAIL_HOST_USER)
-        SERVER_EMAIL = env("SERVER_EMAIL", default=EMAIL_HOST_USER)
+        EMAIL_BACKEND       = "django.core.mail.backends.console.EmailBackend"
+        DEFAULT_FROM_EMAIL  = "no-reply@localhost"
+        SERVER_EMAIL        = "server@localhost"
 else:
-    # Desliga e-mail por padrão (evita crash em prod sem variáveis)
-    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+    EMAIL_BACKEND      = "django.core.mail.backends.console.EmailBackend"
     DEFAULT_FROM_EMAIL = "no-reply@localhost"
-    SERVER_EMAIL = "server@localhost"
+    SERVER_EMAIL       = "server@localhost"
 
 EMAIL_TIMEOUT = 20
 

@@ -141,17 +141,21 @@
             <div class="col-md-6">
               <div class="border rounded p-2 h-100">
                 <div class="fw-semibold mb-2">Atual</div>
-                <img class="img-fluid rounded img-fit"
-                     src="{% if form.instance and form.instance.imagem %}{{ form.instance.imagem.url }}{% else %}{% static 'images/sem_imagem.png' %}{% endif %}"
-                     alt="Imagem atual da empresa">
+<img class="img-fluid rounded img-fit"
+     src="{% if form.instance and form.instance.imagem and form.instance.imagem.name %}
+              {{ form.instance.imagem.url }}
+          {% else %}
+              {% static 'core/images/sem_imagem.png' %}
+          {% endif %}"
+     alt="Imagem atual da empresa">
               </div>
             </div>
             <div class="col-md-6">
               <div class="border rounded p-2 h-100">
                 <div class="fw-semibold mb-2">Nova (pré-visualização)</div>
-                <img id="img-preview" class="img-fluid rounded img-fit"
-                     src="{% static 'images/sem_imagem.png' %}"
-                     alt="Pré-visualização">
+<img id="img-preview" class="img-fluid rounded img-fit"
+     src="{% static 'core/images/sem_imagem.png' %}"
+     alt="Pré-visualização">
                 <div class="mt-2">
                   {{ form.imagem|add_class:"form-control form-control-sm" }}
                   <div class="form-hint">A imagem só muda ao salvar.</div>
