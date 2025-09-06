@@ -159,19 +159,23 @@ LOGOUT_REDIRECT_URL = "/login/"
 # Media (local dev / Cloudinary prod se configurado)
 # ===========================
 cloud_name = env("CLOUDINARY_CLOUD_NAME", default="")
-api_key    = env("CLOUDINARY_API_KEY", default="")
+api_key = env("CLOUDINARY_API_KEY", default="")
 api_secret = env("CLOUDINARY_API_SECRET", default="")
 
-USE_CLOUDINARY = IS_PROD and cloud_name and api_key and api_secret
-
-if USE_CLOUDINARY:
+if not DEBUG and cloud_name and api_key and api_secret:
     import cloudinary
     cloudinary.config(cloud_name=cloud_name, api_key=api_key, api_secret=api_secret)
+
     DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
-    # NÃO force MEDIA_URL aqui; o storage do Cloudinary já gera URL pública com versão
+
+    # ⚠️ Não force MEDIA_URL para Cloudinary; deixe o storage gerar a URL absoluta
+    # MEDIA_URL = f"https://res.cloudinary.com/{cloud_name}/image/upload/"  # REMOVER
+
+    # Opcionalmente deixe sem definir, ou mantenha algo neutro:
+    MEDIA_URL = "/media/"   # neutro; não será usado para .url do FileField
 else:
     DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
-    MEDIA_URL  = "/media/"
+    MEDIA_URL = "/media/"
     MEDIA_ROOT = BASE_DIR / "media"
 
 # ===========================
