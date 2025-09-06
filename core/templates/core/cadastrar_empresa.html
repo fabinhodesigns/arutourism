@@ -131,7 +131,7 @@
                 <div class="col-12">
                   <label for="{{ form.imagem.id_for_label }}" class="form-label fw-semibold">Imagem da Empresa</label>
                   <div class="preview-wrap">
-                    <img id="img-preview" src="{% static 'images/sem_imagem.png' %}" alt="Pré-visualização da imagem" />
+                    <img id="img-preview" src="{% static 'core/images/sem_imagem.png' %}" alt="Pré-visualização da imagem" />
                     {{ form.imagem|add_class:"form-control form-control-sm" }}
                   </div>
                   <small class="form-text text-muted fst-italic mt-1">Pré-visualize a imagem antes de salvar.</small>
@@ -328,7 +328,7 @@
       } else {
         form.reset();
         if (marker){ map.removeLayer(marker); marker=null; }
-        if (imgPrev) imgPrev.src = "{% static 'images/sem_imagem.png' %}";
+        if (imgPrev) imgPrev.src = "{% static 'core/images/sem_imagem.png' %}";
       }
     }else{
       // tenta pegar JSON amigável

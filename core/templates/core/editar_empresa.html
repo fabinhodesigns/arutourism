@@ -98,7 +98,7 @@
               <div class="card-header fw-semibold">Imagem atual</div>
               <div class="card-body text-center">
                 <img id="img-atual"
-                     src="{% if form.instance and form.instance.imagem %}{{ form.instance.imagem.url }}{% else %}{% static 'images/sem_imagem.png' %}{% endif %}"
+                     src="{% if form.instance and form.instance.imagem %}{{ form.instance.imagem.url }}{% else %}{% static 'core/images/sem_imagem.png' %}{% endif %}"
                      alt="Imagem atual da empresa"
                      class="img-fluid rounded"
                      style="max-height:260px;">
@@ -111,7 +111,7 @@
               <div class="card-header fw-semibold">Nova imagem (pré-visualização)</div>
               <div class="card-body text-center">
                 <img id="img-preview"
-                     src="{% static 'images/sem_imagem.png' %}"
+                     src="{% static 'core/images/sem_imagem.png' %}"
                      alt="Pré-visualização da nova imagem"
                      class="img-fluid rounded"
                      style="max-height:260px;">

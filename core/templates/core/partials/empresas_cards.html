@@ -6,7 +6,7 @@
       {% if empresa.imagem %}
         <img class="card-img-top" src="{{ empresa.imagem.url }}" alt="{{ empresa.nome }}" loading="lazy">
       {% else %}
-        <img class="card-img-top" src="{% static 'images/sem_imagem.png' %}" alt="Sem imagem" loading="lazy">
+        <img class="card-img-top" src="{% static 'core/images/sem_imagem.png' %}" alt="Sem imagem" loading="lazy">
       {% endif %}
 
       <div class="card-body d-flex flex-column">

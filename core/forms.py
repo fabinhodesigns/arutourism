@@ -76,18 +76,19 @@ class UserRegistrationForm(forms.ModelForm):
             raise ValidationError('As senhas não correspondem.')
         return cleaned
 
-    def save(self, commit=True):
-        user = super().save(commit=False)
-        user.set_password(self.cleaned_data['password'])
-        user.email = (user.email or '').lower()
-        if commit:
-            user.save()
-            PerfilUsuario.objects.create(
-                user=user,
-                cpf_cnpj=self.cleaned_data['cpf_cnpj'],
-                full_name=self.cleaned_data['full_name']
-            )
-        return user
+def save(self, commit=True):
+    user = super().save(commit=False)
+    user.set_password(self.cleaned_data['password'])
+    user.email = (user.email or '').lower()
+
+    if commit:
+        user.save()
+        perfil, _ = PerfilUsuario.objects.get_or_create(user=user)
+        perfil.cpf_cnpj = re.sub(r"\D", "", self.cleaned_data['cpf_cnpj'])
+        perfil.full_name = self.cleaned_data.get('full_name') or perfil.full_name or user.username
+        perfil.save()
+
+    return user
     
 
 class ProfileForm(forms.ModelForm):
