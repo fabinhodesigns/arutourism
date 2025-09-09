@@ -11,6 +11,13 @@ class PerfilUsuario(models.Model):
     def __str__(self):
         return self.user.username
     
+    @property
+    def display_name(self):
+        full = (self.full_name or self.user.get_full_name() or self.user.first_name or "").strip()
+        if full:
+            return full.split()[0]
+        return (self.user.username or (self.user.email.split("@")[0] if self.user.email else "Você"))
+    
 class Categoria(models.Model):
     nome = models.CharField(max_length=150, unique=True)  # + espaço p/ nomes longos
     def nome_limpo(self):
