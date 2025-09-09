@@ -3,6 +3,7 @@
 {% block title %}ARUTOURISM - Login{% endblock %}
 
 {% load static %}
+{% load static widget_tweaks %}
 
 {% block content %}
     <div id="login-container" class="container d-flex justify-content-center align-items-center custom-container">
@@ -29,18 +30,20 @@
             <h4 class="text-center mb-4">Administração</h4>
             <p class="text-center mb-4">Entre com suas credenciais para acessar sua conta</p>
 
-            <form id="login-form" method="POST" novalidate>
+            <form id="login-form" method="POST" novalidate class="needs-validation">
                 {% csrf_token %}
                 <div class="mb-3">
-                    <label for="identificador" class="form-label">E-mail ou CPF</label>
-                    {{ form.identificador }}
+                    <label for="id_identificador" class="form-label">E-mail ou CPF</label>
+                    {{ form.identificador|add_class:"form-control"|attr:"autocomplete:username email"|attr:"inputmode:email" }}
+                    <div id="err-identificador" class="invalid-feedback" aria-live="assertive"></div>
                 </div>
                 <div class="mb-3">
-                    <label for="password" class="form-label">Senha</label>
-                    {{ form.password }}
+                    <label for="id_password" class="form-label">Senha</label>
+                    {{ form.password|add_class:"form-control"|attr:"autocomplete:current-password" }}
+                    <div id="err-password" class="invalid-feedback" aria-live="assertive"></div>
                 </div>
                 <button type="submit" class="btn btn-primary w-100">Login</button>
-                <div id="login-error" class="mt-3 text-danger text-center"></div>
+                <div id="login-error" class="mt-3 text-danger text-center" role="alert" aria-live="assertive"></div>
             </form>
 
             <hr class="my-4">
@@ -60,6 +63,80 @@
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
+    (function(){
+        const f = document.getElementById('login-form');
+        const id = document.getElementById('id_identificador');
+        const pw = document.getElementById('id_password');
+        const eId = document.getElementById('err-identificador');
+        const ePw = document.getElementById('err-password');
+        const globalErr = document.getElementById('login-error');
+
+        function setErr(input, el, msg){
+            if (msg){
+            input.classList.add('is-invalid');
+            input.setAttribute('aria-invalid','true');
+            el.textContent = msg;
+            }else{
+            input.classList.remove('is-invalid');
+            input.removeAttribute('aria-invalid');
+            el.textContent = '';
+            }
+        }
+
+        function validateIdentificador(){
+            const v = id.value.trim();
+            if (!v) { setErr(id, eId, 'Informe e-mail, CPF ou usuário.'); return false; }
+            if (v.includes('@')){
+            if (!window.validators.isEmail(v)){ setErr(id, eId, 'E-mail inválido.'); return false; }
+            }else if (window.validators.onlyDigits(v).length >= 11){
+            if (!window.validators.isCPF(v)){ setErr(id, eId, 'CPF inválido.'); return false; }
+            }
+            setErr(id, eId, '');
+            return true;
+        }
+        function validatePassword(){
+            if (!pw.value){ setErr(pw, ePw, 'Informe a senha.'); return false; }
+            setErr(pw, ePw, ''); return true;
+        }
+
+        id.addEventListener('blur', validateIdentificador);
+        pw.addEventListener('input', validatePassword);
+
+        f.addEventListener('submit', async (ev)=>{
+            ev.preventDefault();
+            globalErr.textContent = '';
+            const ok = validateIdentificador() & validatePassword();
+            if (!ok){ (id.classList.contains('is-invalid') ? id : pw).focus(); return; }
+
+            const fd = new FormData(f);
+            try{
+            const resp = await fetch("{% url 'login' %}", {
+                method:'POST',
+                headers:{'X-Requested-With':'XMLHttpRequest'},
+                body: fd
+            });
+            if (resp.ok){
+                const data = await resp.json();
+                if (data.redirect) location.href = data.redirect; return;
+            }
+            // 400 → mostra mensagens específicas
+            const data = await resp.json();
+            if (data.errors){
+                // prioriza códigos conhecidos
+                const bad = (arr)=> arr.find(e => e.code==='bad_password');
+                const notfound = (arr)=> arr.find(e => e.code==='user_not_found');
+                if (bad(data.errors)) setErr(pw, ePw, 'Senha incorreta.');
+                if (notfound(data.errors)) setErr(id, eId, 'Usuário não encontrado para o identificador informado.');
+                // fallback
+                if (!data.errors.length) globalErr.textContent = 'Não foi possível autenticar.';
+            }else{
+                globalErr.textContent = data.detail || 'Falha no login.';
+            }
+            }catch(err){
+            globalErr.textContent = 'Falha de conexão. Tente novamente.';
+            }
+        });
+        })();
     function getCookie(name) {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {

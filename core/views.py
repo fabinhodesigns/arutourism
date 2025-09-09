@@ -9,6 +9,7 @@ from io import BytesIO, StringIO
 from urllib.parse import urlparse, parse_qs
 from .forms import ProfileForm, CpfUpdateForm
 from .models import PerfilUsuario, Empresa
+from django.contrib.auth import authenticate
 
 import logging
 logger = logging.getLogger(__name__)
@@ -290,6 +291,20 @@ def _first_url_in_text(s):
     m = re.search(r'(https?://\S+)', s)
     return m.group(1) if m else None
 
+def _wants_json(request):
+    h = (request.headers.get("Accept") or "").lower()
+    return request.headers.get("x-requested-with") == "XMLHttpRequest" or "application/json" in h
+
+
+def _ident_kind(ident: str) -> str:
+    ident = (ident or "").strip()
+    if "@" in ident and "." in ident:
+        return "email"
+    digits = re.sub(r"\D+", "", ident)
+    if len(digits) >= 11:
+        return "cpf"
+    return "username"
+
 # ============================================================
 # Páginas básicas / Auth
 # ============================================================
@@ -316,12 +331,20 @@ def register(request):
         form = UserRegistrationForm(request.POST)
         if form.is_valid():
             form.save()
+            if _wants_json(request):
+                return JsonResponse({"ok": True, "redirect": reverse("login")})
             return redirect('login')
+
+        if _wants_json(request):
+            # serializa erros por campo
+            return JsonResponse({"ok": False, "errors": form.errors}, status=400)
+
         for field, errors in form.errors.items():
             for error in errors:
-                messages.error(request, f"Atenção: {error}")
+                messages.error(request, f"{field}: {error}")
     else:
         form = UserRegistrationForm()
+
     return render(request, 'core/register.html', {'form': form})
 
 def login_view(request):
@@ -329,13 +352,70 @@ def login_view(request):
         return redirect('home')
 
     if request.method == 'POST':
-        form = CustomLoginForm(request.POST)
-        if form.is_valid():
-            auth_login(request, form.user)
-            return redirect('home')
-        messages.error(request, "Usuário ou senha inválidos.")
+        ident = (request.POST.get('identificador') or "").strip()
+        pwd = request.POST.get('password') or ""
+        
+        # --- LÓGICA DE LOGIN MANUAL INSERIDA AQUI ---
+        user_obj = None
+        
+        # 1. Determina o tipo de identificador e busca o usuário
+        if '@' in ident:
+            # Busca por e-mail
+            user_obj = User.objects.filter(email__iexact=ident).first()
+        elif re.match(r'^\d{11}$|^\d{14}$', re.sub(r'\D', '', ident)):
+            # Busca por CPF
+            digits = re.sub(r'\D', '', ident)
+            perfil = PerfilUsuario.objects.select_related("user").filter(cpf_cnpj=digits).first()
+            if perfil:
+                user_obj = perfil.user
+        else:
+            # Por padrão, busca por username
+            user_obj = User.objects.filter(username__iexact=ident).first()
+
+        # 2. Se encontrou um usuário, tenta autenticar com a senha
+        if user_obj:
+            # IMPORTANTE: Usamos o user_obj.username para o authenticate!
+            user = authenticate(request, username=user_obj.username, password=pwd)
+            
+            if user is not None:
+                # Autenticação bem-sucedida!
+                if user.is_active:
+                    print(f"[LOGIN] Autenticação manual OK para user.id={user.id}")
+                    auth_login(request, user)
+                    
+                    # Lógica para resposta JSON ou redirect
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                        return JsonResponse({"ok": True, "redirect": reverse("home")})
+                    return redirect('home')
+                else:
+                    # Usuário inativo
+                    print(f"[LOGIN] Falha: usuário '{user.username}' está inativo.")
+                    messages.error(request, 'Esta conta está desativada.')
+            else:
+                # Senha incorreta
+                print(f"[LOGIN] Falha: Senha incorreta para o usuário '{user_obj.username}'.")
+                messages.error(request, 'Por favor, verifique seu identificador e senha.')
+        else:
+            # Usuário não encontrado
+            print(f"[LOGIN] Falha: Nenhum usuário encontrado para o identificador '{ident}'.")
+            messages.error(request, 'Por favor, verifique seu identificador e senha.')
+        
+        # Se chegou até aqui, o login falhou.
+        # Prepara a resposta de erro.
+        form = CustomLoginForm(request.POST) # Para reenviar o form com os dados
+        
+        if request.headers.get('X-Requested-with') == 'XMLHttpRequest':
+             # Pega a última mensagem de erro para enviar no JSON
+            error_message = str(list(messages.get_messages(request))[-1])
+            return JsonResponse({
+                "ok": False, 
+                "errors": [{"message": error_message}]
+            }, status=400)
+            
+        # Para requisições normais, renderiza a página com a mensagem de erro
         return render(request, 'core/login.html', {'form': form})
 
+    # GET
     form = CustomLoginForm()
     return render(request, 'core/login.html', {'form': form})
 
