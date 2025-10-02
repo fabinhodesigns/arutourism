@@ -1,0 +1,75 @@
+.page-shell {
+    min-height: 65vh
+}
+
+.hero-bar {
+    background: linear-gradient(135deg, #f8f9fa, #eef4ff);
+    border-bottom: 1px solid #e9ecef
+}
+
+.results-count {
+    font-size: .95rem;
+    color: #6c757d
+}
+
+.hero-bar .breadcrumb .breadcrumb-item.active {
+    color: #212529;
+    font-weight: 700;
+}
+
+.hero-bar .breadcrumb a {
+    text-decoration: none;
+}
+
+.filters-wrap {
+    background: #f8f9fb;
+    border: 1px solid #e9ecef;
+    border-radius: .75rem;
+    padding: .75rem 1rem
+}
+
+.filter-pill {
+    font-weight: 600;
+    background: #e7f1ff;
+    color: #0b5ed7
+}
+
+.empresa-card .card-img-top {
+    height: 200px;
+    object-fit: cover
+}
+
+.empresa-card {
+    transition: transform .15s, box-shadow .15s;
+    cursor: pointer
+}
+
+.empresa-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .12)
+}
+
+.empresa-card:focus-within {
+    outline: 2px solid #0d6efd;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 .2rem rgba(13, 110, 253, .15)
+}
+
+.badge-cat {
+    background: #e7f1ff;
+    color: #0b5ed7;
+    font-weight: 600
+}
+
+.empty-state {
+    border: 1px dashed #ced4da;
+    border-radius: .75rem;
+    padding: 2rem;
+    background: #f8f9fa
+}
+
+.empresa-card .card-img-top-placeholder i {
+  font-size: 4rem; /* Ícone grande */
+  color: #dee2e6;
+}
+

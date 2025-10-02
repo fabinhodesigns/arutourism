@@ -1,6 +1,8 @@
-/* Estilo básico do corpo da página */
+* {
+    font-family: 'Poppins', sans-serif !important;
+}
+
 body {
-    font-family: 'Poppins', sans-serif;
     height: 100vh;
     margin: 0;
     overflow-x: hidden;
@@ -17,7 +19,6 @@ body {
     border-radius: .5rem;
 }
 
-/* Animação do gradiente */
 @keyframes gradient-animation {
     0% {
         background-position: 0% 50%;
@@ -30,27 +31,24 @@ body {
     }
 }
 
-/* Container centralizado e compacto */
 .custom-container {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 1rem; /* Espaço ao redor reduzido */
-    background: transparent; /* Já está no body */
+    padding: 1rem;
+    background: transparent;
 }
 
-/* Card compacto do formulário */
 .custom-card {
     width: 100%;
-    max-width: 560px; /* Mais estreito que antes */
+    max-width: 560px;
     border-radius: 12px;
     background-color: #fff;
     box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
-    padding: 15px 20px; /* Padding reduzido */
+    padding: 15px 20px;
     box-sizing: border-box;
 }
 
-/* Títulos mais compactos */
 h2 {
     font-weight: 700;
     font-size: 26px;
@@ -71,7 +69,6 @@ p {
     text-align: center;
 }
 
-/* Inputs com padding menor */
 input, .form-check-input {
     border-radius: 5px;
     border: 1px solid #ddd;
@@ -81,26 +78,23 @@ input, .form-check-input {
     box-sizing: border-box;
 }
 
-/* Espaçamento mais reduzido entre elementos */
 .mb-3 {
     margin-bottom: 12px;
 }
 
-/* Radio buttons alinhados e espaçados */
 .d-flex {
     display: flex;
     align-items: center;
-    /* gap: 12px; */
+
 }
 
-/* Radio buttons com margem menor */
 .form-check-input {
     width: 1em !important;
     height: 1.5em !important;
 }
 
 .form-check-inline {
-  margin-right: 1rem; /* ou o valor que achar ideal */
+  margin-right: 1rem;
 }
 
 .d-flex > .form-check-inline {
@@ -108,7 +102,6 @@ input, .form-check-input {
   align-items: center;
 }
 
-/* Botão estilizado e compacto */
 button {
     width: 100%;
     padding: 10px;
@@ -125,7 +118,6 @@ button:hover {
     background-color: #0056b3;
 }
 
-/* Link "Cadastre-se" */
 a {
     color: #007bff;
     text-decoration: none;
@@ -137,25 +129,22 @@ a:hover {
     color: #0056b3;
 }
 
-/* NOTIFICAÇÕES */
 
-/* Fundo escuro transparente cobrindo a tela inteira */
 .message-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(0, 0, 0, 0.7); /* escurece e desfoca levemente */
+    background: rgba(0, 0, 0, 0.7);
     backdrop-filter: blur(4px);
     display: flex;
     justify-content: center;
-    align-items: flex-start; /* topo da tela */
+    align-items: flex-start;
     padding-top: 20px;
-    z-index: 1050; /* acima de tudo */
+    z-index: 1050;
 }
 
-/* Caixa das mensagens, centralizada e com tamanho máximo */
 .message-box {
     border-radius: 8px;
     padding: 1rem 1.5rem;
@@ -164,7 +153,6 @@ a:hover {
     position: relative;
 }
 
-/* Lista sem estilo e espaçamento entre as mensagens */
 .message-box ul {
     list-style: none;
     margin: 0;
@@ -181,7 +169,6 @@ a:hover {
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
-/* Botão fechar (X) posicionado no canto direito de cada mensagem */
 .message-box ul li .btn-close {
     position: absolute;
     top: 40%;
@@ -198,11 +185,8 @@ a:hover {
     color: #333;
 }
 
-/* NOTIFICAÇÕES */
 
-/* RESPONSIVIDADE */
 
-/* Mobile: background branco no container, removendo gradiente */
 @media (max-width: 575.98px) {
     body, .custom-container {
         overflow-y: auto;
@@ -249,7 +233,6 @@ a:hover {
     }
 }
 
-/* Tablet: background gradiente e padding médio */
 @media (min-width: 576px) and (max-width: 991.98px) {
     body {
         background: linear-gradient(-45deg, #2E3192, #1b8dff);

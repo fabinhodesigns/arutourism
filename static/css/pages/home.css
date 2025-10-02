@@ -1,0 +1,40 @@
+.empresa-card {
+  transition: transform .2s ease-in-out, box-shadow .2s ease-in-out;
+  position: relative; /* Essencial para o link overlay funcionar */
+}
+
+.empresa-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+}
+
+/* O link "invisível" que faz o card ser clicável */
+.empresa-card .card-link-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1; 
+}
+
+/* Faz o conteúdo ficar "acima" do link invisível para seleção de texto */
+.empresa-card .card-body {
+  position: relative;
+  z-index: 2;
+}
+
+.empresa-card .card-img-top {
+  height: 200px;
+  object-fit: cover;
+}
+
+.empresa-card .card-img-top-placeholder {
+  height: 200px;
+  background-color: #f8f9fa;
+}
+
+.empresa-card .card-img-top-placeholder i {
+  font-size: 4rem; /* Ícone grande */
+  color: #dee2e6;
+}

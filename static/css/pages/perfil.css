@@ -1,0 +1,18 @@
+.profile-hero {
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    color: #fff;
+    border-radius: 18px;
+}
+
+.avatar-lg {
+    width: 104px;
+    height: 104px;
+    object-fit: cover;
+    border-radius: 999px;
+    border: 3px solid #fff;
+}
+
+.metric-card {
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .06);
+}

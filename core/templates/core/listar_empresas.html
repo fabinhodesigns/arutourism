@@ -3,42 +3,11 @@
 
 {% block title %}Pontos turísticos — listagem{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/listar_empresas.css' %}">
+{% endblock %}
+
 {% block content %}
-<style>
-  .page-shell{min-height:65vh}
-  .hero-bar{
-    background:linear-gradient(135deg,#f8f9fa,#eef4ff);
-    border-bottom:1px solid #e9ecef
-  }
-  .results-count{font-size:.95rem;color:#6c757d}
-
-  /* >>> ajustes pedindo “Pontos turísticos” preto */
-  .hero-bar .breadcrumb .breadcrumb-item.active{
-    color:#212529;              /* preto */
-    font-weight:700;            /* negrito */
-  }
-  .hero-bar .breadcrumb a{
-    text-decoration:none;
-  }
-
-  /* Filtros */
-  .filters-wrap{
-    background:#f8f9fb;border:1px solid #e9ecef;border-radius:.75rem;
-    padding:.75rem 1rem
-  }
-  .filter-pill{font-weight:600;background:#e7f1ff;color:#0b5ed7}
-
-  /* Cards */
-  .empresa-card .card-img-top{height:200px;object-fit:cover}
-  .empresa-card{transition:transform .15s, box-shadow .15s; cursor:pointer}
-  .empresa-card:hover{transform:translateY(-2px);box-shadow:0 .5rem 1rem rgba(0,0,0,.12)}
-  .empresa-card:focus-within{outline:2px solid #0d6efd; outline-offset:2px; box-shadow:0 0 0 .2rem rgba(13,110,253,.15)}
-  .badge-cat{background:#e7f1ff;color:#0b5ed7;font-weight:600}
-
-  .empty-state{border:1px dashed #ced4da;border-radius:.75rem;padding:2rem;background:#f8f9fa}
-</style>
-
-<!-- Breadcrumb / Hero (ajustado) -->
 <div class="hero-bar py-4 mt-5">
   <div class="container d-flex flex-wrap justify-content-between align-items-center gap-3">
     <nav aria-label="breadcrumb" class="m-0">
@@ -52,9 +21,8 @@
       <div id="results-count" class="results-count" aria-live="polite">
         {{ page_obj.paginator.count }} resultado{% if page_obj.paginator.count != 1 %}s{% endif %}
       </div>
-      <button id="btn-open-filters" type="button"
-              class="btn btn-dark d-inline-flex align-items-center gap-2"
-              onclick="const c=document.getElementById('open-search'); c && c.click()">
+      <button id="btn-open-filters" type="button" class="btn btn-dark d-inline-flex align-items-center gap-2"
+        onclick="const c=document.getElementById('open-search'); c && c.click()">
         <i class="bi bi-funnel" aria-hidden="true"></i><span>Buscar / filtrar</span>
       </button>
     </div>
@@ -62,105 +30,62 @@
 </div>
 
 <main class="container page-shell py-4">
-  {% if filtros_aplicados.q or filtros_aplicados.categoria or filtros_aplicados.cidade or filtros_aplicados.com_imagem_real or filtros_aplicados.meus %}
-    <section class="filters-wrap mb-4" aria-label="Filtros aplicados">
-      <div class="d-flex flex-wrap align-items-center gap-2">
-        <span class="fw-semibold me-1">Filtros ativos:</span>
-        <div class="d-flex flex-wrap gap-2">
-          {% if filtros_legiveis.q %}<span class="badge rounded-pill filter-pill">termo: {{ filtros_legiveis.q }}</span>{% endif %}
-          {% if filtros_legiveis.categoria %}<span class="badge rounded-pill filter-pill">categoria: {{ filtros_legiveis.categoria }}</span>{% endif %}
-          {% if filtros_legiveis.cidade %}<span class="badge rounded-pill filter-pill">cidade: {{ filtros_legiveis.cidade }}</span>{% endif %}
-          {% if filtros_legiveis.com_imagem_real %}<span class="badge rounded-pill filter-pill">com imagem</span>{% endif %}
-          {% if filtros_legiveis.meus %}<span class="badge rounded-pill filter-pill">minhas empresas</span>{% endif %}
-        </div>
-        <div class="ms-auto d-flex gap-2">
-          <a class="btn btn-sm btn-outline-secondary" href="{% url 'listar_empresas' %}">Limpar filtros</a>
-          <button class="btn btn-sm btn-outline-secondary"
-                  onclick="const b=document.getElementById('open-search'); b && b.click()">Editar filtros</button>
-        </div>
+  {% if filtros_aplicados.q or filtros_aplicados.tag or filtros_aplicados.cidade or filtros_aplicados.com_imagem_real or filtros_aplicados.meus %}
+  <section class="filters-wrap mb-4" aria-label="Filtros aplicados">
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      <span class="fw-semibold me-1">Filtros ativos:</span>
+      <div class="d-flex flex-wrap gap-2">
+        {% if filtros_legiveis.q %}<span class="badge rounded-pill filter-pill">termo: {{ filtros_legiveis.q }}</span>{% endif %}
+        {% if filtros_legiveis.tag %}<span class="badge rounded-pill filter-pill">tag: {{ filtros_legiveis.tag }}</span>{% endif %}
+        {% if filtros_legiveis.cidade %}<span class="badge rounded-pill filter-pill">cidade: {{ filtros_legiveis.cidade }}</span>{% endif %}
+        {% if filtros_legiveis.com_imagem_real %}<span class="badge rounded-pill filter-pill">com imagem</span>{% endif %}
+        {% if filtros_legiveis.meus %}<span class="badge rounded-pill filter-pill">minhas empresas</span>{% endif %}
       </div>
-    </section>
+      <div class="ms-auto d-flex gap-2">
+        <a class="btn btn-sm btn-outline-secondary" href="{% url 'listar_empresas' %}">Limpar filtros</a>
+        <button class="btn btn-sm btn-outline-secondary"
+          onclick="const b=document.getElementById('open-search'); b && b.click()">Editar filtros</button>
+      </div>
+    </div>
+  </section>
   {% endif %}
 
   {% if page_obj.paginator.count == 0 %}
-    <div class="row justify-content-center">
-      <div class="col-12 col-md-10 col-lg-8">
-        <section class="empty-state text-center" aria-labelledby="empty-title">
-          <i class="bi bi-geo-alt fs-1 d-block mb-2" aria-hidden="true"></i>
-          <h2 id="empty-title" class="h5 mb-2">Nenhum resultado encontrado</h2>
-          <p class="text-muted mb-4">Ajuste os filtros ou explore outras categorias/cidades.</p>
-          <div class="d-flex gap-2 justify-content-center">
-            <a class="btn btn-light" href="{% url 'listar_empresas' %}">Limpar filtros</a>
-            <button class="btn btn-primary" onclick="const b=document.getElementById('open-search'); b && b.click()">
-              <i class="bi bi-sliders" aria-hidden="true"></i> Abrir filtros
-            </button>
-          </div>
-        </section>
-      </div>
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-10 col-lg-8">
+      <section class="empty-state text-center" aria-labelledby="empty-title">
+        <i class="bi bi-geo-alt fs-1 d-block mb-2" aria-hidden="true"></i>
+        <h2 id="empty-title" class="h5 mb-2">Nenhum resultado encontrado</h2>
+        <p class="text-muted mb-4">Ajuste os filtros ou explore outras categorias/cidades.</p>
+        <div class="d-flex gap-2 justify-content-center">
+          <a class="btn btn-light" href="{% url 'listar_empresas' %}">Limpar filtros</a>
+          <button class="btn btn-primary" onclick="const b=document.getElementById('open-search'); b && b.click()">
+            <i class="bi bi-sliders" aria-hidden="true"></i> Abrir filtros
+          </button>
+        </div>
+      </section>
     </div>
+  </div>
   {% else %}
-    <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 gx-4 gy-5" id="empresas-container">
-      {% include 'core/partials/empresas_cards.html' %}
-    </div>
+  <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 gx-4 gy-5" id="empresas-container">
+    {% include 'core/partials/empresas_cards.html' %}
+  </div>
 
-    {% if page_obj.has_next %}
-      <div class="d-flex flex-column align-items-center mt-4">
-        <div id="load-status" class="visually-hidden" aria-live="polite"></div>
-        <button id="load-more-btn" class="btn btn-primary btn-lg d-inline-flex align-items-center gap-2">
-          <span class="spinner-border spinner-border-sm d-none" aria-hidden="true"></span>
-          <span>Carregar mais</span>
-        </button>
-      </div>
-    {% endif %}
+  {% if page_obj.has_next %}
+  <div class="d-flex flex-column align-items-center mt-4">
+    <div id="load-status" class="visually-hidden" aria-live="polite"></div>
+    <button id="load-more-btn" class="btn btn-primary btn-lg d-inline-flex align-items-center gap-2"
+      data-url="{% url 'listar_empresas' %}" data-next-page="{{ page_obj.next_page_number }}">
+      <span class="spinner-border spinner-border-sm d-none" aria-hidden="true"></span>
+      <span>Carregar mais</span>
+    </button>
+  </div>
+  {% endif %}
   {% endif %}
 </main>
+{% endblock %}
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script>
-  // Acessibilidade: abrir card com Enter/Espaço
-  $(document).on('keydown', '.empresa-card', function (e) {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      const href = this.dataset.href || this.getAttribute('data-href');
-      if (href) window.location = href;
-    }
-  });
 
-  // Paginação incremental (Load more)
-  $(function(){
-    const $btn = $('#load-more-btn');
-    if (!$btn.length) return;
-
-    let nextPage = {% if page_obj.has_next %}{{ page_obj.next_page_number }}{% else %}null{% endif %};
-    const $spinner = $btn.find('.spinner-border');
-    const $status  = $('#load-status');
-
-    function setLoading(is){
-      $btn.prop('disabled', is);
-      $spinner.toggleClass('d-none', !is);
-      $status.text(is ? 'Carregando mais resultados…' : '');
-    }
-
-    $btn.on('click', function(){
-      if(!nextPage) return;
-      setLoading(true);
-      $.ajax({
-        url: "{% url 'listar_empresas' %}",
-        data: { page: nextPage, ajax: 1 },
-        dataType: 'json',
-        success: function(data){
-          $('#empresas-container').append(data.html);
-          if(data.has_next){
-            nextPage = data.next_page_number;
-          } else {
-            nextPage = null;
-            $btn.addClass('disabled').attr('aria-disabled','true').text('Não há mais resultados');
-          }
-        },
-        error: function(){ alert('Erro ao carregar mais empresas. Tente novamente.'); },
-        complete: function(){ setLoading(false); }
-      });
-    });
-  });
-</script>
+{% block extra_js %}
+<script src="{% static 'js/site/listar_empresas.js' %}"></script>
 {% endblock %}

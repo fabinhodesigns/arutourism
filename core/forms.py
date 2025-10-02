@@ -7,9 +7,8 @@ from django.contrib.auth import authenticate, get_user_model
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.forms import UserCreationForm
-from .models import PerfilUsuario
 from .utils.cpf import is_valid_cpf, only_digits
-from .models import Categoria, PerfilUsuario, Empresa
+from .models import Tag, PerfilUsuario, Empresa
 from django.core.validators import EmailValidator
 from django.contrib.auth.password_validation import validate_password
 
@@ -254,17 +253,25 @@ class CustomLoginForm(forms.Form):
 #  - usado nas suas telas atuais de cadastrar/editar
 # =========================================================
 class EmpresaForm(forms.ModelForm):
-    # imagem opcional na edição
-    imagem = forms.ImageField(required=False, label="Imagem da Empresa")
+    # ADICIONADO: Campo para selecionar múltiplas tags.
+    # Ele substitui a antiga lógica de dropdown de 'categoria'.
+    tags = forms.ModelMultipleChoiceField(
+        queryset=Tag.objects.order_by('nome'),
+        widget=forms.CheckboxSelectMultiple,
+        required=False,
+        label="Categorias / Tags"
+    )
 
-    # flags amigáveis
+    # MANTIDO: Seus campos de flags continuam iguais
+    imagem = forms.ImageField(required=False, label="Imagem da Empresa")
     sem_telefone = forms.BooleanField(required=False, label="Sem Telefone")
     sem_email = forms.BooleanField(required=False, label="Sem Email")
 
     class Meta:
         model = Empresa
+        # ALTERADO: Trocamos 'categoria' por 'tags' na lista de campos
         fields = [
-            'nome', 'categoria', 'descricao',
+            'nome', 'tags', 'descricao',
             'rua', 'bairro', 'cidade', 'numero', 'cep',
             'telefone', 'email',
             'site', 'facebook', 'instagram',
@@ -272,9 +279,9 @@ class EmpresaForm(forms.ModelForm):
             'latitude', 'longitude',
             'sem_telefone', 'sem_email',
         ]
+        # ALTERADO: O widget e label de 'categoria' foram removidos daqui
         widgets = {
             'nome': forms.TextInput(attrs={'placeholder': 'Digite o nome da empresa'}),
-            'categoria': forms.Select(),
             'descricao': forms.Textarea(attrs={'placeholder': 'Descreva a empresa', 'rows': 4}),
             'rua': forms.TextInput(attrs={'placeholder': 'Rua'}),
             'bairro': forms.TextInput(attrs={'placeholder': 'Bairro'}),
@@ -292,7 +299,6 @@ class EmpresaForm(forms.ModelForm):
         }
         labels = {
             'nome': 'Nome da Empresa',
-            'categoria': 'Categoria',
             'descricao': 'Descrição',
             'rua': 'Rua',
             'bairro': 'Bairro',
@@ -310,24 +316,21 @@ class EmpresaForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # Categorias em ordem alfabética + opção vazia
-        self.fields['categoria'].queryset = Categoria.objects.all().order_by('nome')
-        self.fields['categoria'].empty_label = "Selecione uma categoria"
-
-        # Classes padrão (combina com seu template)
         for name, field in self.fields.items():
+            if name == 'tags':  # Ignora o campo de checkboxes
+                continue
             if isinstance(field.widget, forms.Select):
                 field.widget.attrs.setdefault('class', 'form-select form-select-lg')
             elif not isinstance(field.widget, (forms.CheckboxInput, forms.HiddenInput, forms.ClearableFileInput)):
                 field.widget.attrs.setdefault('class', 'form-control form-control-lg')
 
-        # Defaults para lat/lng (evita 400 por campo vazio)
+        # MANTIDO: Sua lógica de valores iniciais para latitude/longitude
         if not self.initial.get('latitude'):
             self.initial['latitude'] = Empresa._meta.get_field('latitude').default
         if not self.initial.get('longitude'):
             self.initial['longitude'] = Empresa._meta.get_field('longitude').default
 
-    # ------------ validações de campos isolados ------------
+    # MANTIDO: Todas as suas validações customizadas ('clean_...') permanecem intactas
     def clean_numero(self):
         numero = self.cleaned_data.get('numero')
         if numero and not numero.isdigit():
@@ -342,7 +345,6 @@ class EmpresaForm(forms.ModelForm):
         telefone = self.cleaned_data.get('telefone')
         if telefone:
             tel = _digits(telefone)
-            # aceita 10 ou 11 dígitos (com DDD)
             if len(tel) not in (10, 11):
                 raise ValidationError("O telefone deve ter 10 ou 11 dígitos (com DDD).")
             return _clip_model(Empresa, 'telefone', tel)
@@ -363,43 +365,32 @@ class EmpresaForm(forms.ModelForm):
             raise ValidationError("Informe uma URL válida do Instagram.")
         return _clip_model(Empresa, 'instagram', url)
 
-    # ----------------------- clean global -------------------
+    # MANTIDO: Sua validação global ('clean') permanece intacta
     def clean(self):
         cleaned = super().clean()
-
-        # latitude/longitude default se vazias
         if not cleaned.get('latitude'):
             cleaned['latitude'] = Empresa._meta.get_field('latitude').default
         if not cleaned.get('longitude'):
             cleaned['longitude'] = Empresa._meta.get_field('longitude').default
-
-        # Regras "sem_*"
         telefone = (cleaned.get('telefone') or '').strip()
         email = (cleaned.get('email') or '').strip()
         sem_tel = cleaned.get('sem_telefone')
         sem_mail = cleaned.get('sem_email')
-
         if not sem_tel and not telefone:
             self.add_error('telefone', 'Obrigatório ou marque "Sem Telefone".')
         if not sem_mail and not email:
             self.add_error('email', 'Obrigatório ou marque "Sem Email".')
-
         if sem_tel:
-            cleaned['telefone'] = ''  # garante vazio no save
+            cleaned['telefone'] = ''
         if sem_mail:
             cleaned['email'] = ''
-
-        # Descrição opcional com fallback (se quiser)
         if not cleaned.get('descricao'):
             cleaned['descricao'] = _clip_model(
                 Empresa, 'descricao',
                 'Estabelecimento cadastrado no sistema.'
             )
-
-        # clipping extra para caber no banco
         for field in ['nome', 'rua', 'bairro', 'cidade', 'descricao', 'facebook', 'instagram']:
             cleaned[field] = _clip_model(Empresa, field, cleaned.get(field))
-
         return cleaned
 
 
@@ -408,29 +399,31 @@ class EmpresaForm(forms.ModelForm):
 #   Use este form na página de edição “completa”
 # =========================================================
 class EmpresaFullForm(forms.ModelForm):
+    tags = forms.ModelMultipleChoiceField(
+        queryset=Tag.objects.order_by('nome'),
+        widget=forms.CheckboxSelectMultiple,
+        required=False,
+        label="Categorias / Tags"
+    )
+    
+    # MANTIDO: Seus campos de flags
     sem_telefone = forms.BooleanField(required=False, label="Sem Telefone")
     sem_email = forms.BooleanField(required=False, label="Sem Email")
 
     class Meta:
         model = Empresa
+        # ALTERADO: Trocamos 'categoria' por 'tags'
         fields = [
-            # essenciais
-            'nome', 'categoria', 'descricao',
-            # identificação
+            'nome', 'tags', 'descricao',
             'cnpj', 'cadastrur',
-            # endereço granular + completo
             'rua', 'bairro', 'cidade', 'numero', 'cep', 'endereco_full',
-            # localização
             'latitude', 'longitude',
-            # contatos
             'telefone', 'email', 'contato_direto',
-            # presença digital (TODOS)
             'site', 'digital', 'maps_url', 'app_url', 'facebook', 'instagram',
-            # imagem
             'imagem',
-            # flags
             'sem_telefone', 'sem_email',
         ]
+        # MANTIDO: Seus widgets, a referência a 'categoria' não estava aqui
         widgets = {
             'descricao': forms.Textarea(attrs={'rows': 4, 'placeholder': 'Descreva o estabelecimento'}),
             'endereco_full': forms.TextInput(attrs={'placeholder': 'Se preferir, informe o endereço completo'}),
@@ -450,23 +443,21 @@ class EmpresaFullForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.fields['categoria'].queryset = Categoria.objects.all().order_by('nome')
-        self.fields['categoria'].empty_label = "Selecione uma categoria"
-
-        # aplica classes padrão
         for name, field in self.fields.items():
+            if name == 'tags':
+                continue
             if isinstance(field.widget, forms.Select):
                 field.widget.attrs.update({'class': 'form-select form-select-lg'})
             elif not isinstance(field.widget, (forms.CheckboxInput, forms.HiddenInput, forms.ClearableFileInput)):
                 field.widget.attrs.update({'class': 'form-control form-control-lg'})
 
-        # defaults lat/lng
+        # MANTIDO: Lógica de valores iniciais
         if not self.initial.get('latitude'):
             self.initial['latitude'] = Empresa._meta.get_field('latitude').default
         if not self.initial.get('longitude'):
             self.initial['longitude'] = Empresa._meta.get_field('longitude').default
 
-    # --- saneamentos básicos (espelham o form simples) ---
+    # MANTIDO: Suas validações customizadas
     def clean_cep(self):
         return _clip_model(Empresa, 'cep', _digits(self.cleaned_data.get('cep')))
 
@@ -485,44 +476,37 @@ class EmpresaFullForm(forms.ModelForm):
             raise ValidationError("O número deve conter apenas dígitos.")
         return _clip_model(Empresa, 'numero', numero)
 
+    # MANTIDO: Sua validação global
     def clean(self):
         cleaned = super().clean()
-
-        # defaults lat/lng
         if not cleaned.get('latitude'):
             cleaned['latitude'] = Empresa._meta.get_field('latitude').default
         if not cleaned.get('longitude'):
             cleaned['longitude'] = Empresa._meta.get_field('longitude').default
-
         sem_telefone = cleaned.get('sem_telefone')
         sem_email = cleaned.get('sem_email')
         telefone = cleaned.get('telefone')
         email = cleaned.get('email')
-
         if not sem_telefone and not telefone:
             self.add_error('telefone', 'Este campo é obrigatório ou marque "Sem Telefone".')
         if not sem_email and not email:
             self.add_error('email', 'Este campo é obrigatório ou marque "Sem Email".')
-
         if sem_telefone:
             cleaned['telefone'] = ''
         if sem_email:
             cleaned['email'] = ''
-
-        # clipping extra
         for field in [
             'nome', 'rua', 'bairro', 'cidade', 'endereco_full', 'descricao',
             'contato_direto', 'cnpj', 'cadastrur', 'site', 'digital', 'maps_url',
             'app_url', 'facebook', 'instagram'
         ]:
             cleaned[field] = _clip_model(Empresa, field, cleaned.get(field))
-
         return cleaned
     
 class CpfUpdateForm(forms.Form):
     cpf_cnpj = forms.CharField(
         label="CPF",
-        max_length=14,  # com máscara
+        max_length=14,
         widget=forms.TextInput(attrs={
             "class": "form-control",
             "placeholder": "000.000.000-00",
@@ -546,10 +530,10 @@ class CpfUpdateForm(forms.Form):
 
     def clean_cpf_cnpj(self):
         raw = self.cleaned_data.get("cpf_cnpj", "")
+        # Você precisa ter a função _only_digits e _cpf_is_valid no topo do seu arquivo
         digits = _only_digits(raw)
         if len(digits) != 11 or not _cpf_is_valid(digits):
             raise forms.ValidationError("CPF inválido.")
-        # unicidade amigável (além da constraint do banco)
         qs = PerfilUsuario.objects.filter(cpf_cnpj=digits).exclude(user=self.user)
         if qs.exists():
             raise forms.ValidationError("Este CPF já está em uso por outra conta.")
@@ -559,6 +543,16 @@ class CpfUpdateForm(forms.Form):
         cleaned = super().clean()
         pwd = cleaned.get("password")
         if not pwd or not self.user.check_password(pwd):
-            # mensagem neutra para não vazar se a conta existe
             raise forms.ValidationError("Não foi possível validar sua senha.")
         return cleaned
+    
+class TagForm(forms.ModelForm):
+    class Meta:
+        model = Tag
+        fields = ['nome']
+        widgets = {
+            'nome': forms.TextInput(attrs={
+                'class': 'form-control form-control-lg', 
+                'placeholder': 'Nome da nova tag'
+            })
+        }

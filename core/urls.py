@@ -25,8 +25,8 @@ urlpatterns = [
 
     # Empresas
     path('empresas/', views.listar_empresas, name='listar_empresas'),
-    path('empresa/<int:empresa_id>/', views.empresa_detalhe, name='empresa_detalhe'),
-    path('empresa/<int:empresa_id>/editar/', views.editar_empresa, name='editar_empresa'),
+    path('empresa/<slug:slug>/', views.empresa_detalhe, name='empresa_detalhe'),
+    path('empresa/<slug:slug>/editar/', views.editar_empresa, name='editar_empresa'),
     path('cadastrar_empresa/', views.cadastrar_empresa, name='cadastrar_empresa'),
     path('suas_empresas/', views.suas_empresas, name='suas_empresas'),
 
@@ -48,6 +48,7 @@ urlpatterns = [
     # core/urls.py
     
     path('perfil/alterar-cpf/', views.perfil_alterar_cpf, name='perfil_alterar_cpf'),
+    path('gerenciar-tags/', views.gerenciar_tags, name='gerenciar_tags'),
 ]
 
 # servir mídia local quando DEBUG=True

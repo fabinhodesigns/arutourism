@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -5,115 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Página Não Encontrada</title>
     
-    <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-            height: 100vh;
-            margin: 0;
-            overflow: hidden;
-            background: linear-gradient(-45deg, #2E3192, #1b8dff);
-            background-size: 400% 400%;
-            animation: gradient-animation 10s ease infinite;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: #333;
-        }
-
-        @keyframes gradient-animation {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        .error-container {
-            text-align: center;
-            max-width: 90%;
-        }
-
-        .error-card {
-            background-color: #fff;
-            padding: 2rem 3rem;
-            border-radius: 12px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            display: inline-block;
-            max-width: 600px;
-            border-radius: 1rem;
-        }
-
-        .error-code {
-            font-size: 8rem;
-            font-weight: 700;
-            color: #1b8dff;
-            margin: 0;
-            line-height: 1;
-        }
-
-        .error-heading {
-            font-weight: 600;
-            font-size: 2rem;
-            margin-top: 1rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .error-message {
-            font-size: 1rem;
-            color: #6c757d;
-            margin-bottom: 2rem;
-        }
-
-        .home-button {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 12px 24px;
-            font-size: 1rem;
-            font-weight: 500;
-            background-color: #007bff;
-            border: none;
-            border-radius: 5px;
-            color: white;
-            text-decoration: none;
-            cursor: pointer;
-            transition: background-color 0.25s ease;
-        }
-
-        .home-button:hover {
-            background-color: #0056b3;
-        }
-
-        @media (max-width: 576px) {
-            body {
-                align-items: flex-start;
-                padding-top: 5vh;
-            }
-
-            .error-card {
-                padding: 1.5rem 1rem;
-                box-shadow: none;
-                border-radius: 0;
-                height: 50vh;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-            }
-
-            .error-code {
-                font-size: 6rem;
-            }
-
-            .error-heading {
-                font-size: 1.5rem;
-            }
-
-            .error-message {
-                font-size: 0.9rem;
-            }
-        }
-    </style>
+    {% block extra_css %}
+        <link rel="stylesheet" href="{% static 'css/pages/404.css' %}">
+    {% endblock %} 
 </head>
 <body>
-
     <div class="error-container">
         <div class="error-card">
             <h1 class="error-code">404</h1>

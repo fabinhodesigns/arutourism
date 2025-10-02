@@ -1,19 +1,18 @@
+{% load static %}
+
 <!DOCTYPE html>
 <html lang="pt">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}ARUTOURISM{% endblock %}</title> 
+    <title>{% block title %}ARUTOURISM{% endblock %}</title>
 
-    {% load static %}
 
-    <link rel="icon" href="{% static 'core/images/at-transparent-blue.png' %}" type="image/x-icon">
-
-    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
-    <link rel="stylesheet" href="{% static 'css/admin/login.css' %}">
-
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    {% block extra_css %}
+        <link rel="icon" href="{% static 'core/images/at-transparent-blue.png' %}" type="image/x-icon">
+        <link rel="stylesheet" href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}">
+        <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    {% endblock %} 
 
     <script type="text/javascript">
         (function(c,l,a,r,i,t,y){
@@ -29,33 +28,10 @@
         {% block content %}{% endblock %}
     </div>
 
-    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{% static 'js/jquery-3.6.0.min.js' %}"></script>
+    <script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+    <script src="{% static 'js/site/auth_helpers.js' %}"></script>
 
-    <script>
-                    $(function () {
-                $(".message-box .btn-close").on("click", function () {
-                    console.log("adfsfas")
-                    $(this).closest("li").fadeOut(function () {
-                        $(this).remove();
-                        if ($(".message-box ul li").length === 0) {
-                            $("#message-overlay").fadeOut();
-                        }
-                    });
-                });
-
-                $("#id_username").on("input", function () {
-                    let value = $(this).val();
-                    if (/\s/.test(value)) {
-                        $(this).val(value.replace(/\s/g, '')); // remove espaços
-                        $(this).attr("placeholder", "Usuário não pode conter espaços");
-                        // Opcional: mostra um alerta, ou efeito visual
-                    } else {
-                        $(this).attr("placeholder", "Digite seu usuário");
-                    }
-                });
-            });
-    </script>
+    {% block extra_js %}{% endblock %}
 </body>
-
 </html>

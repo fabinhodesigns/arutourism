@@ -134,7 +134,7 @@ class TestesFuncionalidadesCRUD(TestCase):
             'bairro': 'Bairro Novo', 'cidade': 'Cidade Nova', 'numero': '2',
             'cep': '87654321', 'telefone': '22222222222', 'email': 'novo@email.com'
         }
-        url = reverse('editar_empresa', kwargs={'empresa_id': empresa.id})
+        url = reverse('editar_empresa', kwargs={'empresa_id': empresa.slug})
         response = self.client.post(url, data=form_data_atualizado)
         self.assertEqual(response.status_code, 302)
         empresa.refresh_from_db()

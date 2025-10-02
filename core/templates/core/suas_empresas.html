@@ -1,18 +1,12 @@
 {% extends 'base2.html' %}
 {% load static %}
-
 {% block title %}Suas Empresas Cadastradas{% endblock %}
 
-{% block content %}
-<style>
-  .page-shell{ min-height:65vh; }
-  .empresa-card .card-img-top{ height:200px; object-fit:cover; }
-  .empresa-card{ min-width:280px; transition:transform .15s, box-shadow .15s; cursor:pointer; }
-  .empresa-card:hover{ transform:translateY(-2px); box-shadow:0 .5rem 1rem rgba(0,0,0,.15); }
-  .empty-state{ border:1px dashed #ced4da; border-radius:.75rem; padding:2rem; background:#f8f9fa; }
-  main .container{ min-height:60vh; }
-</style>
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/pages/suas_empresas.css' %}">
+{% endblock %} 
 
+{% block content %}
 <div class="container page-shell py-5 mt-5">
   <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4 w-100">
     <h2 class="fw-bold m-0">Suas Empresas Cadastradas</h2>
@@ -38,7 +32,7 @@
     {% with qtd=page_obj.object_list|length %}
     <div class="row g-4 {% if qtd == 1 %}justify-content-center{% endif %}" id="empresas-container">
       {# Usa o mesmo partial de cards para manter consistência visual #}
-      {% include 'core/partials/empresas_cards.html' %}
+      {# {% include 'core/partials/empresas_cards.html' %} #}
     </div>
     {% endwith %}
 
@@ -50,34 +44,4 @@
   {% endif %}
 </div>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script>
-  // Acessibilidade: Enter/Espaço abre o card
-  $(document).on('keydown', '.empresa-card', function (e) {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); window.location = this.dataset.href; }
-  });
-
-  // "Carregar mais" via AJAX (rota de "suas_empresas")
-  $(function(){
-    const $btn = $('#load-more-btn'); if (!$btn.length) return;
-    let nextPage = {% if page_obj.has_next %}{{ page_obj.next_page_number }}{% else %}null{% endif %};
-    $btn.on('click', function(){
-      if(!nextPage) return;
-      $.ajax({
-        url: "{% url 'suas_empresas' %}",
-        data: { page: nextPage },
-        dataType: 'json',
-        success: function(data){
-          $('#empresas-container').append(data.html);
-          if(data.has_next){
-            nextPage = data.next_page_number;
-          } else {
-            nextPage = null; $btn.hide();
-          }
-        },
-        error: function(){ alert('Erro ao carregar mais empresas.'); }
-      });
-    });
-  });
-</script>
 {% endblock %}

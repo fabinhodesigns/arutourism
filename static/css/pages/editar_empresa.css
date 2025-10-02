@@ -1,0 +1,34 @@
+  .hero {
+      background: linear-gradient(135deg, #f8f9fa, #eef4ff);
+      border-bottom: 1px solid #e9ecef
+  }
+
+  .section-card {
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, .06);
+  }
+
+  .form-hint {
+      font-size: .9rem;
+      color: #6c757d
+  }
+
+  .img-fit {
+      max-height: 260px;
+      object-fit: cover
+  }
+
+  .badge-muted {
+      background: #e9ecef;
+      color: #495057
+  }
+
+  .tag-checkbox-container>div {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 10px;
+  }
+
+  .tag-checkbox-container .form-check {
+      margin: 0;
+  }

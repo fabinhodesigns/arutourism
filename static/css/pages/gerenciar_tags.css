@@ -1,0 +1,36 @@
+.management-card {
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .06);
+    background-color: #fff;
+}
+
+.parent-tag-header {
+    font-weight: bold;
+    font-size: 1.2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.child-tag-list {
+    list-style-type: none;
+    padding-left: 1.5rem;
+}
+
+.child-tag-list li {
+    margin-bottom: 0.5rem;
+}
+
+.modal-body .form-check {
+    padding: 0.5rem;
+    border-radius: 6px;
+}
+
+.modal-body .form-check:hover {
+    background-color: #f8f9fa;
+}
+
+#childrenModal .modal-body {
+    max-height: 60vh;
+    overflow-y: auto;
+}

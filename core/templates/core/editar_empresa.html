@@ -4,14 +4,12 @@
 
 {% block title %}Editar: {{ empresa.nome }}{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/editar_empresa.css' %}">
+<link rel="stylesheet" href="{% static 'css/leaflet.css' %}">
+{% endblock %}
+
 {% block content %}
-<style>
-  .hero{background:linear-gradient(135deg,#f8f9fa,#eef4ff);border-bottom:1px solid #e9ecef}
-  .section-card{border-radius:14px; box-shadow:0 8px 24px rgba(0,0,0,.06);}
-  .form-hint{font-size:.9rem;color:#6c757d}
-  .img-fit{max-height:260px; object-fit:cover}
-  .badge-muted{background:#e9ecef;color:#495057}
-</style>
 
 <header class="hero py-4 mt-5" style="margin-top: 100px !important;">
   <div class="container d-flex justify-content-between align-items-center gap-3">
@@ -23,7 +21,7 @@
       </ol>
     </nav>
     <div class="d-flex align-items-center gap-2">
-      <a class="btn btn-outline-secondary" href="{% url 'empresa_detalhe' empresa.id %}">Ver página</a>
+      <a class="btn btn-outline-secondary" href="{% url 'empresa_detalhe' empresa.slug %}">Ver página</a>
     </div>
   </div>
 </header>
@@ -37,22 +35,21 @@
     <div class="fw-semibold mb-2">Corrija os campos abaixo:</div>
     <ul class="mb-0">
       {% for field in form %}
-        {% for e in field.errors %}
-          <li><strong>{{ field.label }}:</strong> {{ e }}</li>
-        {% endfor %}
+      {% for e in field.errors %}
+      <li><strong>{{ field.label }}:</strong> {{ e }}</li>
+      {% endfor %}
       {% endfor %}
       {% for e in form.non_field_errors %}
-        <li>{{ e }}</li>
+      <li>{{ e }}</li>
       {% endfor %}
     </ul>
   </div>
-{% endif %}
+  {% endif %}
 
   <form id="empresa-form" method="POST" enctype="multipart/form-data" novalidate>
     {% csrf_token %}
     <div class="row g-4">
 
-      <!-- Coluna principal -->
       <div class="col-lg-8">
         <div class="section-card bg-white p-4">
           <h2 class="h5 fw-bold mb-3">Informações gerais</h2>
@@ -62,13 +59,19 @@
               {{ form.nome|add_class:"form-control"|attr:"placeholder:Nome da empresa" }}
             </div>
             <div class="col-md-4">
-              <label class="form-label">Categoria *</label>
-              {{ form.categoria|add_class:"form-select" }}
+              <div class="col-12">
+                <label class="form-label fw-semibold">{{ form.tags.label }}</label>
+                <div class="tag-checkbox-container p-2 border rounded">
+                  {{ form.tags }}
+                </div>
+                <small class="text-muted">Selecione uma ou mais tags para esta empresa.</small>
+              </div>
             </div>
 
             <div class="col-12">
               <label class="form-label">Descrição</label>
-              {{ form.descricao|add_class:"form-control"|attr:"rows:4"|attr:"placeholder:Conte sobre o local, serviços, diferenciais..." }}
+              {{ form.descricao|add_class:"form-control"|attr:"rows:4"|attr:"placeholder:Conte sobre o local, serviços,
+              diferenciais..." }}
               <div class="form-hint mt-1">Se vazio, uma descrição padrão pode ser aplicada.</div>
             </div>
           </div>
@@ -141,21 +144,18 @@
             <div class="col-md-6">
               <div class="border rounded p-2 h-100">
                 <div class="fw-semibold mb-2">Atual</div>
-<img class="img-fluid rounded img-fit"
-     src="{% if form.instance and form.instance.imagem and form.instance.imagem.name %}
+                <img class="img-fluid rounded img-fit" src="{% if form.instance and form.instance.imagem and form.instance.imagem.name %}
               {{ form.instance.imagem.url }}
           {% else %}
               {% static 'core/images/sem_imagem.png' %}
-          {% endif %}"
-     alt="Imagem atual da empresa">
+          {% endif %}" alt="Imagem atual da empresa">
               </div>
             </div>
             <div class="col-md-6">
               <div class="border rounded p-2 h-100">
                 <div class="fw-semibold mb-2">Nova (pré-visualização)</div>
-<img id="img-preview" class="img-fluid rounded img-fit"
-     src="{% static 'core/images/sem_imagem.png' %}"
-     alt="Pré-visualização">
+                <img id="img-preview" class="img-fluid rounded img-fit" src="{% static 'core/images/sem_imagem.png' %}"
+                  alt="Pré-visualização">
                 <div class="mt-2">
                   {{ form.imagem|add_class:"form-control form-control-sm" }}
                   <div class="form-hint">A imagem só muda ao salvar.</div>
@@ -179,101 +179,26 @@
         </div>
       </div>
 
-      <!-- Coluna lateral com metadados -->
       <aside class="col-lg-4">
         <div class="section-card bg-white p-4">
           <h2 class="h6 fw-bold">Resumo</h2>
-          <div class="small text-muted">ID #{{ empresa.id }}</div>
+          <div class="small text-muted">ID #{{ empresa.slug }}</div>
           <div class="mt-2"><span class="badge badge-muted">Categoria</span> {{ empresa.categoria.nome }}</div>
           <div class="mt-2"><span class="badge badge-muted">Cidade</span> {{ empresa.cidade|default:"—" }}</div>
           <div class="mt-2"><span class="badge badge-muted">Telefone</span> {{ empresa.telefone|default:"—" }}</div>
           <hr>
           <div class="small text-muted">Proprietário: {{ empresa.user.username }}</div>
-          <div class="small text-muted">Atualizado em: {{ empresa.atualizado_em|default:empresa.data_cadastro|date:"d/m/Y H:i" }}</div>
+          <div class="small text-muted">Atualizado em: {{
+            empresa.atualizado_em|default:empresa.data_cadastro|date:"d/m/Y H:i" }}</div>
         </div>
       </aside>
     </div>
   </form>
 </main>
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-(function(){
-  // Pré-visualização da nova imagem
-  const file = document.querySelector('input[type="file"][name$="imagem"]');
-  const prev = document.getElementById('img-preview');
-  if (file && prev){
-    file.addEventListener('change', function(){
-      const f = this.files && this.files[0];
-      if (!f) return;
-      const reader = new FileReader();
-      reader.onload = e => prev.src = e.target.result;
-      reader.readAsDataURL(f);
-    });
-  }
+{% block extra_js %}
+  <script src="{% static 'js/leaflet.js' %}"></script>
+  <script src="{% static 'js/site/editar_empresa.js' %}"></script>
+{% endblock %}
 
-  // Mapa
-  const mapEl = document.getElementById('map');
-  if (mapEl && window.L){
-    const latInput = document.getElementById('id_latitude');
-    const lngInput = document.getElementById('id_longitude');
-    const DEF = {lat:-28.937100, lng:-49.484000};
-    let lat = parseFloat(latInput?.value); if (Number.isNaN(lat)) lat = DEF.lat;
-    let lng = parseFloat(lngInput?.value); if (Number.isNaN(lng)) lng = DEF.lng;
-
-    const map = L.map(mapEl, {keyboard:true}).setView([lat,lng], 14);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
-    const marker = L.marker([lat,lng], {keyboard:true}).addTo(map);
-
-    function update(ll){ if(latInput) latInput.value = ll.lat.toFixed(6); if(lngInput) lngInput.value = ll.lng.toFixed(6); }
-    map.on('click', e => { marker.setLatLng(e.latlng); update(e.latlng); });
-    mapEl.addEventListener('keydown', e=>{
-      const step=0.0005, p=marker.getLatLng(); let h=true;
-      if(e.key==='ArrowUp') marker.setLatLng([p.lat+step,p.lng]);
-      else if(e.key==='ArrowDown') marker.setLatLng([p.lat-step,p.lng]);
-      else if(e.key==='ArrowLeft') marker.setLatLng([p.lat,p.lng-step]);
-      else if(e.key==='ArrowRight') marker.setLatLng([p.lat,p.lng+step]);
-      else h=false;
-      if(h){ update(marker.getLatLng()); e.preventDefault(); }
-    });
-    setTimeout(()=>map.invalidateSize(),0);
-  }
-
-  // Envio AJAX opcional (ative adicionando data-ajax="1" no <form>)
-  const form = document.getElementById('empresa-form');
-  if (form && form.dataset.ajax === "1"){
-    form.addEventListener('submit', async (e)=>{
-      e.preventDefault();
-      const fd = new FormData(form);
-      const resp = await fetch(form.action || location.href, {
-        method:'POST',
-        body: fd,
-        headers: {
-          'X-Requested-With':'XMLHttpRequest',
-          'Accept':'application/json'
-        }
-      });
-
-      if (resp.redirected){ location.href = resp.url; return; }
-
-      const ct = resp.headers.get('content-type') || '';
-      if (ct.includes('application/json')){
-        const data = await resp.json();
-        if (resp.ok && data.ok !== false){
-          location.href = data.redirect_url || "{% url 'suas_empresas' %}";
-        } else {
-          document.getElementById('form-errors').innerHTML = data.html || `<div class="alert alert-danger">${data.error||'Erro ao salvar.'}</div>`;
-        }
-      } else {
-        // Só lemos UMA vez: texto puro
-        const html = await resp.text();
-        document.getElementById('form-errors').innerHTML =
-          '<div class="alert alert-danger">Erro ao processar a resposta do servidor.</div>';
-        console.warn('Resposta não JSON:', html);
-      }
-    });
-  }
-})();
-</script>
 {% endblock %}

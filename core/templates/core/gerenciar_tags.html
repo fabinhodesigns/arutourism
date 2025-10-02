@@ -1,0 +1,115 @@
+{% extends 'base2.html' %}
+{% block title %}Gerenciar Tags{% endblock %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/gerenciar_tags.css' %}">
+{% endblock %} 
+
+{% block content %}
+<div class="container py-5 mt-5">
+  <div class="text-center mb-5">
+    <h2 class="fw-bold">Gerenciamento de Tags</h2>
+    <p class="text-muted">Adicione novas tags e organize-as em categorias e subcategorias.</p>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="row g-4">
+    <div class="col-lg-4">
+      <div class="management-card p-4 sticky-top" style="top: 120px;">
+        <h4 class="fw-bold mb-3">Adicionar Nova Tag</h4>
+        <form method="POST" action="{% url 'gerenciar_tags' %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="add">
+          {{ form.nome }}
+          <div class="d-grid mt-2">
+            <button class="btn btn-primary btn-lg" type="submit">Adicionar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="col-lg-8">
+      <div class="management-card p-4">
+        <h4 class="fw-bold mb-3">Hierarquia de Tags</h4>
+        <div id="hierarchy-area">
+          {% for parent in parent_tags %}
+          <div class="mb-4">
+            <div class="parent-tag-header">
+              <span>{{ parent.nome }}</span>
+              <div class="d-flex gap-2">
+                <button class="btn btn-primary btn-sm btn-manage-children" data-bs-toggle="modal" data-bs-target="#childrenModal"
+                        data-parent-id="{{ parent.id }}" data-parent-name="{{ parent.nome }}"
+                        data-children-ids="{% for child in parent.children.all %}{{ child.id }},{% endfor %}">
+                  <i class="bi bi-diagram-3 me-1"></i> Gerenciar Subcategorias
+                </button>
+                <form class="d-inline" method="POST" onsubmit="return confirm('Deseja excluir a categoria \'{{ parent.nome }}\' e TODAS as suas subcategorias?');">
+                  {% csrf_token %}<input type="hidden" name="action" value="delete"><input type="hidden" name="tag_id" value="{{ parent.id }}"><button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                </form>
+              </div>
+            </div>
+            {% if parent.children.all %}
+              <ul class="child-tag-list mt-2">
+                {% for child in parent.children.all %}
+                <li>{{ child.nome }}</li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="small text-muted ps-2">Nenhuma subcategoria definida.</p>
+            {% endif %}
+          </div>
+          {% empty %}
+            <p class="text-muted">Nenhuma categoria principal encontrada. Adicione uma no formulário ao lado.</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="childrenModal" tabindex="-1" aria-labelledby="childrenModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="childrenModalLabel">Gerenciar Subcategorias</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="POST" action="{% url 'gerenciar_tags' %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="update_children">
+        <input type="hidden" name="tag_id" id="modal-parent-id" value="">
+        <div class="modal-body">
+          <p>Selecione as tags que devem ser subcategorias de <strong id="modal-parent-name"></strong>:</p>
+          <div id="modal-checkbox-list">
+            {% for tag in all_tags %}
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="children" value="{{ tag.id }}" id="tag-check-{{ tag.id }}">
+              <label class="form-check-label" for="tag-check-{{ tag.id }}">
+                {{ tag.nome }}
+              </label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'js/site/gerenciar_tags.js' %}"></script>
+{% endblock %}

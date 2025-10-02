@@ -7,9 +7,11 @@ import io
 import re
 from io import BytesIO, StringIO
 from urllib.parse import urlparse, parse_qs
-from .forms import ProfileForm, CpfUpdateForm
+from .forms import ProfileForm, CpfUpdateForm, StartResetByCpfForm, CustomLoginForm, EmpresaForm, UserRegistrationForm, TagForm
 from .models import PerfilUsuario, Empresa
 from django.contrib.auth import authenticate
+from .models import Tag
+from django.contrib.admin.views.decorators import staff_member_required
 
 import logging
 logger = logging.getLogger(__name__)
@@ -42,11 +44,9 @@ from django.urls import reverse, reverse_lazy
 from django.core.mail import send_mail  # se usar backend real
 from django.utils import timezone
 
-from .forms import ProfileForm, StartResetByCpfForm
-from .models import PerfilUsuario, Empresa, Categoria
+from .models import PerfilUsuario, Empresa, Tag
 
-from core.models import Categoria, Empresa
-from .forms import CustomLoginForm, EmpresaForm, UserRegistrationForm
+from core.models import Tag, Empresa
 
 # ============================================================
 # Constantes / Mapeamentos
@@ -455,16 +455,11 @@ def excluir_usuario(request, id):
         return redirect('listar_usuarios')
     return render(request, '/excluir_usuario.html', {'usuario': usuario})
 
-# ============================================================
-# Empresas (CRUD básico)
-# ============================================================
-
 @login_required(login_url='/login/')
 @require_http_methods(["GET", "POST"])
 def cadastrar_empresa(request):
     initial = {"latitude": "-28.937100", "longitude": "-49.484000"}
 
-    # Detecta se o cliente quer JSON (fetch/AJAX)
     wants_json = (
         'application/json' in (request.headers.get('Accept') or '')
         or (request.headers.get('x-requested-with') == 'XMLHttpRequest')
@@ -477,7 +472,6 @@ def cadastrar_empresa(request):
             'is_editing': False
         })
 
-    # POST
     form = EmpresaForm(request.POST, request.FILES)
     if form.is_valid():
         empresa = form.save(commit=False)
@@ -497,7 +491,6 @@ def cadastrar_empresa(request):
         messages.success(request, f"Empresa '{empresa.nome}' cadastrada com sucesso!")
         return redirect('suas_empresas')
 
-    # inválido
     if wants_json:
         html = render_to_string('core/partials/form_errors.html', {'form': form}, request=request)
         return JsonResponse(
@@ -512,8 +505,8 @@ def cadastrar_empresa(request):
 
 @login_required(login_url='/login/')
 @require_http_methods(["GET", "POST"])
-def editar_empresa(request, empresa_id):
-    empresa = get_object_or_404(Empresa, pk=empresa_id)
+def editar_empresa(request, slug):
+    empresa = get_object_or_404(Empresa, slug=slug)
 
     # dono ou superuser
     if empresa.user_id != request.user.id and not request.user.is_superuser:
@@ -556,75 +549,74 @@ def suas_empresas(request):
                              'next_page_number': page_obj.next_page_number() if page_obj.has_next() else None})
     return render(request, 'core/suas_empresas.html', {'page_obj': page_obj})
 
-def empresa_detalhe(request, empresa_id):
-    empresa = get_object_or_404(Empresa, id=empresa_id)
+def empresa_detalhe(request, slug):
+    empresa = get_object_or_404(Empresa, slug=slug)
     return render(request, 'core/empresa_detalhe.html', {'empresa': empresa})
-
-# ============================================================
-# Listagem + filtros (com “Load more” opcional)
-# ============================================================
 
 def listar_empresas(request):
     empresas = Empresa.objects.all().order_by('-id')
 
+    # Pega os parâmetros da URL
     q = (request.GET.get('q') or '').strip()
-    categoria = (request.GET.get('categoria') or '').strip()
+    tag_id = (request.GET.get('tag') or '').strip()
     cidade = (request.GET.get('cidade') or '').strip()
-    com_imagem_real = request.GET.get('com_imagem_real') == '1'
-    meus = request.GET.get('meus') == '1'
+    # ... outros filtros que você tenha
 
+    # --- LÓGICA DE BUSCA GERAL (TEXTO) ---
     if q:
         empresas = empresas.filter(
             Q(nome__icontains=q) |
             Q(descricao__icontains=q) |
             Q(bairro__icontains=q) |
             Q(cidade__icontains=q) |
-            Q(categoria__nome__icontains=q)
-        )
-    if categoria:
-        empresas = empresas.filter(categoria_id=categoria)
+            Q(tags__nome__icontains=q)
+        ).distinct()
+
+    # --- NOVA LÓGICA DE BUSCA HIERÁRQUICA POR TAG ---
+    tag_label = None
+    if tag_id:
+        try:
+            # 1. Pega a tag selecionada no banco
+            selected_tag = Tag.objects.prefetch_related('children').get(id=tag_id)
+            tag_label = selected_tag.nome
+
+            # 2. Pega os IDs de todas as suas "filhas" (subcategorias)
+            child_ids = list(selected_tag.children.values_list('id', flat=True))
+
+            # 3. VERIFICA A REGRA:
+            if child_ids:
+                # Se a tag tem filhas, ela é uma "mãe".
+                # Buscamos empresas que tenham a tag "mãe" OU qualquer uma das "filhas".
+                search_ids = [selected_tag.id] + child_ids
+                empresas = empresas.filter(tags__id__in=search_ids).distinct()
+            else:
+                # Se não tem filhas, é uma subcategoria ou uma tag sozinha.
+                # Buscamos apenas por empresas com essa tag específica.
+                empresas = empresas.filter(tags__id=tag_id)
+
+        except (Tag.DoesNotExist, ValueError):
+            # Se o ID da tag for inválido, não faz nada e mostra todos os resultados
+            pass
+    # --- FIM DA NOVA LÓGICA ---
+    
     if cidade:
         empresas = empresas.filter(cidade__iexact=cidade)
-    if com_imagem_real:
-        # ajuste conforme seu field/placeholder
-        empresas = empresas.exclude(imagem='').exclude(imagem__icontains='placeholders/sem_imagem.png')
-    if meus and request.user.is_authenticated:
-        empresas = empresas.filter(user=request.user)
+    # ... outros filtros
 
-    paginator = Paginator(empresas, 12)  # 12 por página
+    # Paginação (mantém o que você já tinha)
+    paginator = Paginator(empresas, 12)
     page_obj = paginator.get_page(request.GET.get('page') or 1)
 
+    # Lógica de resposta AJAX (mantém o que você já tinha)
     is_ajax = (request.headers.get('x-requested-with') == 'XMLHttpRequest') or (request.GET.get('ajax') == '1')
     if is_ajax:
         html = render_to_string('core/partials/empresas_cards.html', {'page_obj': page_obj}, request=request)
         return JsonResponse({'html': html, 'has_next': page_obj.has_next(),
                              'next_page_number': page_obj.next_page_number() if page_obj.has_next() else None})
 
-    categoria_label = None
-    if categoria:
-        try:
-            cat_obj = Categoria.objects.only("nome").get(pk=int(categoria))
-            categoria_label = cat_obj.nome
-        except (Categoria.DoesNotExist, ValueError, TypeError):
-            categoria_label = None  # some em silêncio se não achar
-
-    # Filtros “crus” (úteis se você precisa reconstruir URLs)
-    filtros_aplicados = {
-        'q': q,
-        'categoria': categoria,           # <- ID original (ou string vazia)
-        'cidade': cidade,
-        'com_imagem_real': '1' if com_imagem_real else '',
-        'meus': '1' if meus else '',
-    }
-
-    # Filtros legíveis para a UI
-    filtros_legiveis = {
-        'q': q or None,
-        'categoria': categoria_label,     # <- nome da categoria (ou None)
-        'cidade': cidade or None,
-        'com_imagem_real': com_imagem_real,
-        'meus': meus,
-    }
+    # Contexto para o template
+    filtros_aplicados = { 'q': q, 'tag': tag_id, 'cidade': cidade }
+    filtros_legiveis = { 'q': q or None, 'tag': tag_label, 'cidade': cidade or None }
 
     return render(request, 'core/listar_empresas.html', {
         'page_obj': page_obj,
@@ -638,17 +630,14 @@ def buscar_empresas(request):
 
 @require_GET
 def filtros_empresas(request):
-    """Compat: retorna categorias e cidades em JSON (se ainda for usado em algum ponto)."""
-    categorias = list(Categoria.objects.order_by('nome').values('id', 'nome'))
+    """Retorna tags e cidades em JSON."""
+    tags = list(Tag.objects.order_by('nome').values('id', 'nome'))
+    
     cidades = list(
         Empresa.objects.exclude(cidade__isnull=True).exclude(cidade__exact='')
         .order_by('cidade').values_list('cidade', flat=True).distinct()
     )
-    return JsonResponse({'categorias': categorias, 'cidades': list(cidades)})
-
-# ============================================================
-# Modelo XLSX para download
-# ============================================================
+    return JsonResponse({'tags': tags, 'cidades': list(cidades)})
 
 @require_GET
 def download_template_empresas(request):
@@ -705,14 +694,14 @@ def download_template_empresas(request):
         headers={"Content-Disposition": 'attachment; filename="modelo_empresas.xlsx"'},
     )
 
-# ============================================================
-# Importação em lote (XLSX/CSV)
-# ============================================================
-
 @login_required
 @require_POST
 @transaction.atomic
 def importar_empresas_arquivo(request):
+    created = 0
+    errors = 0
+    msgs = []
+
     try:
         up = request.FILES.get("arquivo")
         if not up:
@@ -724,29 +713,6 @@ def importar_empresas_arquivo(request):
 
         header_map = _build_header_map(headers_raw)
 
-        # Usando as funções de ajuda definidas dentro da sua view original
-        def clip(s, n): return (s or "")[:n]
-        def digits(s):  return re.sub(r"\D", "", s or "")
-        def looks_url(s): s=(s or "").strip().lower(); return s.startswith("http://") or s.startswith("https://")
-        def first_url(text):
-            if not text: return None
-            m = re.search(r'(https?://\S+)', text); return m.group(1) if m else None
-        def extract_latlng_from_maps(url: str):
-            if not url: return (None, None)
-            try:
-                from urllib.parse import urlparse, parse_qs
-                u = urlparse(url); qs = parse_qs(u.query)
-                if "q" in qs and "," in qs["q"][0]:
-                    lat, lng = qs["q"][0].split(",")[:2]; return float(lat), float(lng)
-                m = re.search(r"@(-?\d+\.\d+),(-?\d+\.\d+)", url)
-                if m: return float(m.group(1)), float(m.group(2))
-            except Exception: pass
-            return (None, None)
-
-        from core.models import Empresa
-        def get_or_create_categoria_INTERNA(name: str) -> Categoria:
-            name = (name or "").strip()
-            
         for line_no, r in enumerate(rows, start=2):
             data = {
                 'cnpj': '', 'categoria': '', 'nome': '', 'bairro': '', 'endereco': '', 'numero': '',
@@ -755,56 +721,68 @@ def importar_empresas_arquivo(request):
             }
             for idx, canon in header_map.items():
                 if idx < len(r): data[canon] = (r[idx] or "").strip()
-            
-            nome = clip(data.get("nome"), 255)
-            cat_name = clip(data.get("categoria"), 100)
 
-            categoria_obj = get_or_create_categoria_INTERNA(cat_name)
-            
-            # Preparando todos os campos como no seu código original
-            bairro    = clip(data.get("bairro"), 100)
-            endereco  = clip(data.get("endereco"), 255)
-            numero    = clip(data.get("numero"), 10)
-            cidade    = clip((data.get("cidade") or "Araranguá"), 100)
-            cep       = clip(digits(data.get("cep")), 8)
-            telefone  = clip(digits(data.get("telefone")), 20)
-            contato   = clip(data.get("contato"), 255)
-            cadastrur = clip(data.get("cadastrur"), 50)
-            cnpj      = clip(digits(data.get("cnpj")), 18)
+            nome = _clip(Empresa, "nome", data.get("nome"))
+            if not nome:
+                errors += 1
+                msgs.append(f"Linha {line_no}: O campo 'nome' é obrigatório.")
+                continue
+
+            tags_str = data.get("categoria", "")
+            tag_names = [name.strip() for name in tags_str.split(',') if name.strip()]
+            tag_objects = []
+            for name in tag_names:
+                tag, _ = Tag.objects.get_or_create(nome=name)
+                tag_objects.append(tag)
+
+            bairro    = _clip(Empresa, "bairro", data.get("bairro"))
+            endereco  = _clip(Empresa, "rua", data.get("endereco"))
+            numero    = _clip(Empresa, "numero", data.get("numero"))
+            cidade    = _clip(Empresa, "cidade", (data.get("cidade") or "Araranguá"))
+            cep       = _clip(Empresa, "cep", _digits(data.get("cep")))
+            telefone  = _clip(Empresa, "telefone", _digits(data.get("telefone")))
+            contato   = _clip(Empresa, "contato_direto", data.get("contato"))
+            cadastrur = _clip(Empresa, "cadastrur", data.get("cadastrur"))
+            cnpj      = _clip(Empresa, "cnpj", _digits(data.get("cnpj")))
             descricao = (data.get("descricao") or DEFAULT_DESC)
             digital_txt = data.get("digital", "").strip()
-            site_url = clip(first_url(digital_txt), 10000) if first_url(digital_txt) else None
+            site_url = _first_url_in_text(digital_txt)
             maps_txt = data.get("maps", "").strip()
-            maps_url = clip(maps_txt, 10000) if looks_url(maps_txt) else None
+            maps_url = maps_txt if _looks_url(maps_txt) else None
             app_txt  = data.get("app", "").strip()
-            app_url  = clip(app_txt, 10000) if looks_url(app_txt) else None
-            lat, lng = extract_latlng_from_maps(maps_txt)
-            lat = str(lat) if lat is not None else "-28.937100"
-            lng = str(lng) if lng is not None else "-49.484000"
+            app_url  = app_txt if _looks_url(app_txt) else None
+            lat, lng = _extract_latlng_from_maps(maps_txt)
 
             try:
                 emp = Empresa(
-                    user=request.user, nome=nome, categoria=categoria_obj, descricao=descricao,
+                    user=request.user, nome=nome, descricao=descricao,
                     rua=endereco, bairro=bairro, cidade=cidade, numero=numero, cep=cep,
-                    latitude=lat, longitude=lng, telefone=telefone, contato_direto=contato,
+                    latitude=str(lat) if lat is not None else None, 
+                    longitude=str(lng) if lng is not None else None,
+                    telefone=telefone, contato_direto=contato,
                     cadastrur=cadastrur, cnpj=cnpj, site=site_url, digital=site_url,
                     maps_url=maps_url, app_url=app_url,
                 )
                 emp.save()
                 
+                if tag_objects:
+                    emp.tags.set(tag_objects)
+                
                 created += 1
             except Exception as e:
                 errors += 1
-                msgs.append(f"Linha {line_no}: {e}")
+                msgs.append(f"Linha {line_no}: Erro ao salvar no banco: {e}")
 
-        if errors:
+        if errors > 0:
             return JsonResponse({"ok": False, "importados": created, "erros": errors, "mensagens": msgs[:100]}, status=400)
+            
         return JsonResponse({"ok": True, "importados": created, "erros": 0, "mensagens": []})
         
     except Exception as e:
         logger.error(f"Erro catastrófico na importação: {e}", exc_info=True)
         return JsonResponse({"ok": False, "error": f"Erro inesperado: {e}"}, status=500)
-    # ========== PERFIL DO USUÁRIO ==========
+    
+    
 @login_required
 def perfil(request):
     perfil, _ = PerfilUsuario.objects.get_or_create(
@@ -824,7 +802,7 @@ def perfil(request):
     else:
         form = ProfileForm(instance=perfil, user=request.user)
 
-    cpf_form = CpfUpdateForm(request.user)  # <<< importante
+    cpf_form = CpfUpdateForm(request.user) 
 
     return render(request, 'core/perfil.html', {
         'form': form,
@@ -833,14 +811,13 @@ def perfil(request):
         'entrou_fmt': entrou_fmt,
     })
 
-# ========== TROCAR SENHA (AUTENTICADO) ==========
 @login_required
 def trocar_senha(request):
     if request.method == 'POST':
         form = PasswordChangeForm(user=request.user, data=request.POST)
         if form.is_valid():
             user = form.save()
-            update_session_auth_hash(request, user)  # mantém logado
+            update_session_auth_hash(request, user) 
             messages.success(request, "Senha atualizada com sucesso!")
             return redirect('perfil')
     else:
@@ -849,7 +826,6 @@ def trocar_senha(request):
     return render(request, 'core/password_change.html', {'form': form})
 
 
-# ========== ESQUECI A SENHA (E-MAIL PADRÃO DJANGO) ==========
 def esqueci_senha_email(request):
     if request.method == 'POST':
         form = PasswordResetForm(request.POST)
@@ -858,7 +834,7 @@ def esqueci_senha_email(request):
                 request=request,
                 use_https=request.is_secure(),
                 email_template_name='core/email_password_reset.txt',
-                html_email_template_name='core/email_password_reset.html',  # <-- ADICIONE
+                html_email_template_name='core/email_password_reset.html',
                 subject_template_name='core/email_password_reset_subject.txt',
                 from_email=None
             )
@@ -877,7 +853,7 @@ def esqueci_senha_cpf(request):
     if request.method == 'POST':
         form = StartResetByCpfForm(request.POST)
         if form.is_valid():
-            cpf_digits = form.cleaned_data['cpf_cnpj']  # já vem só dígitos pelo form
+            cpf_digits = form.cleaned_data['cpf_cnpj']  
             perfil = (PerfilUsuario.objects
                       .select_related('user')
                       .filter(cpf_cnpj=cpf_digits)
@@ -910,7 +886,6 @@ def esqueci_senha_cpf(request):
 @login_required
 @require_POST
 def perfil_alterar_cpf(request):
-    # bloqueia a linha do perfil para evitar race (Postgres)
     with transaction.atomic():
         perfil = (PerfilUsuario.objects
                   .select_for_update()
@@ -919,7 +894,6 @@ def perfil_alterar_cpf(request):
 
         form = CpfUpdateForm(request.user, request.POST)
         if not form.is_valid():
-            # volta para a tela de perfil com os erros do sub-form
             form_profile = ProfileForm(instance=perfil, user=request.user)
             empresas_qtd = Empresa.objects.filter(user=request.user).count()
             entrou_fmt = timezone.localtime(request.user.date_joined).strftime("%m/%Y")
@@ -936,10 +910,9 @@ def perfil_alterar_cpf(request):
             return redirect('perfil')
 
         try:
-            perfil.cpf_cnpj = novo_cpf  # armazenamos apenas dígitos
+            perfil.cpf_cnpj = novo_cpf 
             perfil.save(update_fields=["cpf_cnpj"])
         except IntegrityError:
-            # proteção dupla caso passe da validação (condição de corrida)
             messages.error(request, "Este CPF já está em uso por outra conta.")
             return redirect('perfil')
 
@@ -954,6 +927,62 @@ def server_error(request):
     return render(request, 'core/500.html', status=500)
 
 def senha_redefinida_redirect(request):
-    # mensagem opcional (aparece na sua tela de login que já mostra messages)
     messages.success(request, "Senha redefinida com sucesso! Faça login para continuar.")
     return redirect('login')
+
+@login_required
+@staff_member_required
+def gerenciar_tags(request):
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        tag_id = request.POST.get('tag_id')
+
+        if action == 'add':
+            form = TagForm(request.POST)
+            if form.is_valid():
+                form.save()
+                messages.success(request, f"Tag '{form.cleaned_data['nome']}' criada com sucesso.")
+            else:
+                messages.error(request, "Erro ao criar a tag: " + form.errors.as_text())
+
+        elif action == 'edit' and tag_id:
+            tag = get_object_or_404(Tag, id=tag_id)
+            form = TagForm(request.POST, instance=tag)
+            if form.is_valid():
+                form.save()
+                messages.success(request, f"Tag '{form.cleaned_data['nome']}' renomeada com sucesso.")
+            else:
+                messages.error(request, "Erro ao renomear: " + form.errors.as_text())
+
+        elif action == 'delete' and tag_id:
+            try:
+                tag = get_object_or_404(Tag, id=tag_id)
+                tag_nome = tag.nome
+                tag.delete()
+                messages.success(request, f"Tag '{tag_nome}' excluída com sucesso!")
+            except Exception as e:
+                messages.error(request, f"Erro ao excluir a tag: {e}")
+        
+        elif action == 'update_children' and tag_id:
+            parent_tag = get_object_or_404(Tag, id=tag_id)
+            child_ids = request.POST.getlist('children')
+
+            child_tags = Tag.objects.filter(id__in=child_ids)
+            parent_tag.children.set(child_tags)
+            parent_tag.children.exclude(id__in=child_ids).update(parent=None)
+
+            messages.success(request, f"Subcategorias de '{parent_tag.nome}' atualizadas com sucesso.")
+
+        return redirect('gerenciar_tags')
+
+    all_tags = Tag.objects.all().order_by('nome')
+    parent_tags = all_tags.filter(parent__isnull=True).prefetch_related('children')
+    
+    form = TagForm()
+    
+    context = {
+        'parent_tags': parent_tags,
+        'all_tags': all_tags,
+        'form': form,
+    }
+    return render(request, 'core/gerenciar_tags.html', context)

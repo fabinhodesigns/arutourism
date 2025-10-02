@@ -1,0 +1,105 @@
+header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    background-color: rgba(30, 60, 114, 0.9);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, .1);
+}
+
+body.no-scroll {
+    overflow: hidden;
+}
+
+.search-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    display: none;
+    opacity: 0;
+    pointer-events: none;
+    background: rgba(0, 0, 0, .38);
+    backdrop-filter: blur(8px) saturate(115%);
+    -webkit-backdrop-filter: blur(8px) saturate(115%);
+    transition: opacity 180ms ease-out;
+}
+
+.search-overlay.open {
+    display: block;
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.search-panel {
+    background: rgba(30, 60, 114, .98);
+    border-bottom: 1px solid rgba(255, 255, 255, .12);
+    transform: translateY(-8px);
+    opacity: 0;
+    transition: transform 180ms ease-out, opacity 180ms ease-out;
+    will-change: transform, opacity;
+}
+
+.search-overlay.open .search-panel {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.search-titlebar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.search-titlebar .left {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.dropdown-list {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    max-height: 240px;
+    overflow: auto;
+    display: none;
+    z-index: 1200;
+    background: #fff;
+    border-radius: .5rem;
+    box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15);
+    transition: transform 120ms ease-out, opacity 120ms ease-out;
+    transform-origin: top;
+    transform: scaleY(.98);
+    opacity: 0;
+}
+
+.dropdown-list.show {
+    display: block;
+    transform: scaleY(1);
+    opacity: 1;
+}
+
+.dropdown-item {
+    padding: .5rem .75rem;
+    cursor: pointer;
+    outline: 0;
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus {
+    background: #f1f3f5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .search-overlay,
+    .search-panel,
+    .dropdown-list {
+        transition: none !important;
+    }
+}

@@ -1,78 +1,11 @@
 {% load static %}
 
-<!-- ========= STYLES ========= -->
-<style>
-  /* NAVBAR */
-  header{
-    position:fixed; top:0; left:0; width:100%; z-index:1000;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    background-color: rgba(30,60,114,0.9);
-    box-shadow: 0 2px 5px rgba(0,0,0,.1);
-  }
-  /* quando a busca está aberta, travar scroll da página */
-  body.no-scroll{ overflow:hidden; }
-
-  /* OVERLAY (fora do header) */
-  .search-overlay{
-    position:fixed; inset:0; z-index:1100;
-    display:none; opacity:0; pointer-events:none;
-    background: rgba(0,0,0,.38);                  /* escurece */
-    backdrop-filter: blur(8px) saturate(115%);    /* iPhone vibe */
-    -webkit-backdrop-filter: blur(8px) saturate(115%);
-    transition: opacity 180ms ease-out;
-  }
-  .search-overlay.open{
-    display:block; opacity:1; pointer-events:auto;
-  }
-
-  /* painel da busca (barra azul) */
-  .search-panel{
-    background: rgba(30,60,114,.98);
-    border-bottom: 1px solid rgba(255,255,255,.12);
-    transform: translateY(-8px);
-    opacity:0;
-    transition: transform 180ms ease-out, opacity 180ms ease-out;
-    will-change: transform, opacity;
-  }
-  .search-overlay.open .search-panel{
-    transform: translateY(0);
-    opacity:1;
-  }
-
-  /* titlebar da busca */
-  .search-titlebar{
-    display:flex; align-items:center; justify-content:space-between; gap:1rem;
-  }
-  .search-titlebar .left{
-    display:flex; align-items:center; gap:.5rem;
-  }
-
-  /* dropdown filtrável (categoria/cidade) */
-  .dropdown-list{
-    position:absolute; left:0; right:0; top:100%;
-    max-height: 240px; overflow:auto; display:none; z-index:1200;
-    background:#fff; border-radius:.5rem; box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
-    transition: transform 120ms ease-out, opacity 120ms ease-out;
-    transform-origin: top;
-    transform: scaleY(.98);
-    opacity: 0;
-  }
-  .dropdown-list.show{
-    display:block; transform: scaleY(1); opacity:1;
-  }
-  .dropdown-item{ padding:.5rem .75rem; cursor:pointer; outline:0; }
-  .dropdown-item:hover, .dropdown-item:focus{ background:#f1f3f5; }
-
-  /* acessibilidade: reduzir movimentos */
-  @media (prefers-reduced-motion: reduce){
-    .search-overlay, .search-panel, .dropdown-list{ transition:none !important; }
-  }
-</style>
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/pages/header.css' %}">
+{% endblock %} 
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
 
-<!-- ========= HEADER / NAVBAR ========= -->
 <header class="fixed-top">
   <nav class="navbar navbar-expand-lg">
     <div class="container">
@@ -102,7 +35,7 @@
                   {% else %}
                     <i class="bi bi-person-circle" style="font-size:1.3rem;"></i>
                   {% endif %}
-                  <span class="d-none d-sm-inline fw-medium">{{ user.perfil.display_name }}</span>
+                  <span class="d-none d-sm-inline fw-medium text-uppercase">{{ user.perfil.display_name }}</span>
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                   <li><a class="dropdown-item d-flex align-items-center" href="{% url 'perfil' %}">
@@ -125,7 +58,6 @@
             {% endif %}
           </li>
 
-          <!-- Botão de busca alinhado como nav-link -->
           <li class="nav-item">
             <button id="open-search"
               class="nav-link text-light bg-transparent border-0 p-0 d-flex align-items-center"
@@ -139,7 +71,6 @@
   </nav>
 </header>
 
-<!-- ========= OVERLAY DE BUSCA (coloque FORA do <header>) ========= -->
 <div id="searchOverlay" class="search-overlay" aria-hidden="true">
   <div class="search-panel">
     <div class="container py-3">
@@ -154,7 +85,6 @@
       </div>
 
       <form class="row g-3 align-items-end" method="get" action="{% url 'listar_empresas' %}" role="search">
-        <!-- termo -->
         <div class="col-12 col-lg-6">
           <label class="form-label text-white" for="f-q">Termo (nome, categoria, bairro)</label>
           <div class="input-group">
@@ -165,21 +95,19 @@
           </div>
         </div>
 
-        <!-- categoria: input + dropdown filtrável -->
         <div class="col-12 col-lg-3 position-relative">
-          <label class="form-label text-white" for="categoria-input">Categoria</label>
+          <label class="form-label text-white" for="categoria-input">Categoria / Tag</label>
           <input id="categoria-input" type="text" class="form-control"
-                 placeholder="{{ GLOBAL_CATEGORIES|length|yesno:'Filtrar categorias...,Sem categorias' }}">
-          <input type="hidden" id="categoria-hidden" name="categoria" value="{{ request.GET.categoria|default_if_none:'' }}">
-          <div id="categoria-list" class="dropdown-list" role="listbox" aria-label="Categorias" tabindex="-1">
+                placeholder="{{ GLOBAL_TAGS|length|yesno:'Filtrar tags...,Sem tags' }}">
+          <input type="hidden" id="categoria-hidden" name="tag" value="{{ request.GET.tag|default_if_none:'' }}">
+          <div id="categoria-list" class="dropdown-list" role="listbox" aria-label="Tags" tabindex="-1">
             <div class="dropdown-item" data-value="">Todas</div>
-            {% for c in GLOBAL_CATEGORIES %}
-              <div class="dropdown-item" data-value="{{ c.id }}">{{ c.nome }}</div>
+            {% for tag in GLOBAL_TAGS %}
+              <div class="dropdown-item" data-value="{{ tag.id }}">{{ tag.nome }}</div>
             {% endfor %}
           </div>
         </div>
 
-        <!-- cidade: input + dropdown filtrável -->
         <div class="col-12 col-lg-3 position-relative">
           <label class="form-label text-white" for="cidade-input">Cidade</label>
           <input id="cidade-input" type="text" class="form-control" placeholder="Filtrar cidades...">
@@ -192,7 +120,6 @@
           </div>
         </div>
 
-        <!-- checkboxes -->
         <div class="col-12 col-lg-6">
           <div class="form-check form-check-inline">
             <input class="form-check-input" type="checkbox" id="f-img" name="com_imagem_real" value="1"
@@ -217,102 +144,4 @@
   </div>
 </div>
 
-<!-- ========= SCRIPTS ========= -->
-<script>
-(function(){
-  const overlay  = document.getElementById('searchOverlay');
-  const panel    = overlay.querySelector('.search-panel');
-  const openBtn  = document.getElementById('open-search');
-  const closeBtn = document.getElementById('close-search');
-  const qInput   = document.getElementById('f-q');
-
-  function openSearch(){
-    overlay.classList.add('open');
-    overlay.setAttribute('aria-hidden','false');
-    document.body.classList.add('no-scroll');
-    setTimeout(()=> qInput && qInput.focus(), 30);
-  }
-  function closeSearch(){
-    overlay.classList.remove('open');
-    overlay.setAttribute('aria-hidden','true');
-    document.body.classList.remove('no-scroll');
-    openBtn && openBtn.focus();
-  }
-
-  openBtn.addEventListener('click', openSearch);
-  closeBtn.addEventListener('click', closeSearch);
-  document.addEventListener('keydown', e => { if(e.key === 'Escape') closeSearch(); });
-
-  // fecha clicando fora do painel
-  overlay.addEventListener('click', (e)=>{
-    if (!panel.contains(e.target)) closeSearch();
-  });
-
-  // dropdown filtrável: input + lista + hidden
-  function wireFilter(inputId, listId, hiddenId, selectedValue){
-    const input  = document.getElementById(inputId);
-    const list   = document.getElementById(listId);
-    const hidden = document.getElementById(hiddenId);
-    if(!input || !list || !hidden) return;
-
-    // mostra nome selecionado anterior como placeholder
-    if (selectedValue){
-      const el = list.querySelector(`.dropdown-item[data-value="${CSS.escape(selectedValue)}"]`);
-      if (el){ input.placeholder = el.textContent.trim(); }
-      hidden.value = selectedValue;
-    }
-
-    // abre/fecha
-    input.addEventListener('focus', ()=> list.classList.add('show'));
-    input.addEventListener('click', ()=> list.classList.toggle('show'));
-
-    // filtra conforme digita
-    input.addEventListener('input', ()=>{
-      const q = input.value.toLowerCase();
-      list.querySelectorAll('.dropdown-item').forEach(it=>{
-        const txt = it.textContent.toLowerCase();
-        it.style.display = txt.includes(q) ? '' : 'none';
-      });
-      list.classList.add('show');
-    });
-
-    // seta ↓ para entrar na lista
-    input.addEventListener('keydown', (e)=>{
-      if (e.key === 'ArrowDown'){
-        e.preventDefault();
-        const first = list.querySelector('.dropdown-item:not([style*="display: none"])');
-        (first || input).focus();
-      }
-      if (e.key === 'Escape'){ list.classList.remove('show'); }
-    });
-
-    // clique em item
-    list.addEventListener('click', (e)=>{
-      const item = e.target.closest('.dropdown-item'); if(!item) return;
-      hidden.value = item.dataset.value;
-      input.value = '';
-      input.placeholder = item.textContent.trim();
-      list.classList.remove('show');
-    });
-
-    // navegação na lista
-    list.addEventListener('keydown', (e)=>{
-      const items = [...list.querySelectorAll('.dropdown-item')].filter(i=>i.style.display!=='none');
-      const idx   = items.indexOf(document.activeElement);
-      if (e.key === 'ArrowDown'){ e.preventDefault(); (items[idx+1]||items[0]).focus(); }
-      if (e.key === 'ArrowUp'){   e.preventDefault(); (items[idx-1]||items[items.length-1]).focus(); }
-      if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); document.activeElement.click(); }
-      if (e.key === 'Escape'){ e.preventDefault(); list.classList.remove('show'); input.focus(); }
-    });
-
-    // fechar lista ao clicar fora
-    document.addEventListener('click', (e)=>{
-      if (!list.contains(e.target) && e.target !== input){ list.classList.remove('show'); }
-    });
-  }
-
-  // ligar categoria e cidade (valores da querystring atual)
-  wireFilter('categoria-input','categoria-list','categoria-hidden','{{ request.GET.categoria|default_if_none:"" }}');
-  wireFilter('cidade-input','cidade-list','cidade-hidden','{{ request.GET.cidade|default_if_none:"" }}');
-})();
-</script>
+<script src="{% static 'js/jquery-3.6.0.min.js' %}"></script>

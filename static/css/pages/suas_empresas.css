@@ -1,0 +1,30 @@
+  .page-shell {
+      min-height: 65vh;
+  }
+
+  .empresa-card .card-img-top {
+      height: 200px;
+      object-fit: cover;
+  }
+
+  .empresa-card {
+      min-width: 280px;
+      transition: transform .15s, box-shadow .15s;
+      cursor: pointer;
+  }
+
+  .empresa-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15);
+  }
+
+  .empty-state {
+      border: 1px dashed #ced4da;
+      border-radius: .75rem;
+      padding: 2rem;
+      background: #f8f9fa;
+  }
+
+  main .container {
+      min-height: 60vh;
+  }
