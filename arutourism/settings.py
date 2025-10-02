@@ -146,7 +146,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # Se tiver pasta 'static' dentro do projeto, descomente:
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+STATICFILES_STORAGE = "whitenoise.storage.ManifestStaticFilesStorage"
 
 # ===========================
 # Auth redirects
