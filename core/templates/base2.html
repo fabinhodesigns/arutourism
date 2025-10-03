@@ -10,6 +10,9 @@
         <link rel="stylesheet" href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}">
         <link rel="stylesheet" href="{% static 'css/base.css' %}">
 
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     {% block extra_css %}{% endblock %}
 
     <script type="text/javascript">
@@ -26,6 +29,7 @@
     {% block content %}{% endblock %}
     {% include 'components/footer.html' %}
 
+    <script src="{% static 'js/jquery-3.6.0.min.js' %}"></script>
     <script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
     <script src="{% static 'js/site/header.js' %}"></script>
 

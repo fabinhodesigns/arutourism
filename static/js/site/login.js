@@ -1,141 +1,123 @@
 (function () {
-    const f = document.getElementById('login-form');
-    const id = document.getElementById('id_identificador');
-    const pw = document.getElementById('id_password');
-    const eId = document.getElementById('err-identificador');
-    const ePw = document.getElementById('err-password');
-    const globalErr = document.getElementById('login-error');
+    const loginForm = document.getElementById('login-form');
+    if (!loginForm) return;
 
-    function setErr(input, el, msg) {
-        if (msg) {
+    const identificadorInput = document.getElementById('id_identificador');
+    const passwordInput = document.getElementById('id_password');
+    const errIdentificador = document.getElementById('err-identificador');
+    const errPassword = document.getElementById('err-password');
+    const globalError = document.getElementById('login-error');
+    
+    const validators = window.validators || {};
+
+    function setFieldError(input, errorElement, message) {
+        if (message) {
             input.classList.add('is-invalid');
             input.setAttribute('aria-invalid', 'true');
-            el.textContent = msg;
+            errorElement.textContent = message;
+            // Garante que o feedback seja visível
+            errorElement.style.display = 'block'; 
         } else {
             input.classList.remove('is-invalid');
             input.removeAttribute('aria-invalid');
-            el.textContent = '';
+            errorElement.textContent = '';
+            errorElement.style.display = 'none';
         }
     }
 
     function validateIdentificador() {
-        const v = id.value.trim();
-        if (!v) { setErr(id, eId, 'Informe e-mail, CPF ou usuário.'); return false; }
-        if (v.includes('@')) {
-            if (!window.validators.isEmail(v)) { setErr(id, eId, 'E-mail inválido.'); return false; }
-        } else if (window.validators.onlyDigits(v).length >= 11) {
-            if (!window.validators.isCPF(v)) { setErr(id, eId, 'CPF inválido.'); return false; }
+        const value = identificadorInput.value.trim();
+        if (!value) {
+            setFieldError(identificadorInput, errIdentificador, 'Por favor, informe seu e-mail ou CPF.');
+            return false;
         }
-        setErr(id, eId, '');
+        if (value.includes('@') && validators.isEmail && !validators.isEmail(value)) {
+            setFieldError(identificadorInput, errIdentificador, 'O e-mail informado é inválido.');
+            return false;
+        }
+        if (!value.includes('@') && validators.isCPF && !validators.isCPF(value)) {
+             setFieldError(identificadorInput, errIdentificador, 'O CPF informado é inválido.');
+             return false;
+        }
+        setFieldError(identificadorInput, errIdentificador, '');
         return true;
     }
+
     function validatePassword() {
-        if (!pw.value) { setErr(pw, ePw, 'Informe a senha.'); return false; }
-        setErr(pw, ePw, ''); return true;
+        if (!passwordInput.value) {
+            setFieldError(passwordInput, errPassword, 'Por favor, informe sua senha.');
+            return false;
+        }
+        setFieldError(passwordInput, errPassword, '');
+        return true;
     }
 
-    id.addEventListener('blur', validateIdentificador);
-    pw.addEventListener('input', validatePassword);
-
-    f.addEventListener('submit', async (ev) => {
-        ev.preventDefault();
-        globalErr.textContent = '';
-        const ok = validateIdentificador() & validatePassword();
-        if (!ok) { (id.classList.contains('is-invalid') ? id : pw).focus(); return; }
-
-        const fd = new FormData(f);
-        try {
-            const resp = await fetch("{% url 'login' %}", {
-                method: 'POST',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                body: fd
-            });
-            if (resp.ok) {
-                const data = await resp.json();
-                if (data.redirect) location.href = data.redirect; return;
-            }
-
-            const data = await resp.json();
-            if (data.errors) {
-
-                const bad = (arr) => arr.find(e => e.code === 'bad_password');
-                const notfound = (arr) => arr.find(e => e.code === 'user_not_found');
-                if (bad(data.errors)) setErr(pw, ePw, 'Senha incorreta.');
-                if (notfound(data.errors)) setErr(id, eId, 'Usuário não encontrado para o identificador informado.');
-
-                if (!data.errors.length) globalErr.textContent = 'Não foi possível autenticar.';
-            } else {
-                globalErr.textContent = data.detail || 'Falha no login.';
-            }
-        } catch (err) {
-            globalErr.textContent = 'Falha de conexão. Tente novamente.';
+    identificadorInput.addEventListener('blur', validateIdentificador);
+    passwordInput.addEventListener('input', () => {
+        if (passwordInput.classList.contains('is-invalid')) {
+            validatePassword();
         }
     });
-})();
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let cookie of cookies) {
-            cookie = cookie.trim();
-            if (cookie.startsWith(name + '=')) {
-                cookieValue = decodeURIComponent(cookie.slice(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
 
-const loginForm = document.getElementById('login-form');
-if (loginForm) {
-    loginForm.addEventListener('submit', async function (e) {
-        e.preventDefault();
+    loginForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        
+        globalError.textContent = '';
+        setFieldError(passwordInput, errPassword, ''); // Limpa erro da senha antes de revalidar
 
-        const form = e.target;
-        const formData = new FormData(form);
-        const csrfToken = getCookie('csrftoken');
+        const isIdentificadorValid = validateIdentificador();
+        const isPasswordValid = validatePassword();
 
-        const response = await fetch("{% url 'login' %}", {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': csrfToken,
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: formData,
-        });
-
-
-        if (response.redirected) {
-            window.location.href = response.url;
+        if (!isIdentificadorValid || !isPasswordValid) {
+            (identificadorInput.classList.contains('is-invalid') ? identificadorInput : passwordInput).focus();
             return;
         }
 
+        const formData = new FormData(loginForm);
 
-        if (!response.ok) {
-            const html = await response.text();
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
+        try {
+            const response = await fetch(LOGIN_URL, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+                },
+                body: formData
+            });
 
-            const errorLi = doc.querySelector('.alert-danger');
+            const data = await response.json();
 
-            if (errorLi) {
-
-                let overlay = document.getElementById("message-overlay");
-                if (!overlay) {
-                    overlay = document.createElement('div');
-                    overlay.id = 'message-overlay';
-                    overlay.className = 'message-overlay';
-                    overlay.innerHTML = `
-                            <div class="message-box">
-                                <ul id="message-list"></ul>
-                            </div>`;
-
-                    document.getElementById('login-container').prepend(overlay);
+            if (response.ok) {
+                if (data.redirect) {
+                    window.location.href = data.redirect;
                 }
-                const messageList = overlay.querySelector("#message-list");
-                messageList.innerHTML = errorLi.outerHTML;
+            } else {
+                if (data.errors) {
+                    // Verifica se há um erro específico para identificador
+                    if (data.errors.user_not_found) {
+                        setFieldError(identificadorInput, errIdentificador, data.errors.user_not_found);
+                        identificadorInput.focus();
+                    }
+                    // Verifica se há um erro específico para senha
+                    if (data.errors.bad_password) {
+                        setFieldError(passwordInput, errPassword, data.errors.bad_password);
+                        passwordInput.focus();
+                    }
+                     // Se houver outros erros não específicos de campo, mostre globalmente
+                    if (Object.keys(data.errors).length === 0 || (!data.errors.user_not_found && !data.errors.bad_password)) {
+                         globalError.textContent = data.detail || 'Não foi possível autenticar. Verifique suas credenciais.';
+                         globalError.style.display = 'block';
+                    }
+                } else {
+                    globalError.textContent = data.detail || 'Falha no login. Tente novamente mais tarde.';
+                    globalError.style.display = 'block';
+                }
             }
+        } catch (error) {
+            console.error('Login request failed:', error);
+            globalError.textContent = 'Falha de conexão. Verifique sua internet e tente novamente.';
+            globalError.style.display = 'block';
         }
     });
-}
+
+})();

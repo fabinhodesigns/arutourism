@@ -1,0 +1,453 @@
+/* Importa a fonte para um visual moderno */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --primary-blue: #007bff; /* Azul primário para botões e links */
+    --dark-blue: #1d2b4b; /* Azul escuro principal do gradiente */
+    --medium-blue: #2a5298; /* Azul médio do gradiente */
+    --light-blue: #1e3c72; /* Azul claro do gradiente */
+    --card-bg: #ffffff; /* Fundo do card */
+    --text-color-primary: #343a40; /* Cor principal do texto */
+    --text-color-secondary: #6c757d; /* Cor secundária do texto */
+    --border-color: #dee2e6; /* Cor da borda padrão */
+    --input-bg: #f8f9fa; /* Fundo do input */
+    --error-color: #dc3545; /* Cor de erro */
+    --focus-ring-color: rgba(0, 123, 255, 0.25); /* Anel de foco acessível */
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    padding: 0;
+    line-height: 1.6;
+    color: var(--text-color-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Container principal da página - Gerencia o fundo e o centramento do card */
+.login-page-container {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem 1rem; /* Padding para evitar que o card toque as bordas */
+    box-sizing: border-box; /* Inclui padding na largura/altura total */
+
+    /* Fundo gradiente animado */
+    background: linear-gradient(-45deg, var(--dark-blue), var(--medium-blue), var(--light-blue), var(--medium-blue));
+    background-size: 400% 400%;
+    animation: gradient-animation 15s ease infinite;
+}
+
+/* Animação do gradiente */
+@keyframes gradient-animation {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Estilo do card de login */
+.login-card {
+    background-color: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    padding: 2.5rem; /* Espaçamento interno generoso */
+    width: 100%;
+    max-width: 600px; /* Largura máxima controlada */
+    text-align: center;
+    box-sizing: border-box;
+}
+
+.logo-container {
+    margin-bottom: 2rem;
+}
+
+.login-logo {
+    max-width: 180px;
+    height: auto;
+}
+
+.card-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text-color-primary);
+    margin-bottom: 0.5rem;
+}
+
+.card-subtitle {
+    font-size: 0.95rem;
+    color: var(--text-color-secondary);
+    margin-bottom: 2rem;
+}
+
+/* Estilos para grupos de formulário */
+.form-group {
+    margin-bottom: 1.5rem;
+    text-align: left; /* Alinha labels à esquerda */
+}
+
+.form-label {
+    display: block; /* Garante que o label ocupe sua própria linha */
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--text-color-primary);
+    font-size: 0.9rem;
+}
+
+/* Input com ícone */
+.input-with-icon {
+    position: relative;
+}
+
+.input-with-icon i {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-color-secondary);
+    font-size: 1.1rem;
+    pointer-events: none; /* Garante que o ícone não impeça o clique no input */
+}
+
+/* Estilo dos inputs */
+.form-control {
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 3rem; /* Aumenta o padding à esquerda para o ícone */
+    border: 1px solid var(--border-color);
+    border-radius: 8px; /* Bordas mais suaves */
+    font-size: 1rem;
+    line-height: 1.5;
+    background-color: var(--input-bg);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    box-sizing: border-box; /* Garante que padding e borda não aumentem o tamanho total */
+}
+
+.form-control:focus {
+    border-color: var(--primary-blue);
+    outline: 0;
+    box-shadow: 0 0 0 0.25rem var(--focus-ring-color); /* Anel de foco acessível */
+    background-color: #fff;
+}
+
+.form-control.is-invalid {
+    border-color: var(--error-color);
+    padding-right: calc(1.5em + 0.75rem + 3rem); /* Espaço extra para ícone de erro + padding do ícone */
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(1.0rem) center; /* Ajusta a posição do ícone de erro */
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+.invalid-feedback {
+    display: none; /* Esconde por padrão */
+    width: 100%;
+    margin-top: 0.25rem;
+    font-size: 0.875em;
+    color: var(--error-color);
+}
+
+.form-control.is-invalid ~ .invalid-feedback {
+    display: block; /* Mostra quando o input está inválido */
+}
+
+/* Estilo do botão */
+.button-group {
+    margin-top: 2rem;
+    margin-bottom: 1.5rem;
+}
+
+.btn-primary {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #fff;
+    background-color: var(--primary-blue);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3; /* Um tom mais escuro no hover */
+    transform: translateY(-1px); /* Pequeno efeito de elevação */
+}
+
+.btn-primary:active {
+    transform: translateY(0); /* Retorna ao normal no clique */
+}
+
+/* Mensagens de erro globais */
+.global-error {
+    color: var(--error-color);
+    font-size: 0.875rem;
+    margin-top: 1rem;
+    text-align: center;
+}
+
+/* Links no rodapé do card */
+.card-footer-links {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #eee; /* Linha divisória sutil */
+    font-size: 0.9rem;
+    color: var(--text-color-secondary);
+}
+
+.card-footer-links div {
+    margin-bottom: 0.75rem;
+}
+
+.card-footer-links a {
+    color: var(--primary-blue);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease, text-decoration 0.2s ease;
+}
+
+.card-footer-links a:hover {
+    color: #0056b3;
+    text-decoration: underline;
+}
+
+/* Área de mensagens flutuantes (Django messages) */
+.message-area {
+    position: fixed;
+    top: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1055;
+    width: 90%;
+    max-width: 450px;
+}
+
+.message-area .alert {
+    margin-bottom: 1rem;
+    text-align: left;
+}
+
+/* =================================== */
+/* Estilos para Responsividade (Mobile) */
+/* =================================== */
+@media (max-width: 768px) {
+    .login-page-container {
+        padding: 0; /* Remove padding para ocupar a tela inteira em mobile */
+        align-items: flex-start; /* Alinha o card no topo */
+    }
+
+    .login-card {
+        min-height: 100vh; /* Ocupa a altura total da viewport */
+        max-width: 100%; /* Ocupa a largura total */
+        border-radius: 0; /* Sem bordas arredondadas em mobile */
+        box-shadow: none; /* Sem sombra em mobile */
+        padding: 2rem 1.5rem; /* Ajusta o padding interno para mobile */
+    }
+
+    .logo-container {
+        margin-bottom: 1.5rem;
+    }
+
+    .login-logo {
+        max-width: 150px; /* Logo um pouco menor em mobile */
+    }
+
+    .card-title {
+        font-size: 1.5rem;
+        margin-bottom: 0.4rem;
+    }
+
+    .card-subtitle {
+        font-size: 0.85rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.2rem;
+    }
+
+    .form-label {
+        font-size: 0.85rem;
+    }
+
+    .form-control {
+        padding: 0.6rem 1rem 0.6rem 2.8rem; /* Ajusta padding do input para ícone */
+        font-size: 0.95rem;
+    }
+
+    .input-with-icon i {
+        left: 0.8rem;
+        font-size: 1rem;
+    }
+
+    .btn-primary {
+        padding: 0.7rem 1rem;
+        font-size: 1rem;
+    }
+
+    .card-footer-links {
+        margin-top: 1.5rem;
+        padding-top: 1rem;
+        font-size: 0.85rem;
+    }
+    
+    .message-area {
+        width: calc(100% - 2rem); /* Ocupa 100% da largura menos padding */
+    }
+}
+
+
+/* auth.css */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --primary-blue: #007bff;
+    --dark-blue: #1d2b4b;
+    --medium-blue: #2a5298;
+    --light-blue: #1e3c72;
+    --card-bg: #ffffff;
+    --text-color-primary: #343a40;
+    --text-color-secondary: #6c757d;
+    --border-color: #dee2e6;
+    --input-bg: #f8f9fa;
+    --error-color: #dc3545;
+    --focus-ring-color: rgba(0, 123, 255, 0.25);
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    line-height: 1.6;
+    color: var(--text-color-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Container principal das páginas de autenticação */
+.auth-page-container {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem 1rem;
+    box-sizing: border-box;
+    background: linear-gradient(-45deg, var(--dark-blue), var(--medium-blue), var(--light-blue), var(--medium-blue));
+    background-size: 400% 400%;
+    animation: gradient-animation 15s ease infinite;
+}
+
+@keyframes gradient-animation {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Card de autenticação */
+.auth-card {
+    background-color: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    padding: 2.5rem;
+    width: 100%;
+    max-width: 800px;
+    text-align: center;
+    box-sizing: border-box;
+}
+
+.logo-container { margin-bottom: 2rem; }
+.auth-logo { max-width: 180px; height: auto; }
+.card-title { font-size: 1.8rem; font-weight: 700; color: var(--text-color-primary); margin-bottom: 0.5rem; }
+.card-subtitle { font-size: 0.95rem; color: var(--text-color-secondary); margin-bottom: 2rem; }
+.form-group { margin-bottom: 1.2rem; text-align: left; }
+.form-label { display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem; }
+.input-with-icon { position: relative; }
+.input-with-icon i { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-color-secondary); pointer-events: none; }
+
+/* NOVO: Linha de formulário para campos lado a lado */
+.form-row {
+    display: flex;
+    gap: 1rem; /* Espaçamento entre os campos */
+}
+.form-row .form-group {
+    flex: 1; /* Faz com que os campos dividam o espaço igualmente */
+}
+
+/* NOVO: Estilo para seleção de tipo de documento (Rádios) */
+.document-type-selector {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.2rem;
+}
+.radio-group {
+    display: flex;
+    gap: 1rem;
+}
+.radio-group .form-check {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.form-check-input {
+    width: 1.2em;
+    height: 1.2em;
+    cursor: pointer;
+}
+.form-check-label {
+    margin-bottom: 0; /* Reseta margem do label do Bootstrap */
+    cursor: pointer;
+}
+
+/* Estilo dos inputs (form-control do Bootstrap) */
+.form-control {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 1rem;
+    background-color: var(--input-bg);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    box-sizing: border-box;
+}
+.input-with-icon .form-control { padding-left: 3rem; }
+.form-control:focus {
+    border-color: var(--primary-blue);
+    outline: 0;
+    box-shadow: 0 0 0 0.25rem var(--focus-ring-color);
+    background-color: #fff;
+}
+.form-control.is-invalid {
+    border-color: var(--error-color);
+    padding-right: calc(1.5em + 0.75rem); /* Espaço para ícone de erro do Bootstrap */
+}
+.form-control.is-invalid ~ .input-with-icon i { color: var(--error-color); }
+.invalid-feedback { display: none; width: 100%; margin-top: 0.25rem; font-size: 0.875em; color: var(--error-color); }
+.form-control.is-invalid ~ .invalid-feedback,
+.is-invalid .invalid-feedback { display: block; }
+
+
+.button-group { margin-top: 2rem; margin-bottom: 1.5rem; }
+.btn-primary { width: 100%; padding: 0.8rem 1rem; font-size: 1.1rem; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; transition: background-color 0.2s ease, transform 0.1s ease; }
+.btn-primary:hover { transform: translateY(-1px); }
+.btn-primary:active { transform: translateY(0); }
+
+.global-error { color: var(--error-color); font-size: 0.875rem; margin-top: 1rem; text-align: center; }
+
+.card-footer-links { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #eee; font-size: 0.9rem; }
+.card-footer-links a { color: var(--primary-blue); text-decoration: none; font-weight: 500; }
+.card-footer-links a:hover { text-decoration: underline; }
+
+/* Área de mensagens flutuantes (Django messages) */
+.message-area { position: fixed; top: 1rem; left: 50%; transform: translateX(-50%); z-index: 1055; width: 90%; max-width: 450px; }
+.message-area .alert { margin-bottom: 1rem; }
+
+@media (max-width: 768px) {
+    .auth-page-container { padding: 0; align-items: flex-start; }
+    .auth-card { min-height: 100vh; max-width: 100%; border-radius: 0; box-shadow: none; padding: 2rem 1.5rem; }
+    .form-row { flex-direction: column; gap: 0; } /* Empilha os campos em mobile */
+    .form-row .form-group { margin-bottom: 1.2rem; }
+    .auth-logo { max-width: 150px; }
+    .card-title { font-size: 1.5rem; }
+    .card-subtitle { font-size: 0.85rem; margin-bottom: 1.5rem; }
+}
