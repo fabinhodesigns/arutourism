@@ -121,12 +121,14 @@
                 </div>
 
                 <div class="col-12">
-                  <label for="{{ form.imagem.id_for_label }}" class="form-label fw-semibold">Imagem da Empresa</label>
-                  <div class="preview-wrap">
-                    <img id="img-preview" src="{% static 'core/images/sem_imagem.png' %}" alt="Pré-visualização da imagem" />
-                    {{ form.imagem|add_class:"form-control form-control-sm" }}
-                  </div>
-                  <small class="form-text text-muted fst-italic mt-1">Pré-visualize a imagem antes de salvar.</small>
+                    <label for="{{ form.imagem_inicial.id_for_label }}" class="form-label fw-semibold">Imagem da Empresa</label>
+                    <div class="preview-wrap">
+                        <img id="img-preview" src="{% static 'core/images/sem_imagem.png' %}" alt="Pré-visualização da imagem" />
+                        {{ form.imagem_inicial|add_class:"form-control form-control-sm" }}
+                    </div>
+                    <small class="form-text text-muted fst-italic mt-1">
+                        Esta será a imagem principal. Você poderá adicionar mais imagens na galeria após o cadastro.
+                    </small>
                 </div>
 
                 {{ form.latitude }} {{ form.longitude }}

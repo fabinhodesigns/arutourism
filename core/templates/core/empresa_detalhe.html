@@ -5,149 +5,88 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/pages/empresa_detalhe.css' %}">
-
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-     crossorigin=""/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery.js@1.4.0/dist/css/lightgallery.min.css" />
+<style>
+    .gallery-item{cursor:pointer;display:block;overflow:hidden;border-radius:0.5rem;}.gallery-item img{width:100%;height:100%;object-fit:cover;transition:transform 0.3s ease;}.gallery-item:hover img{transform:scale(1.05);}.main-image-container{aspect-ratio:16/9;}.thumbnail-container{aspect-ratio:1/1;}
+</style>
 {% endblock %}
 
 {% block content %}
-<header class="hero-cover" style="{% if empresa.imagem %}--bg-image: url('{{ empresa.imagem.url }}');{% endif %}"
+<header class="hero-cover" style="{% if empresa.imagem_principal %}--bg-image: url('{{ empresa.imagem_principal.imagem.url }}');{% endif %}"
   role="img" aria-label="Foto de capa do estabelecimento">
 
   <div class="hero-mask"></div>
 
   <div class="container hero-content py-5 text-white d-flex flex-column align-items-center">
-    
     <div class="text-center">
       <h1 class="text-white fw-bold display-5 mb-2">{{ empresa.nome }}
         {% if request.user.is_superuser or request.user == empresa.user %}
-          <a href="{% url 'editar_empresa' empresa.slug %}" class="btn btn-outline-light btn-sm chip-edit">
-            <i class="bi bi-pencil-square me-1"></i> EDITAR
-          </a>
+          <a href="{% url 'editar_empresa' empresa.slug %}" class="btn btn-outline-light btn-sm chip-edit"><i class="bi bi-pencil-square me-1"></i> EDITAR</a>
         {% endif %}
       </h1>
     </div>
 
     {% if empresa.tags.all %}
       <div class="d-flex flex-wrap justify-content-center align-items-center gap-2 my-4">
-        {% for tag in empresa.tags.all %}
-          <a href="{% url 'listar_empresas' %}?tag={{ tag.id }}" class="chip">{{ tag.nome }}</a>
-        {% endfor %}
+        {% for tag in empresa.tags.all %}<a href="{% url 'listar_empresas' %}?tag={{ tag.id }}" class="chip">{{ tag.nome }}</a>{% endfor %}
       </div>
     {% endif %}
 
-    <p class="text-white-50 lead mb-0">
-      <i class="bi bi-geo-alt me-1"></i>
-      {% if empresa.endereco_full %}{{ empresa.endereco_full }}{% else %}{{ empresa.bairro }} - {{ empresa.cidade }} - CEP {{ empresa.cep }}{% endif %}
-    </p>
-
+    <p class="text-white-50 lead mb-0"><i class="bi bi-geo-alt me-1"></i> {% if empresa.endereco_full %}{{ empresa.endereco_full }}{% else %}{{ empresa.bairro }} - {{ empresa.cidade }}{% endif %}</p>
   </div>
 </header>
+
 <main class="container my-5">
   <div class="row g-4">
     <div class="col-12 col-lg-7">
       <div class="card section-card p-3 p-md-4">
         <div class="d-flex align-items-center justify-content-between mb-3">
           <h2 class="h5 fw-bold mb-0">Contato</h2>
-          {% if empresa.site %}
-          <a class="btn btn-outline-primary btn-sm" href="{{ empresa.site }}" target="_blank" rel="noopener">
-            <i class="bi bi-globe2 me-1" aria-hidden="true"></i> Site
-          </a>
-          {% endif %}
+          {% if empresa.site %}<a class="btn btn-outline-primary btn-sm" href="{{ empresa.site }}" target="_blank" rel="noopener"><i class="bi bi-globe2 me-1"></i> Site</a>{% endif %}
         </div>
-
         <div class="row g-3">
           <div class="col-12 col-md-6">
             <div class="d-flex gap-3 align-items-start">
-              <span class="icon-badge"><i class="bi bi-telephone" aria-hidden="true"></i></span>
+              <span class="icon-badge"><i class="bi bi-telephone"></i></span>
               <div>
                 <div class="fw-semibold">Telefone</div>
-                {% if empresa.telefone %}
-                <a class="link-primary" href="tel:{{ empresa.telefone }}">{{ empresa.telefone }}</a>
-                <div class="mt-2">
-                  <a class="btn btn-sm btn-outline-secondary" href="https://wa.me/{{ empresa.telefone }}"
-                    target="_blank" rel="noopener">
-                    <i class="bi bi-whatsapp me-1" aria-hidden="true"></i> WhatsApp
-                  </a>
-                </div>
-                {% else %}
-                <span class="text-muted">Não informado</span>
-                {% endif %}
+                {% if empresa.telefone %}<a class="link-primary" href="tel:{{ empresa.telefone }}">{{ empresa.telefone }}</a><div class="mt-2"><a class="btn btn-sm btn-outline-secondary" href="https://wa.me/{{ empresa.telefone }}" target="_blank" rel="noopener"><i class="bi bi-whatsapp me-1"></i> WhatsApp</a></div>{% else %}<span class="text-muted">Não informado</span>{% endif %}
               </div>
             </div>
           </div>
-
           <div class="col-12 col-md-6">
             <div class="d-flex gap-3 align-items-start">
-              <span class="icon-badge"><i class="bi bi-envelope" aria-hidden="true"></i></span>
+              <span class="icon-badge"><i class="bi bi-envelope"></i></span>
               <div>
                 <div class="fw-semibold">E-mail</div>
-                {% if empresa.email %}
-                <a class="link-primary" href="mailto:{{ empresa.email }}">{{ empresa.email }}</a>
-                {% else %}
-                <span class="text-muted">Não informado</span>
-                {% endif %}
+                {% if empresa.email %}<a class="link-primary" href="mailto:{{ empresa.email }}">{{ empresa.email }}</a>{% else %}<span class="text-muted">Não informado</span>{% endif %}
               </div>
             </div>
           </div>
-
           <div class="col-12">
             <div class="d-flex gap-3 align-items-start">
-              <span class="icon-badge"><i class="bi bi-geo-alt" aria-hidden="true"></i></span>
+              <span class="icon-badge"><i class="bi bi-geo-alt"></i></span>
               <div class="w-100">
                 <div class="fw-semibold">Endereço</div>
-                <div class="text-muted">
-                  {% if empresa.rua %}{{ empresa.rua }}{% endif %}
-                  {% if empresa.numero %}, {{ empresa.numero }}{% endif %}
-                  {% if empresa.bairro %} – {{ empresa.bairro }}{% endif %}
-                  {% if empresa.cidade %} – {{ empresa.cidade }}{% endif %}
-                  {% if empresa.cep %} ({{ empresa.cep }}){% endif %}
-                </div>
-                <div class="d-flex flex-wrap gap-2 mt-2">
-                  <a class="btn btn-primary"
-                    href="https://www.google.com/maps/dir/?api=1&destination={{ empresa.latitude|default:'-28.9371' }},{{ empresa.longitude|default:'-49.4840' }}"
-                    target="_blank" rel="noopener" aria-label="Traçar rota no Google Maps">
-                    <i class="bi bi-pin-map me-1" aria-hidden="true"></i> Como chegar
-                  </a>
-                  {% if empresa.maps_url %}
-                  <a class="btn btn-outline-secondary" href="{{ empresa.maps_url }}" target="_blank" rel="noopener">
-                    <i class="bi bi-map me-1" aria-hidden="true"></i> Ver no Maps
-                  </a>
-                  {% endif %}
-                  {% if empresa.app_url %}
-                  <a class="btn btn-outline-secondary" href="{{ empresa.app_url }}" target="_blank" rel="noopener">
-                    <i class="bi bi-phone me-1" aria-hidden="true"></i> App
-                  </a>
-                  {% endif %}
-                </div>
+                <div class="text-muted">{% if empresa.rua %}{{ empresa.rua }}{% endif %}{% if empresa.numero %}, {{ empresa.numero }}{% endif %}{% if empresa.bairro %} – {{ empresa.bairro }}{% endif %}{% if empresa.cidade %} – {{ empresa.cidade }}{% endif %}{% if empresa.cep %} ({{ empresa.cep }}){% endif %}</div>
+                <div class="d-flex flex-wrap gap-2 mt-2"><a class="btn btn-primary" href="https://www.google.com/maps/dir/?api=1&destination={{ empresa.latitude|default:'-28.9371' }},{{ empresa.longitude|default:'-49.4840' }}" target="_blank" rel="noopener"><i class="bi bi-pin-map me-1"></i> Como chegar</a>{% if empresa.maps_url %}<a class="btn btn-outline-secondary" href="{{ empresa.maps_url }}" target="_blank" rel="noopener"><i class="bi bi-map me-1"></i> Ver no Maps</a>{% endif %}{% if empresa.app_url %}<a class="btn btn-outline-secondary" href="{{ empresa.app_url }}" target="_blank" rel="noopener"><i class="bi bi-phone me-1"></i> App</a>{% endif %}</div>
               </div>
             </div>
           </div>
         </div>
-
         <hr class="my-4">
-
         <h2 class="h5 fw-bold mb-3">Detalhes</h2>
         <dl class="detail-dl row">
-          <dt class="col-sm-4">Categoria</dt>
-          <dd class="col-sm-8">{{ empresa.categoria.nome|default:"—" }}</dd>
-
+          <dt class="col-sm-4">Tags</dt>
+          <dd class="col-sm-8">{% for tag in empresa.tags.all %}{{ tag.nome }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</dd>
           <dt class="col-sm-4">CNPJ</dt>
           <dd class="col-sm-8">{{ empresa.cnpj|default:"—" }}</dd>
-
           <dt class="col-sm-4">CADASTUR</dt>
           <dd class="col-sm-8">{{ empresa.cadastrur|default:"—" }}</dd>
-
           <dt class="col-sm-4">Contato direto</dt>
           <dd class="col-sm-8">{{ empresa.contato_direto|default:"—" }}</dd>
-
-          {% if empresa.site %}
-          <dt class="col-sm-4">Site</dt>
-          <dd class="col-sm-8">
-            <a href="{{ empresa.site }}" target="_blank" rel="noopener">{{ empresa.site }}</a>
-          </dd>
-          {% endif %}
+          {% if empresa.site %}<dt class="col-sm-4">Site</dt><dd class="col-sm-8"><a href="{{ empresa.site }}" target="_blank" rel="noopener">{{ empresa.site }}</a></dd>{% endif %}
         </dl>
       </div>
     </div>
@@ -158,41 +97,56 @@
         <p class="mb-0">{{ empresa.descricao|default:"Descrição ainda não informada."|linebreaksbr }}</p>
       </div>
 
-      {% if empresa.imagem and empresa.imagem.name %}
-      <div class="card section-card overflow-hidden mb-4" role="figure" aria-label="Imagem do estabelecimento">
-        <img src="{{ empresa.imagem.url }}" alt="Foto de {{ empresa.nome }}" class="w-100"
-          style="object-fit:cover; max-height:360px">
-      </div>
-      {% endif %}
+      <div class="card section-card p-3 p-md-4 mb-4">
+          <h2 class="h5 fw-bold mb-3">Galeria de Imagens</h2>
+          <div id="lightgallery" class="row g-2 g-md-3">
+              
+              {# Em vez de 'if imagens', checamos diretamente 'empresa.imagens.all' #}
+              {% if empresa.imagens.all %}
+                  
+                  {# Iteramos diretamente sobre 'empresa.imagens.all' #}
+                  {% for imagem in empresa.imagens.all %}
+                      
+                      {% if imagem.principal %}
+                          <div class="col-12 order-1">
+                              <a class="gallery-item main-image-container shadow-sm" href="{{ imagem.imagem.url }}">
+                                  <img src="{{ imagem.imagem.url }}" class="img-fluid" alt="Imagem principal de {{ empresa.nome }}">
+                              </a>
+                          </div>
+                      {% else %}
+                          <div class="col-6 col-md-6 order-2">
+                              <a class="gallery-item thumbnail-container shadow-sm" href="{{ imagem.imagem.url }}">
+                                  <img src="{{ imagem.imagem.url }}" class="img-fluid" alt="Imagem da galeria de {{ empresa.nome }}">
+                              </a>
+                          </div>
+                      {% endif %}
 
+                  {% endfor %}
+
+              {% else %}
+                  <div class="col-12">
+                      <p class="text-muted">Esta empresa ainda não possui imagens na galeria.</p>
+                  </div>
+              {% endif %}
+          </div>
+      </div>
       <div class="card section-card p-3 p-md-4">
-        <div class="d-flex align-items-center justify-content-between mb-3">
-          <h2 class="h5 fw-bold mb-0">Localização</h2>
-          <span class="text-muted small">Lat {{ empresa.latitude|default:"-28.9371" }}, Lng {{
-            empresa.longitude|default:"-49.4840" }}</span>
-        </div>
-        <div id="map" role="region" aria-label="Mapa de localização"
-          data-lat="{{ empresa.latitude|default:'-28.9371' }}" data-lon="{{ empresa.longitude|default:'-49.4840' }}"
-          data-nome="{{ empresa.nome|escapejs }}">
-        </div>
+        <h2 class="h5 fw-bold mb-0">Localização</h2>
+        <div id="map" class="mt-3" role="region" aria-label="Mapa de localização" data-lat="{{ empresa.latitude|default:'-28.9371' }}" data-lon="{{ empresa.longitude|default:'-49.4840' }}" data-nome="{{ empresa.nome|escapejs }}"></div>
       </div>
     </aside>
   </div>
 </main>
+
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "LocalBusiness",
-  "name": {{ empresa.nome|escapejs }},
-  "image": "{% if empresa.imagem and empresa.imagem.name %}{{ empresa.imagem.url }}{% else %}{% static 'images/sem_imagem.png' %}{% endif %}",
-  "address": {
-    "@type": "PostalAddress",
-    "streetAddress": "{{ empresa.rua|default_if_none:'' }}{% if empresa.numero %}, {{ empresa.numero }}{% endif %}",
-    "addressLocality": "{{ empresa.cidade|default_if_none:'' }}",
-    "postalCode": "{{ empresa.cep|default_if_none:'' }}",
-    "addressRegion": "",
-    "addressCountry": "BR"
-  },
+  "name": "{{ empresa.nome|escapejs }}",
+  {% if empresa.imagem_principal %}
+  "image": "{{ request.scheme }}://{{ request.get_host }}{{ empresa.imagem_principal.imagem.url }}",
+  {% endif %}
+  "address": { "@type": "PostalAddress", "streetAddress": "{{ empresa.rua|default_if_none:'' }}{% if empresa.numero %}, {{ empresa.numero }}{% endif %}", "addressLocality": "{{ empresa.cidade|default_if_none:'' }}", "postalCode": "{{ empresa.cep|default_if_none:'' }}", "addressCountry": "BR" },
   "url": "{% if empresa.site %}{{ empresa.site }}{% else %}{{ request.build_absolute_uri }}{% endif %}",
   "telephone": "{{ empresa.telefone|default_if_none:'' }}",
   "geo": {"@type":"GeoCoordinates","latitude":"{{ empresa.latitude|default:'-28.9371' }}","longitude":"{{ empresa.longitude|default:'-49.4840' }}"}
@@ -202,8 +156,18 @@
 
 
 {% block extra_js %}
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-     crossorigin=""></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="{% static 'js/site/empresa_detalhe.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/npm/lightgallery.js@1.4.0/dist/js/lightgallery.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const gallery = document.getElementById('lightgallery');
+        if (gallery) {
+            lightGallery(gallery, {
+                selector: '.gallery-item',
+                download: false
+            });
+        }
+    });
+</script>
 {% endblock %}

@@ -8,7 +8,7 @@ import re
 from io import BytesIO, StringIO
 from urllib.parse import urlparse, parse_qs
 from .forms import ProfileForm, CpfUpdateForm, StartResetByCpfForm, CustomLoginForm, EmpresaForm, UserRegistrationForm, TagForm
-from .models import PerfilUsuario, Empresa
+from .models import PerfilUsuario, Empresa, ImagemEmpresa
 from django.contrib.auth import authenticate
 from .models import Tag
 from django.contrib.admin.views.decorators import staff_member_required
@@ -478,6 +478,14 @@ def cadastrar_empresa(request):
         empresa.user = request.user
         empresa.save()
 
+        imagem_file = request.FILES.get('imagem_inicial')
+        if imagem_file:
+            ImagemEmpresa.objects.create(
+                empresa=empresa,
+                imagem=imagem_file,
+                principal=True 
+            )
+
         if wants_json:
             action = 'reset' if 'save_and_add' in request.POST else 'redirect'
             return JsonResponse({
@@ -523,6 +531,16 @@ def editar_empresa(request, slug):
         form = EmpresaForm(request.POST, request.FILES, instance=empresa)
         if form.is_valid():
             form.save()
+
+            novas_imagens = request.FILES.getlist('novas_imagens')
+            for file in novas_imagens:
+                ImagemEmpresa.objects.create(empresa=empresa, imagem=file)
+
+            principal_id = request.POST.get('imagem_principal')
+            if principal_id:
+                empresa.imagens.update(principal=False)
+                ImagemEmpresa.objects.filter(id=principal_id, empresa=empresa).update(principal=True)
+
             if wants_json:
                 return JsonResponse({'ok': True, 'redirect_url': reverse('suas_empresas')})
             messages.success(request, f"A empresa “{empresa.nome}” foi atualizada com sucesso!")
@@ -536,6 +554,27 @@ def editar_empresa(request, slug):
         'form': form,
         'empresa': empresa,
     }, status=(400 if request.method == 'POST' else 200))
+
+@login_required
+@require_POST
+def deletar_imagem_empresa(request, imagem_id):
+    imagem = get_object_or_404(ImagemEmpresa, id=imagem_id)
+    empresa = imagem.empresa
+
+    if empresa.user != request.user and not request.user.is_superuser:
+        return JsonResponse({'status': 'error', 'message': 'Permissão negada.'}, status=403)
+
+    if imagem.principal:
+        imagem.delete()
+        nova_principal = empresa.imagens.order_by('data_upload').first()
+        if nova_principal:
+            nova_principal.principal = True
+            nova_principal.save()
+    else:
+        imagem.delete()
+
+    return JsonResponse({'status': 'success', 'message': 'Imagem deletada.'})
+
 
 @login_required(login_url='/login/')
 def suas_empresas(request):

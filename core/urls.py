@@ -49,6 +49,7 @@ urlpatterns = [
     
     path('perfil/alterar-cpf/', views.perfil_alterar_cpf, name='perfil_alterar_cpf'),
     path('gerenciar-tags/', views.gerenciar_tags, name='gerenciar_tags'),
+    path('imagem-empresa/deletar/<int:imagem_id>/', views.deletar_imagem_empresa, name='deletar_imagem_empresa'),
 ]
 
 # servir mídia local quando DEBUG=True

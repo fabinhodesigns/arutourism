@@ -10,7 +10,6 @@ from core.views import senha_redefinida_redirect
 
 urlpatterns = [
     path('', include('core.urls')),
-    # path('admin/', admin.site.urls),
 
     path(
         "senha/redefinir/<uidb64>/<token>/",
@@ -20,7 +19,6 @@ urlpatterns = [
         ),
         name="password_reset_confirm",
     ),
-    # ✅ após redefinir: só redireciona pro login
     path(
         'senha/redefinida/',
         senha_redefinida_redirect,

@@ -20,6 +20,49 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    // ✅ NOVA LÓGICA PARA DELETAR IMAGENS
+    function initImageDeletion() {
+        const galleryContainer = document.getElementById('image-gallery-container');
+        if (!galleryContainer) return;
+
+        galleryContainer.addEventListener('click', function (event) {
+            const deleteButton = event.target.closest('.btn-delete-image');
+            if (!deleteButton) return;
+
+            const imageId = deleteButton.dataset.imageId;
+            const csrfToken = deleteButton.dataset.csrf;
+            const url = `/imagem-empresa/deletar/${imageId}/`;
+
+            if (confirm('Tem certeza que deseja deletar esta imagem? A ação não pode ser desfeita.')) {
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            // Remove o card da imagem da tela
+                            const imageCard = document.getElementById(`imagem-card-${imageId}`);
+                            if (imageCard) {
+                                imageCard.remove();
+                            }
+                            // Poderia adicionar um "toast" de sucesso aqui
+                            alert(data.message);
+                        } else {
+                            alert(`Erro: ${data.message}`);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erro ao deletar imagem:', error);
+                        alert('Ocorreu um erro de conexão.');
+                    });
+            }
+        });
+    }
+
     // Função para inicializar o mapa Leaflet
     function initLeafletMap() {
         const mapContainer = document.getElementById('map');
@@ -75,8 +118,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Chama as funções de inicialização
-    initImagePreview();
     initLeafletMap();
+    initImageDeletion();
 
     // A lógica de envio AJAX pode ser mantida aqui, se você planeja usá-la.
     // Lembre-se de remover as tags Django do código, passando os valores necessários

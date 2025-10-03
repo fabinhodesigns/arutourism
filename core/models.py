@@ -2,6 +2,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils.text import slugify
+from django.db.models import F
 
 class PerfilUsuario(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='perfil')
@@ -70,8 +71,6 @@ class Empresa(models.Model):
     facebook = models.TextField(blank=True, null=True)
     instagram = models.TextField(blank=True, null=True)
 
-    imagem = models.ImageField(upload_to='empresas/', null=True, blank=True)
-
     sem_telefone = models.BooleanField(default=False)
     sem_email = models.BooleanField(default=False)
 
@@ -98,3 +97,23 @@ class Empresa(models.Model):
             counter += 1
             
         super().save(*args, **kwargs)
+
+    @property
+    def imagem_principal(self):
+        img = self.imagens.filter(principal=True).first()
+        if img:
+            return img
+        return self.imagens.order_by('data_upload').first()
+    
+
+class ImagemEmpresa(models.Model):
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='imagens')
+    imagem = models.ImageField(upload_to='empresas/galeria/')
+    principal = models.BooleanField(default=False, help_text="Marque se esta é a imagem principal/capa da empresa.")
+    data_upload = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = [F('principal').desc(), '-data_upload'] # Principal sempre primeiro
+
+    def __str__(self):
+        return f"Imagem para {self.empresa.nome}"
