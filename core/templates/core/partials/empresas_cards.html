@@ -24,6 +24,15 @@
       <h5 class="card-title">{{ empresa.nome }}</h5>
       <p class="card-text mb-4">{{ empresa.descricao|truncatechars:100 }}</p>
 
+      {% if empresa.total_avaliacoes > 0 %}
+        <div class="card-rating mb-2">
+            <i class="bi bi-star-fill"></i>
+            <span class="fw-bold">{{ empresa.nota_media|floatformat:1 }}</span>
+            <span class="text-muted small">({{ empresa.total_avaliacoes }} avaliaç{% if empresa.total_avaliacoes > 1 %}ões{% else %}ão{% endif %})</span>
+        </div>
+      {% endif %}
+      <p class="card-text mb-4">{{ empresa.descricao|truncatechars:100 }}</p>
+
       <div class="mt-auto">
         <div class="d-flex align-items-center text-muted small">
           <i class="bi bi-person-circle me-2 fs-5"></i>

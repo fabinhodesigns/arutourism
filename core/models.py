@@ -2,7 +2,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils.text import slugify
-from django.db.models import F
+from django.db.models import F, Avg
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 class PerfilUsuario(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='perfil')
@@ -64,12 +65,12 @@ class Empresa(models.Model):
     email = models.EmailField(blank=True, null=True)
     contato_direto = models.CharField(max_length=255, blank=True, null=True)
 
-    site = models.TextField(blank=True, null=True)
+    site = models.URLField(blank=True, null=True)
     digital = models.TextField(blank=True, null=True)
     maps_url = models.TextField(blank=True, null=True)
     app_url = models.TextField(blank=True, null=True)
-    facebook = models.TextField(blank=True, null=True)
-    instagram = models.TextField(blank=True, null=True)
+    facebook = models.URLField(blank=True, null=True)
+    instagram = models.URLField(blank=True, null=True)
 
     sem_telefone = models.BooleanField(default=False)
     sem_email = models.BooleanField(default=False)
@@ -91,10 +92,17 @@ class Empresa(models.Model):
 
         original_slug = self.slug
         counter = 1
+        queryset = Empresa.objects.filter(slug=self.slug)
+        if self.pk:
+            queryset = queryset.exclude(pk=self.pk)
 
         while Empresa.objects.filter(slug=self.slug).exclude(pk=self.pk).exists():
             self.slug = f'{original_slug}-{counter}'
             counter += 1
+            queryset = Empresa.objects.filter(slug=self.slug)
+            
+            if self.pk:
+                queryset = queryset.exclude(pk=self.pk)
             
         super().save(*args, **kwargs)
 
@@ -104,6 +112,15 @@ class Empresa(models.Model):
         if img:
             return img
         return self.imagens.order_by('data_upload').first()
+    
+    @property
+    def nota_media(self):
+        media = self.avaliacoes.aggregate(Avg('nota')).get('nota__avg') or 0.0
+        return round(media, 1)
+
+    @property
+    def total_avaliacoes(self):
+        return self.avaliacoes.count()
     
 
 class ImagemEmpresa(models.Model):
@@ -117,3 +134,20 @@ class ImagemEmpresa(models.Model):
 
     def __str__(self):
         return f"Imagem para {self.empresa.nome}"
+    
+class Avaliacao(models.Model):
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='avaliacoes')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='avaliacoes')
+    nota = models.IntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+        help_text="Nota de 1 a 5"
+    )
+    comentario = models.TextField(blank=True, null=True)
+    data_criacao = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['empresa', 'user']
+        ordering = ['-data_criacao']
+
+    def __str__(self):
+        return f'Avaliação de {self.user.username} para {self.empresa.nome}: {self.nota} estrelas'

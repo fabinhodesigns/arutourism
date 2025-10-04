@@ -15,7 +15,7 @@
     </a>
   </div>
 
-  {% if page_obj.paginator.count == 0 %}
+   {% if not page_obj.object_list %}
     <div class="row justify-content-center">
       <div class="col-12 col-md-10 col-lg-8">
         <div class="empty-state text-center">
@@ -31,8 +31,7 @@
   {% else %}
     {% with qtd=page_obj.object_list|length %}
     <div class="row g-4 {% if qtd == 1 %}justify-content-center{% endif %}" id="empresas-container">
-      {# Usa o mesmo partial de cards para manter consistência visual #}
-      {# {% include 'core/partials/empresas_cards.html' %} #}
+      {% include 'core/partials/empresas_cards.html' %}
     </div>
     {% endwith %}
 
@@ -44,4 +43,8 @@
   {% endif %}
 </div>
 
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'js/site/suas_empresas.js' %}"></script>
 {% endblock %}

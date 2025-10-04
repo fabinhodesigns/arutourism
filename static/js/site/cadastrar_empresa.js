@@ -1,10 +1,10 @@
 // Garante que todo o código só execute após o carregamento completo do HTML.
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
 
     // ======================================
     // INICIALIZAÇÃO GERAL E VARIÁVEIS
     // ======================================
-    
+
     // Variáveis globais para o mapa
     let map;
     let marker;
@@ -26,12 +26,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Isso corrige o erro 'Map container is already initialized' no recarregamento.
     if (mapContainer && !mapContainer._leaflet_id) {
         map = L.map('map').setView([-28.9371, -49.4840], 13);
-        
+
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
 
-        map.on('click', function(e) {
+        map.on('click', function (e) {
             if (marker) {
                 map.removeLayer(marker);
             }
@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Máscaras e toggles de campos (usando jQuery como no original)
-    $('#id_cep').on('input', function() {
+    $('#id_cep').on('input', function () {
         $(this).val($(this).val().replace(/\D/g, '').slice(0, 8));
     });
 
@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', function() {
     toggleFields(); // Executa uma vez no carregamento da página
 
     // Submissão do formulário individual via AJAX
-    $('#empresa-form').on('submit', async function(e) {
+    $('#empresa-form').on('submit', async function (e) {
         e.preventDefault();
         const form = this;
         const formData = new FormData(form);
@@ -98,13 +98,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (response.ok) {
             let data = {};
-            try { data = await response.json(); } catch (_) {}
-            
+            try { data = await response.json(); } catch (_) { }
+
             toast(data.message || 'Salvo com sucesso!');
-            
+
             const action = data.action || 'redirect';
             const redirectUrl = data.redirect_url; // O template Django não é processado aqui
-            
+
             if (action === 'redirect' && redirectUrl) {
                 setTimeout(() => location.href = redirectUrl, 900);
             } else { // 'save_and_add'
@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 // Reseta a imagem para a padrão (o path precisa ser passado do Django)
                 if (imgPrev && imgPrev.dataset.defaultSrc) {
-                     imgPrev.src = imgPrev.dataset.defaultSrc;
+                    imgPrev.src = imgPrev.dataset.defaultSrc;
                 }
             }
             return;
@@ -125,7 +125,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const contentType = (response.headers.get('content-type') || '').toLowerCase();
         if (contentType.includes('application/json')) {
             let payload = null;
-            try { payload = await response.clone().json(); } catch (_) {}
+            try { payload = await response.clone().json(); } catch (_) { }
             if (payload) {
                 if (payload.html) { showOverlay(payload.html); return; }
                 if (payload.error) { toast(payload.error, true); return; }
@@ -175,7 +175,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    $('#form-import').on('submit', async function(e) {
+    $('#form-import').on('submit', async function (e) {
         e.preventDefault();
         if (!fileInput || !fileInput.files.length) {
             drop?.classList.add('border-danger');
@@ -184,7 +184,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         if (loading) loading.style.display = 'flex';
-        
+
         let response;
         try {
             const formData = new FormData(this);
@@ -199,7 +199,7 @@ document.addEventListener('DOMContentLoaded', function() {
             showImportErrors(['Falha de conexão com o servidor. Tente novamente.']);
             return;
         }
-        
+
         if (loading) loading.style.display = 'none';
         drop?.classList.remove('border-danger');
         hideImportErrors();
@@ -213,8 +213,8 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             drop?.classList.add('border-danger');
             let payload = null;
-            try { payload = await response.json(); } catch (_) {}
-            
+            try { payload = await response.json(); } catch (_) { }
+
             if (payload) {
                 const messages = payload.mensagens?.length ? payload.mensagens : [payload.error || 'Falha ao importar.'];
                 showImportErrors(messages);
@@ -244,7 +244,7 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
         wrap.addEventListener('click', e => { if (e.target === wrap) hideOverlay(); });
         wrap.querySelector('[data-dismiss-overlay]').addEventListener('click', hideOverlay);
-        
+
         escListener = e => { if (e.key === 'Escape') hideOverlay(); };
         document.addEventListener('keydown', escListener);
 
@@ -255,7 +255,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const overlay = document.getElementById('form-errors-overlay');
         if (overlay) {
             overlay.remove();
-            if(escListener) document.removeEventListener('keydown', escListener);
+            if (escListener) document.removeEventListener('keydown', escListener);
         }
     }
 
@@ -265,7 +265,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const innerBox = tmp.querySelector('.message-box');
         // Pega o conteúdo de dentro do .message-box se ele existir
         const content = innerBox ? innerBox.innerHTML : tmp.innerHTML;
-        
+
         const finalDiv = document.createElement('div');
         finalDiv.innerHTML = content;
         if (!finalDiv.querySelector('h1,h2,h3,h4,h5,h6')) {
@@ -298,14 +298,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Notificações Toast
     function toast(message, isDanger = false) {
         const container = document.getElementById('notification-container');
-        if(!container) return;
+        if (!container) return;
 
         const toastEl = document.createElement('div');
         toastEl.className = 'toast-notification' + (isDanger ? ' bg-danger' : '');
         toastEl.innerHTML = `<span>${message}</span>`;
-        
+
         container.appendChild(toastEl);
-        
+
         setTimeout(() => toastEl.classList.add('show'), 30);
         setTimeout(() => {
             if (toastEl.isConnected) {
@@ -313,6 +313,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 setTimeout(() => toastEl.remove(), 300);
             }
         }, 4200);
+    }
+
+    const tagSearchInput = document.getElementById('tag-search-input');
+    if (tagSearchInput) {
+        tagSearchInput.addEventListener('input', function () {
+            const searchTerm = this.value.toLowerCase();
+            const allTags = document.querySelectorAll('.tag-list-container .form-check');
+
+            allTags.forEach(function (tagElement) {
+                const label = tagElement.querySelector('label');
+                if (label) {
+                    const labelText = label.innerText.toLowerCase();
+                    if (labelText.includes(searchTerm)) {
+                        tagElement.style.display = 'block';
+                    } else {
+                        tagElement.style.display = 'none';
+                    }
+                }
+            });
+        });
     }
 
 });

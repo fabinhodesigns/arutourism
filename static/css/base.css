@@ -179,3 +179,14 @@ p {
 html {
     scroll-behavior: smooth;
 }
+
+.card-rating {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.9rem;
+}
+
+.card-rating .bi-star-fill {
+    color: #ffc107; /* Amarelo do Bootstrap */
+}

@@ -1,3 +1,8 @@
+.filters-wrap,
+#empresas-container {
+    width: 100%;
+}
+
 .page-shell {
     min-height: 65vh
 }
@@ -41,7 +46,8 @@
 
 .empresa-card {
     transition: transform .15s, box-shadow .15s;
-    cursor: pointer
+    cursor: pointer;
+    max-width: 22rem;
 }
 
 .empresa-card:hover {

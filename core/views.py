@@ -1,4 +1,3 @@
-# core/views.py
 from __future__ import annotations
 import unicodedata
 
@@ -13,6 +12,10 @@ from django.contrib.auth import authenticate
 from .models import Tag
 from django.contrib.admin.views.decorators import staff_member_required
 
+from .forms import AvaliacaoForm
+from .models import Avaliacao
+from django.db import IntegrityError
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -20,11 +23,11 @@ from django.views.decorators.http import require_http_methods
 from django.contrib import messages
 from django.contrib.auth import login as auth_login, logout
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import AuthenticationForm  # (mantido se você usar em outro lugar)
+from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
 from django.db import transaction, IntegrityError
-from django.db.models import Q
+from django.db.models import Q, Avg, Count, Prefetch
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
@@ -34,22 +37,16 @@ from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
 import csv, io
 
-
-
-# core/views.py (imports)
-
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm, PasswordResetForm
 from django.urls import reverse, reverse_lazy
-from django.core.mail import send_mail  # se usar backend real
+from django.core.mail import send_mail  
 from django.utils import timezone
 
 from .models import PerfilUsuario, Empresa, Tag
 
 from core.models import Tag, Empresa
 
-# ============================================================
-# Constantes / Mapeamentos
 # ============================================================
 
 # nomes aceitos (mantém os seus sinônimos)
@@ -105,6 +102,16 @@ HUMAN_LABEL_BY_CANON = {c: label for (label, _req, c) in TEMPLATE_HEADERS}
 # ============================================================
 # Helpers
 # ============================================================
+
+def get_base_empresas_queryset():
+    """
+    Cria uma QuerySet base otimizada SEM o annotate problemático.
+    """
+    return Empresa.objects.select_related('user').prefetch_related(
+        'tags',
+        'avaliacoes', # Pré-busca as avaliações para os cálculos no modelo
+        Prefetch('imagens', queryset=ImagemEmpresa.objects.filter(principal=True), to_attr='imagem_principal_list')
+    )
     
 def _clip(model_cls, field_name, value):
     """Trunca strings para caber no max_length do campo (se houver)."""
@@ -207,7 +214,6 @@ def _squeeze(s: str | None) -> str:
 def _norm_label(s: str | None) -> str:
     """normaliza rótulo de coluna: lowercase, remove '(...)', colapsa espaços"""
     s = (s or "")
-    # remove conteúdos em parênteses (ex.: '(OBRIGATÓRIO)', '(opcional)')
     s = re.sub(r"\([^)]*\)", "", s)
     s = s.replace(":", " ").replace("/", " ")
     s = _squeeze(s).lower()
@@ -225,10 +231,6 @@ def _to_float(val, default=None):
         return default
 
 def _match_header_map(headers: list[str]) -> dict[int, str]:
-    """
-    Mapeia índice da coluna -> chave canônica (ex.: 3 -> 'cidade'),
-    aceitando sinônimos definidos em COLUMN_ALIASES.
-    """
     result = {}
     for idx, raw in enumerate(headers):
         k = _norm_space_lower(raw)
@@ -239,10 +241,6 @@ def _match_header_map(headers: list[str]) -> dict[int, str]:
     return result
 
 def _get_reader(file_obj, filename: str):
-    """
-    Lê CSV (utf-8) ou XLSX e retorna lista de linhas (list[list[str]]).
-    Primeira linha é header.
-    """
     ext = (filename or "").lower()
     if ext.endswith(".csv"):
         data = file_obj.read().decode("utf-8", errors="ignore")
@@ -250,7 +248,6 @@ def _get_reader(file_obj, filename: str):
         rows = [[(c or "").strip() for c in r] for r in reader]
         return rows
 
-    # XLSX (openpyxl)
     from openpyxl import load_workbook
     wb = load_workbook(file_obj, data_only=True)
     ws = wb.active
@@ -276,7 +273,6 @@ def _strip_parens(s: str | None) -> str:
     """Remove QUALQUER sufixo entre parênteses no cabeçalho."""
     if not s:
         return ""
-    # remove tudo que estiver entre parênteses no final do texto
     return re.sub(r"\s*\(.*?\)\s*$", "", str(s)).strip()
 
 def _has_field(model_class, field_name: str) -> bool:
@@ -310,9 +306,13 @@ def _ident_kind(ident: str) -> str:
 # ============================================================
 
 def home(request):
-    empresas = Empresa.objects.all().order_by('-data_cadastro')[:6]
+    empresas_list = get_base_empresas_queryset().order_by('-data_cadastro')[:6]
     total_empresas = Empresa.objects.count()
-    return render(request, 'home.html', {'empresas': empresas, 'total_empresas': total_empresas})
+    return render(request, 'home.html', {
+        'page_obj': empresas_list,
+        'total_empresas': total_empresas
+    })
+
 
 def sobre(request):
     return render(request, 'core/sobre.html')
@@ -336,7 +336,6 @@ def register(request):
             return redirect('login')
 
         if _wants_json(request):
-            # serializa erros por campo
             return JsonResponse({"ok": False, "errors": form.errors}, status=400)
 
         for field, errors in form.errors.items():
@@ -355,67 +354,50 @@ def login_view(request):
         ident = (request.POST.get('identificador') or "").strip()
         pwd = request.POST.get('password') or ""
         
-        # --- LÓGICA DE LOGIN MANUAL INSERIDA AQUI ---
         user_obj = None
         
-        # 1. Determina o tipo de identificador e busca o usuário
         if '@' in ident:
-            # Busca por e-mail
             user_obj = User.objects.filter(email__iexact=ident).first()
         elif re.match(r'^\d{11}$|^\d{14}$', re.sub(r'\D', '', ident)):
-            # Busca por CPF
             digits = re.sub(r'\D', '', ident)
             perfil = PerfilUsuario.objects.select_related("user").filter(cpf_cnpj=digits).first()
             if perfil:
                 user_obj = perfil.user
         else:
-            # Por padrão, busca por username
             user_obj = User.objects.filter(username__iexact=ident).first()
 
-        # 2. Se encontrou um usuário, tenta autenticar com a senha
         if user_obj:
-            # IMPORTANTE: Usamos o user_obj.username para o authenticate!
             user = authenticate(request, username=user_obj.username, password=pwd)
             
             if user is not None:
-                # Autenticação bem-sucedida!
                 if user.is_active:
                     print(f"[LOGIN] Autenticação manual OK para user.id={user.id}")
                     auth_login(request, user)
                     
-                    # Lógica para resposta JSON ou redirect
                     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                         return JsonResponse({"ok": True, "redirect": reverse("home")})
                     return redirect('home')
                 else:
-                    # Usuário inativo
                     print(f"[LOGIN] Falha: usuário '{user.username}' está inativo.")
                     messages.error(request, 'Esta conta está desativada.')
             else:
-                # Senha incorreta
                 print(f"[LOGIN] Falha: Senha incorreta para o usuário '{user_obj.username}'.")
                 messages.error(request, 'Por favor, verifique seu identificador e senha.')
         else:
-            # Usuário não encontrado
             print(f"[LOGIN] Falha: Nenhum usuário encontrado para o identificador '{ident}'.")
             messages.error(request, 'Por favor, verifique seu identificador e senha.')
         
-        # Se chegou até aqui, o login falhou.
-        # Prepara a resposta de erro.
-        form = CustomLoginForm(request.POST) # Para reenviar o form com os dados
+        form = CustomLoginForm(request.POST)
         
         if request.headers.get('X-Requested-with') == 'XMLHttpRequest':
-             # Pega a última mensagem de erro para enviar no JSON
             error_message = str(list(messages.get_messages(request))[-1])
             return JsonResponse({
                 "ok": False, 
                 "errors": [{"message": error_message}]
             }, status=400)
             
-        # Para requisições normais, renderiza a página com a mensagem de erro
         return render(request, 'core/login.html', {'form': form})
 
-    # GET
     form = CustomLoginForm()
     return render(request, 'core/login.html', {'form': form})
 
@@ -516,7 +498,6 @@ def cadastrar_empresa(request):
 def editar_empresa(request, slug):
     empresa = get_object_or_404(Empresa, slug=slug)
 
-    # dono ou superuser
     if empresa.user_id != request.user.id and not request.user.is_superuser:
         raise Http404("Você não tem permissão para editar esta empresa.")
 
@@ -578,30 +559,47 @@ def deletar_imagem_empresa(request, imagem_id):
 
 @login_required(login_url='/login/')
 def suas_empresas(request):
-    empresas = Empresa.objects.filter(user=request.user).order_by('-data_cadastro')
-    paginator = Paginator(empresas, 6)
+    empresas_list = get_base_empresas_queryset().filter(user=request.user).order_by('-data_cadastro')
+    paginator = Paginator(empresas_list, 6)
     page_obj = paginator.get_page(request.GET.get('page') or 1)
 
-    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-        html = render_to_string('core/partials/empresas_cards.html', {'page_obj': page_obj})
+    if _wants_json(request):
+        html = render_to_string('core/partials/empresas_cards.html', {'page_obj': page_obj}, request=request)
         return JsonResponse({'html': html, 'has_next': page_obj.has_next(),
                              'next_page_number': page_obj.next_page_number() if page_obj.has_next() else None})
+    
     return render(request, 'core/suas_empresas.html', {'page_obj': page_obj})
 
+
 def empresa_detalhe(request, slug):
-    empresa = get_object_or_404(Empresa, slug=slug)
-    return render(request, 'core/empresa_detalhe.html', {'empresa': empresa})
+    empresa = get_object_or_404(
+        Empresa.objects.annotate(
+            nota_media=Avg('avaliacoes__nota'),
+            total_avaliacoes=Count('avaliacoes')
+        ).prefetch_related('imagens', 'avaliacoes__user__perfil'), 
+        slug=slug
+    )
+
+    avaliacao_form = AvaliacaoForm()
+    user_ja_avaliou = False
+    if request.user.is_authenticated:
+        if Avaliacao.objects.filter(empresa=empresa, user=request.user).exists():
+            user_ja_avaliou = True
+
+    context = {
+        'empresa': empresa,
+        'avaliacao_form': avaliacao_form,
+        'user_ja_avaliou': user_ja_avaliou,
+    }
+    return render(request, 'core/empresa_detalhe.html', context)
+
 
 def listar_empresas(request):
-    empresas = Empresa.objects.all().order_by('-id')
-
-    # Pega os parâmetros da URL
+    empresas = get_base_empresas_queryset()
     q = (request.GET.get('q') or '').strip()
     tag_id = (request.GET.get('tag') or '').strip()
     cidade = (request.GET.get('cidade') or '').strip()
-    # ... outros filtros que você tenha
-
-    # --- LÓGICA DE BUSCA GERAL (TEXTO) ---
+    
     if q:
         empresas = empresas.filter(
             Q(nome__icontains=q) |
@@ -611,49 +609,26 @@ def listar_empresas(request):
             Q(tags__nome__icontains=q)
         ).distinct()
 
-    # --- NOVA LÓGICA DE BUSCA HIERÁRQUICA POR TAG ---
     tag_label = None
     if tag_id:
         try:
-            # 1. Pega a tag selecionada no banco
-            selected_tag = Tag.objects.prefetch_related('children').get(id=tag_id)
+            selected_tag = Tag.objects.get(id=tag_id)
             tag_label = selected_tag.nome
-
-            # 2. Pega os IDs de todas as suas "filhas" (subcategorias)
-            child_ids = list(selected_tag.children.values_list('id', flat=True))
-
-            # 3. VERIFICA A REGRA:
-            if child_ids:
-                # Se a tag tem filhas, ela é uma "mãe".
-                # Buscamos empresas que tenham a tag "mãe" OU qualquer uma das "filhas".
-                search_ids = [selected_tag.id] + child_ids
-                empresas = empresas.filter(tags__id__in=search_ids).distinct()
-            else:
-                # Se não tem filhas, é uma subcategoria ou uma tag sozinha.
-                # Buscamos apenas por empresas com essa tag específica.
-                empresas = empresas.filter(tags__id=tag_id)
-
+            empresas = empresas.filter(tags__id=tag_id)
         except (Tag.DoesNotExist, ValueError):
-            # Se o ID da tag for inválido, não faz nada e mostra todos os resultados
             pass
-    # --- FIM DA NOVA LÓGICA ---
     
     if cidade:
         empresas = empresas.filter(cidade__iexact=cidade)
-    # ... outros filtros
 
-    # Paginação (mantém o que você já tinha)
+    empresas = empresas.order_by('-id')
     paginator = Paginator(empresas, 12)
     page_obj = paginator.get_page(request.GET.get('page') or 1)
 
-    # Lógica de resposta AJAX (mantém o que você já tinha)
-    is_ajax = (request.headers.get('x-requested-with') == 'XMLHttpRequest') or (request.GET.get('ajax') == '1')
-    if is_ajax:
+    if _wants_json(request):
         html = render_to_string('core/partials/empresas_cards.html', {'page_obj': page_obj}, request=request)
-        return JsonResponse({'html': html, 'has_next': page_obj.has_next(),
-                             'next_page_number': page_obj.next_page_number() if page_obj.has_next() else None})
+        return JsonResponse({'html': html, 'has_next': page_obj.has_next(), 'next_page_number': page_obj.next_page_number() if page_obj.has_next() else None})
 
-    # Contexto para o template
     filtros_aplicados = { 'q': q, 'tag': tag_id, 'cidade': cidade }
     filtros_legiveis = { 'q': q or None, 'tag': tag_label, 'cidade': cidade or None }
 
@@ -1025,3 +1000,36 @@ def gerenciar_tags(request):
         'form': form,
     }
     return render(request, 'core/gerenciar_tags.html', context)
+
+@login_required
+@require_POST
+def adicionar_avaliacao(request, slug):
+    empresa = get_object_or_404(Empresa, slug=slug)
+    form = AvaliacaoForm(request.POST)
+
+    if form.is_valid():
+        try:
+            avaliacao = form.save(commit=False)
+            avaliacao.empresa = empresa
+            avaliacao.user = request.user
+            avaliacao.save()
+            messages.success(request, "Obrigado pela sua avaliação!")
+        except IntegrityError:
+            messages.error(request, "Você já avaliou esta empresa.")
+    else:
+        messages.error(request, "Houve um erro no seu formulário. Por favor, tente novamente.")
+
+    return redirect('empresa_detalhe', slug=empresa.slug)
+
+@login_required
+@require_POST
+def deletar_avaliacao(request, avaliacao_id):
+    avaliacao = get_object_or_404(Avaliacao, id=avaliacao_id)
+
+    if request.user != avaliacao.user and not request.user.is_superuser:
+        return JsonResponse({'status': 'error', 'message': 'Permissão negada.'}, status=403)
+
+    avaliacao.delete()
+
+    messages.success(request, "Sua avaliação foi removida com sucesso.")
+    return JsonResponse({'status': 'success'})

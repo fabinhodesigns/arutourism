@@ -67,10 +67,10 @@
     </div>
   </div>
   {% else %}
-  <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 gx-4 gy-5" id="empresas-container">
+  <div class="row g-4" id="empresas-container">
     {% include 'core/partials/empresas_cards.html' %}
   </div>
-
+  
   {% if page_obj.has_next %}
   <div class="d-flex flex-column align-items-center mt-4">
     <div id="load-status" class="visually-hidden" aria-live="polite"></div>

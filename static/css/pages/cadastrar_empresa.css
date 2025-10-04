@@ -105,3 +105,37 @@
     white-space: nowrap;
     border: 0
 }
+
+.tag-select-widget .tag-list-container {
+  max-height: 250px; /* Altura máxima da caixa */
+  overflow-y: auto;  /* Adiciona o scroll vertical */
+  padding: 0.75rem;
+}
+
+/* Organiza os checkboxes em colunas */
+.tag-select-widget #id_tags {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.5rem;
+}
+
+/* Estiliza cada item da lista (label + checkbox) */
+.tag-select-widget .form-check {
+  display: block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.tag-select-widget .form-check:hover {
+  background-color: #f8f9fa;
+}
+
+.tag-select-widget ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.tag-select-widget li {
+  padding: 0;
+}

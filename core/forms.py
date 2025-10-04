@@ -11,6 +11,7 @@ from .utils.cpf import is_valid_cpf, only_digits
 from .models import Tag, PerfilUsuario, Empresa
 from django.core.validators import EmailValidator
 from django.contrib.auth.password_validation import validate_password
+from .models import Avaliacao
 
 User = get_user_model()
 
@@ -253,10 +254,10 @@ class CustomLoginForm(forms.Form):
     
 class EmpresaForm(forms.ModelForm):
     tags = forms.ModelMultipleChoiceField(
-        queryset=Tag.objects.order_by('nome'),
+        queryset=Tag.objects.all().order_by('nome'),
         widget=forms.CheckboxSelectMultiple,
         required=False,
-        label="Categorias / Tags"
+        label="Categorias e Tags"
     )
 
     imagem_inicial = forms.ImageField(
@@ -381,3 +382,20 @@ class CpfUpdateForm(forms.Form):
         if not pwd or not self.user.check_password(pwd):
             raise forms.ValidationError("Não foi possível validar sua senha.")
         return cleaned
+    
+class AvaliacaoForm(forms.ModelForm):
+    nota = forms.ChoiceField(
+        choices=[(i, f'{i} Estrela' + ('s' if i > 1 else '')) for i in range(1, 6)],
+        widget=forms.RadioSelect(attrs={'class': 'star-rating'}),
+        label="Sua nota"
+    )
+
+    class Meta:
+        model = Avaliacao
+        fields = ['nota', 'comentario']
+        widgets = {
+            'comentario': forms.Textarea(attrs={
+                'rows': 4,
+                'placeholder': 'Conte como foi sua experiência (opcional)...'
+            })
+        }

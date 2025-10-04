@@ -1,5 +1,6 @@
 {% extends 'base2.html' %}
 {% load static %}
+{% load widget_tweaks %}
 
 {% block title %}{{ empresa.nome }} - Detalhes{% endblock %}
 
@@ -9,86 +10,89 @@
 <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery.js@1.4.0/dist/css/lightgallery.min.css" />
 <style>
     .gallery-item{cursor:pointer;display:block;overflow:hidden;border-radius:0.5rem;}.gallery-item img{width:100%;height:100%;object-fit:cover;transition:transform 0.3s ease;}.gallery-item:hover img{transform:scale(1.05);}.main-image-container{aspect-ratio:16/9;}.thumbnail-container{aspect-ratio:1/1;}
+    .avatar-placeholder{width:48px;height:48px;background-color:#e9ecef;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.5rem;color:#6c757d;}
+    .star-rating-display{color:#ffc107;}.star-rating-form input[type=radio]{display:none}.star-rating-form label{font-size:1.8rem;color:#ddd;cursor:pointer;transition:color .2s;padding:0 .1em}.star-rating-form label.hover,.star-rating-form label.selected{color:#ffc107}
 </style>
 {% endblock %}
 
 {% block content %}
-<header class="hero-cover" style="{% if empresa.imagem_principal %}--bg-image: url('{{ empresa.imagem_principal.imagem.url }}');{% endif %}"
-  role="img" aria-label="Foto de capa do estabelecimento">
-
+<header class="hero-cover" style="{% if empresa.imagem_principal %}--bg-image: url('{{ empresa.imagem_principal.imagem.url }}');{% endif %}" role="img" aria-label="Foto de capa do estabelecimento">
   <div class="hero-mask"></div>
-
   <div class="container hero-content py-5 text-white d-flex flex-column align-items-center">
-    <div class="text-center">
-      <h1 class="text-white fw-bold display-5 mb-2">{{ empresa.nome }}
+    
+    <div class="d-flex flex-wrap align-items-center justify-content-center gap-3 mb-3">
+        <h1 class="text-white fw-bold display-5 mb-0">{{ empresa.nome }}</h1>
         {% if request.user.is_superuser or request.user == empresa.user %}
-          <a href="{% url 'editar_empresa' empresa.slug %}" class="btn btn-outline-light btn-sm chip-edit"><i class="bi bi-pencil-square me-1"></i> EDITAR</a>
+            <a href="{% url 'editar_empresa' empresa.slug %}" class="btn btn-light chip-edit">
+                <i class="bi bi-pencil-square me-1"></i> EDITAR
+            </a>
         {% endif %}
-      </h1>
     </div>
 
     {% if empresa.tags.all %}
-      <div class="d-flex flex-wrap justify-content-center align-items-center gap-2 my-4">
-        {% for tag in empresa.tags.all %}<a href="{% url 'listar_empresas' %}?tag={{ tag.id }}" class="chip">{{ tag.nome }}</a>{% endfor %}
+      <div class="d-flex flex-wrap justify-content-center align-items-center gap-2">
+        {% for tag in empresa.tags.all %}
+          <a href="{% url 'listar_empresas' %}?tag={{ tag.id }}" class="chip">{{ tag.nome }}</a>
+        {% endfor %}
       </div>
     {% endif %}
 
-    <p class="text-white-50 lead mb-0"><i class="bi bi-geo-alt me-1"></i> {% if empresa.endereco_full %}{{ empresa.endereco_full }}{% else %}{{ empresa.bairro }} - {{ empresa.cidade }}{% endif %}</p>
+    {% if empresa.total_avaliacoes > 0 %}
+      <div class="d-flex align-items-center justify-content-center gap-2 mt-4">
+        <span class="star-rating-display"><i class="bi bi-star-fill"></i></span>
+        <span class="fw-bold fs-5">{{ empresa.nota_media }}</span>
+        <span class="text-white-50">({{ empresa.total_avaliacoes }} avaliaç{% if empresa.total_avaliacoes > 1 %}ões{% else %}ão{% endif %})</span>
+      </div>
+    {% endif %}
+
   </div>
 </header>
 
 <main class="container my-5">
+  {# ✅ ESTRUTURA DE LAYOUT RESTAURADA #}
   <div class="row g-4">
     <div class="col-12 col-lg-7">
-      <div class="card section-card p-3 p-md-4">
+      <div class="card section-card p-3 p-md-4 mb-4">
         <div class="d-flex align-items-center justify-content-between mb-3">
           <h2 class="h5 fw-bold mb-0">Contato</h2>
           {% if empresa.site %}<a class="btn btn-outline-primary btn-sm" href="{{ empresa.site }}" target="_blank" rel="noopener"><i class="bi bi-globe2 me-1"></i> Site</a>{% endif %}
         </div>
         <div class="row g-3">
-          <div class="col-12 col-md-6">
-            <div class="d-flex gap-3 align-items-start">
-              <span class="icon-badge"><i class="bi bi-telephone"></i></span>
-              <div>
-                <div class="fw-semibold">Telefone</div>
-                {% if empresa.telefone %}<a class="link-primary" href="tel:{{ empresa.telefone }}">{{ empresa.telefone }}</a><div class="mt-2"><a class="btn btn-sm btn-outline-secondary" href="https://wa.me/{{ empresa.telefone }}" target="_blank" rel="noopener"><i class="bi bi-whatsapp me-1"></i> WhatsApp</a></div>{% else %}<span class="text-muted">Não informado</span>{% endif %}
-              </div>
-            </div>
-          </div>
-          <div class="col-12 col-md-6">
-            <div class="d-flex gap-3 align-items-start">
-              <span class="icon-badge"><i class="bi bi-envelope"></i></span>
-              <div>
-                <div class="fw-semibold">E-mail</div>
-                {% if empresa.email %}<a class="link-primary" href="mailto:{{ empresa.email }}">{{ empresa.email }}</a>{% else %}<span class="text-muted">Não informado</span>{% endif %}
-              </div>
-            </div>
-          </div>
-          <div class="col-12">
-            <div class="d-flex gap-3 align-items-start">
-              <span class="icon-badge"><i class="bi bi-geo-alt"></i></span>
-              <div class="w-100">
-                <div class="fw-semibold">Endereço</div>
-                <div class="text-muted">{% if empresa.rua %}{{ empresa.rua }}{% endif %}{% if empresa.numero %}, {{ empresa.numero }}{% endif %}{% if empresa.bairro %} – {{ empresa.bairro }}{% endif %}{% if empresa.cidade %} – {{ empresa.cidade }}{% endif %}{% if empresa.cep %} ({{ empresa.cep }}){% endif %}</div>
-                <div class="d-flex flex-wrap gap-2 mt-2"><a class="btn btn-primary" href="https://www.google.com/maps/dir/?api=1&destination={{ empresa.latitude|default:'-28.9371' }},{{ empresa.longitude|default:'-49.4840' }}" target="_blank" rel="noopener"><i class="bi bi-pin-map me-1"></i> Como chegar</a>{% if empresa.maps_url %}<a class="btn btn-outline-secondary" href="{{ empresa.maps_url }}" target="_blank" rel="noopener"><i class="bi bi-map me-1"></i> Ver no Maps</a>{% endif %}{% if empresa.app_url %}<a class="btn btn-outline-secondary" href="{{ empresa.app_url }}" target="_blank" rel="noopener"><i class="bi bi-phone me-1"></i> App</a>{% endif %}</div>
-              </div>
-            </div>
-          </div>
+          <div class="col-12 col-md-6"><div class="d-flex gap-3 align-items-start"><span class="icon-badge"><i class="bi bi-telephone"></i></span><div><div class="fw-semibold">Telefone</div>{% if empresa.telefone %}<a class="link-primary" href="tel:{{ empresa.telefone }}">{{ empresa.telefone }}</a><div class="mt-2"><a class="btn btn-sm btn-outline-secondary" href="https://wa.me/{{ empresa.telefone }}" target="_blank" rel="noopener"><i class="bi bi-whatsapp me-1"></i> WhatsApp</a></div>{% else %}<span class="text-muted">Não informado</span>{% endif %}</div></div></div>
+          <div class="col-12 col-md-6"><div class="d-flex gap-3 align-items-start"><span class="icon-badge"><i class="bi bi-envelope"></i></span><div><div class="fw-semibold">E-mail</div>{% if empresa.email %}<a class="link-primary" href="mailto:{{ empresa.email }}">{{ empresa.email }}</a>{% else %}<span class="text-muted">Não informado</span>{% endif %}</div></div></div>
+          <div class="col-12"><div class="d-flex gap-3 align-items-start"><span class="icon-badge"><i class="bi bi-geo-alt"></i></span><div class="w-100"><div class="fw-semibold">Endereço</div><div class="text-muted">{{ empresa.rua|default:'' }}{% if empresa.numero %}, {{ empresa.numero }}{% endif %} {% if empresa.bairro %} – {{ empresa.bairro }}{% endif %} {% if empresa.cidade %} – {{ empresa.cidade }}{% endif %} {% if empresa.cep %} ({{ empresa.cep }}){% endif %}</div><div class="d-flex flex-wrap gap-2 mt-2"><a class="btn btn-primary" href="https://www.google.com/maps/dir/?api=1&destination={{ empresa.latitude|default:'-28.9371' }},{{ empresa.longitude|default:'-49.4840' }}" target="_blank" rel="noopener"><i class="bi bi-pin-map me-1"></i> Como chegar</a>{% if empresa.maps_url %} <a class="btn btn-outline-secondary" href="{{ empresa.maps_url }}" target="_blank" rel="noopener"><i class="bi bi-map me-1"></i> Ver no Maps</a>{% endif %}{% if empresa.app_url %} <a class="btn btn-outline-secondary" href="{{ empresa.app_url }}" target="_blank" rel="noopener"><i class="bi bi-phone me-1"></i> App</a>{% endif %}</div></div></div></div>
         </div>
         <hr class="my-4">
         <h2 class="h5 fw-bold mb-3">Detalhes</h2>
-        <dl class="detail-dl row">
-          <dt class="col-sm-4">Tags</dt>
-          <dd class="col-sm-8">{% for tag in empresa.tags.all %}{{ tag.nome }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</dd>
-          <dt class="col-sm-4">CNPJ</dt>
-          <dd class="col-sm-8">{{ empresa.cnpj|default:"—" }}</dd>
-          <dt class="col-sm-4">CADASTUR</dt>
-          <dd class="col-sm-8">{{ empresa.cadastrur|default:"—" }}</dd>
-          <dt class="col-sm-4">Contato direto</dt>
-          <dd class="col-sm-8">{{ empresa.contato_direto|default:"—" }}</dd>
-          {% if empresa.site %}<dt class="col-sm-4">Site</dt><dd class="col-sm-8"><a href="{{ empresa.site }}" target="_blank" rel="noopener">{{ empresa.site }}</a></dd>{% endif %}
-        </dl>
+        <dl class="detail-dl row"><dt class="col-sm-4">Tags</dt><dd class="col-sm-8">{% for t in empresa.tags.all %}{{ t.nome }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</dd><dt class="col-sm-4">CNPJ</dt><dd class="col-sm-8">{{ empresa.cnpj|default:"—" }}</dd><dt class="col-sm-4">CADASTUR</dt><dd class="col-sm-8">{{ empresa.cadastrur|default:"—" }}</dd><dt class="col-sm-4">Contato direto</dt><dd class="col-sm-8">{{ empresa.contato_direto|default:"—" }}</dd>{% if empresa.site %}<dt class="col-sm-4">Site</dt><dd class="col-sm-8"><a href="{{ empresa.site }}" target="_blank" rel="noopener">{{ empresa.site }}</a></dd>{% endif %}</dl>
       </div>
+
+      <div class="card section-card p-3 p-md-4 mb-4">
+        <h2 class="h5 fw-bold mb-3">Deixe sua avaliação</h2>
+        {% if user.is_authenticated %}
+            <input type="hidden" id="csrf-token-for-js" value="{{ csrf_token }}">
+            {% if user_ja_avaliou %}
+                <div class="alert alert-info">Você já avaliou esta empresa. Obrigado!</div>
+            {% else %}
+                <form action="{% url 'adicionar_avaliacao' empresa.slug %}" method="POST">
+                    {% csrf_token %}
+                    <div class="mb-3"><label class="form-label d-block">{{ avaliacao_form.nota.label }}</label><div class="star-rating-form">{% for radio in avaliacao_form.nota %}{{ radio.tag }}<label for="{{ radio.id_for_label }}" title="{{ radio.choice_label }}"><i class="bi bi-star-fill"></i></label>{% endfor %}</div></div>
+                    <div class="mb-3"><label for="{{ avaliacao_form.comentario.id_for_label }}" class="form-label">Seu comentário (opcional)</label>{{ avaliacao_form.comentario|add_class:"form-control" }}</div>
+                    <button type="submit" class="btn btn-primary">Enviar Avaliação</button>
+                </form>
+            {% endif %}
+        {% else %}
+            <div class="alert alert-secondary">Você precisa <a href="{% url 'login' %}?next={{ request.path }}">fazer login</a> para deixar uma avaliação.</div>
+        {% endif %}
+      </div>
+      
+      <div class="card section-card p-3 p-md-4">
+        <h2 class="h5 fw-bold mb-3">O que outros visitantes dizem</h2>
+        <div id="review-list">
+          {% for avaliacao in empresa.avaliacoes.all %}<div class="d-flex gap-3 {% if not forloop.last %}mb-4 pb-4 border-bottom{% endif %}" id="review-{{ avaliacao.id }}">{% if avaliacao.user.perfil and avaliacao.user.perfil.avatar %}<img src="{{ avaliacao.user.perfil.avatar.url }}" alt="Avatar" class="rounded-circle" style="width: 48px; height: 48px; object-fit: cover;">{% else %}<div class="avatar-placeholder"><i class="bi bi-person-fill"></i></div>{% endif %}<div class="flex-grow-1"><div class="d-flex justify-content-between align-items-start"><div><span class="fw-bold">{{ avaliacao.user.perfil.display_name|default:avaliacao.user.username }}</span><div class="star-rating-display">{% for i in "12345"|make_list %}<i class="bi {% if forloop.counter <= avaliacao.nota %}bi-star-fill{% else %}bi-star{% endif %}"></i>{% endfor %}</div></div>{% if request.user == avaliacao.user or request.user.is_superuser %}<button class="btn btn-sm btn-outline-danger btn-delete-review" data-id="{{ avaliacao.id }}" title="Remover minha avaliação"><i class="bi bi-trash"></i></button>{% endif %}</div><p class="mb-1 mt-2">{{ avaliacao.comentario|linebreaksbr|default:"Nenhum comentário." }}</p><small class="text-muted">{{ avaliacao.data_criacao|date:"d M, Y" }}</small></div></div>{% empty %}<p id="no-reviews-message" class="text-muted">Esta empresa ainda não recebeu nenhuma avaliação. Seja o primeiro!</p>{% endfor %}
+        </div>
+      </div>
+
     </div>
 
     <aside class="col-12 col-lg-5">
@@ -98,38 +102,32 @@
       </div>
 
       <div class="card section-card p-3 p-md-4 mb-4">
-          <h2 class="h5 fw-bold mb-3">Galeria de Imagens</h2>
-          <div id="lightgallery" class="row g-2 g-md-3">
-              
-              {# Em vez de 'if imagens', checamos diretamente 'empresa.imagens.all' #}
-              {% if empresa.imagens.all %}
-                  
-                  {# Iteramos diretamente sobre 'empresa.imagens.all' #}
-                  {% for imagem in empresa.imagens.all %}
-                      
-                      {% if imagem.principal %}
-                          <div class="col-12 order-1">
-                              <a class="gallery-item main-image-container shadow-sm" href="{{ imagem.imagem.url }}">
-                                  <img src="{{ imagem.imagem.url }}" class="img-fluid" alt="Imagem principal de {{ empresa.nome }}">
-                              </a>
-                          </div>
-                      {% else %}
-                          <div class="col-6 col-md-6 order-2">
-                              <a class="gallery-item thumbnail-container shadow-sm" href="{{ imagem.imagem.url }}">
-                                  <img src="{{ imagem.imagem.url }}" class="img-fluid" alt="Imagem da galeria de {{ empresa.nome }}">
-                              </a>
-                          </div>
-                      {% endif %}
-
-                  {% endfor %}
-
+        <h2 class="h5 fw-bold mb-3">Galeria de Imagens</h2>
+        <div id="lightgallery" class="row g-2 g-md-3">
+          {% if empresa.imagens.all %}
+            {% for imagem in empresa.imagens.all %}
+              {% if imagem.principal %}
+                <div class="col-12 order-1">
+                  <a class="gallery-item main-image-container shadow-sm" href="{{ imagem.imagem.url }}">
+                    <img src="{{ imagem.imagem.url }}" class="img-fluid" alt="Imagem principal">
+                  </a>
+                </div>
               {% else %}
-                  <div class="col-12">
-                      <p class="text-muted">Esta empresa ainda não possui imagens na galeria.</p>
-                  </div>
+                <div class="col-6 col-md-6 order-2">
+                  <a class="gallery-item thumbnail-container shadow-sm" href="{{ imagem.imagem.url }}">
+                    <img src="{{ imagem.imagem.url }}" class="img-fluid" alt="Imagem da galeria">
+                  </a>
+                </div>
               {% endif %}
-          </div>
+            {% endfor %}
+            {% else %}
+            <div class="col-12">
+              <p class="text-muted">Nenhuma imagem na galeria.</p>
+            </div>
+            {% endif %}
+        </div>
       </div>
+
       <div class="card section-card p-3 p-md-4">
         <h2 class="h5 fw-bold mb-0">Localização</h2>
         <div id="map" class="mt-3" role="region" aria-label="Mapa de localização" data-lat="{{ empresa.latitude|default:'-28.9371' }}" data-lon="{{ empresa.longitude|default:'-49.4840' }}" data-nome="{{ empresa.nome|escapejs }}"></div>
@@ -137,37 +135,11 @@
     </aside>
   </div>
 </main>
-
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "LocalBusiness",
-  "name": "{{ empresa.nome|escapejs }}",
-  {% if empresa.imagem_principal %}
-  "image": "{{ request.scheme }}://{{ request.get_host }}{{ empresa.imagem_principal.imagem.url }}",
-  {% endif %}
-  "address": { "@type": "PostalAddress", "streetAddress": "{{ empresa.rua|default_if_none:'' }}{% if empresa.numero %}, {{ empresa.numero }}{% endif %}", "addressLocality": "{{ empresa.cidade|default_if_none:'' }}", "postalCode": "{{ empresa.cep|default_if_none:'' }}", "addressCountry": "BR" },
-  "url": "{% if empresa.site %}{{ empresa.site }}{% else %}{{ request.build_absolute_uri }}{% endif %}",
-  "telephone": "{{ empresa.telefone|default_if_none:'' }}",
-  "geo": {"@type":"GeoCoordinates","latitude":"{{ empresa.latitude|default:'-28.9371' }}","longitude":"{{ empresa.longitude|default:'-49.4840' }}"}
-}
-</script>
 {% endblock %}
 
-
 {% block extra_js %}
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="{% static 'js/site/empresa_detalhe.js' %}"></script>
-<script src="https://cdn.jsdelivr.net/npm/lightgallery.js@1.4.0/dist/js/lightgallery.min.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const gallery = document.getElementById('lightgallery');
-        if (gallery) {
-            lightGallery(gallery, {
-                selector: '.gallery-item',
-                download: false
-            });
-        }
-    });
-</script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="https://cdn.jsdelivr.net/npm/lightgallery.js@1.4.0/dist/js/lightgallery.min.js"></script>
+  
+  <script src="{% static 'js/site/empresa_detalhe.js' %}"></script>
 {% endblock %}

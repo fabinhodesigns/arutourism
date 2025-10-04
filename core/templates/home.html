@@ -117,14 +117,23 @@
                 </div>
 
                 <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" id="empresas-container">
-                    {% if empresas %}
-                    {% with page_obj=empresas %}
+
+                    {# Verificamos se a lista 'page_obj' que veio da view NÃO está vazia #}
+                    {% if page_obj %}
+
+                    {# Se não estiver vazia, incluímos o partial que faz o loop e mostra os cards #}
                     {% include 'core/partials/empresas_cards.html' %}
-                    {% endwith %}
+
                     {% else %}
-                    <div class="col text-center">
-                        <p class="text-muted fs-5">Nenhum ponto turístico cadastrado ainda.</p>
+
+                    {# Se ESTIVER vazia, mostramos a mensagem de 'nenhum ponto' #}
+                    <div class="col-12">
+                        <div class="text-center py-5">
+                            <i class="bi bi-building-slash fs-1 text-muted"></i>
+                            <p class="text-muted fs-5 mt-3">Nenhum ponto turístico cadastrado ainda.</p>
+                        </div>
                     </div>
+
                     {% endif %}
                 </div>
 
