@@ -104,13 +104,13 @@ HUMAN_LABEL_BY_CANON = {c: label for (label, _req, c) in TEMPLATE_HEADERS}
 # ============================================================
 
 def get_base_empresas_queryset():
-    """
-    Cria uma QuerySet base otimizada SEM o annotate problemático.
-    """
-    return Empresa.objects.select_related('user').prefetch_related(
+    return Empresa.objects.select_related('user__perfil').prefetch_related(
         'tags',
-        'avaliacoes', # Pré-busca as avaliações para os cálculos no modelo
+        'avaliacoes',
         Prefetch('imagens', queryset=ImagemEmpresa.objects.filter(principal=True), to_attr='imagem_principal_list')
+    ).annotate(
+        avg_nota=Avg('avaliacoes__nota'),
+        count_avaliacoes=Count('avaliacoes__id', distinct=True)
     )
     
 def _clip(model_cls, field_name, value):
@@ -574,8 +574,8 @@ def suas_empresas(request):
 def empresa_detalhe(request, slug):
     empresa = get_object_or_404(
         Empresa.objects.annotate(
-            nota_media=Avg('avaliacoes__nota'),
-            total_avaliacoes=Count('avaliacoes')
+            avg_nota=Avg('avaliacoes__nota'),
+            count_avaliacoes=Count('avaliacoes__id', distinct=True)
         ).prefetch_related('imagens', 'avaliacoes__user__perfil'), 
         slug=slug
     )
