@@ -143,8 +143,6 @@ p {
     }
 }
 
-
-/* Classe para animar */
 .animated-zoom {
     transition: transform 0.3s ease-in-out !important; 
 }
@@ -153,7 +151,6 @@ p {
     transform: scale(1.02) !important; 
 }
 
-/* Classe para limitar o tamanho da imagem */
 .img-logo {
     width: 40px;
     height: 40px;
@@ -166,7 +163,6 @@ p {
     object-fit: cover;
 }
 
-/* White Menu */
 .navbar-toggler-icon {
     background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30"%3E%3Cpath stroke="%23ffffff" stroke-linecap="round" stroke-width="3" d="M5 7h20M5 15h20M5 23h20"/%3E%3C/svg%3E');
 }
@@ -175,7 +171,6 @@ p {
     box-shadow: none !important;
 }
 
-/* Rolar a tela */
 html {
     scroll-behavior: smooth;
 }
@@ -188,5 +183,14 @@ html {
 }
 
 .card-rating .bi-star-fill {
-    color: #ffc107; /* Amarelo do Bootstrap */
+    color: #ffc107;
+}
+
+.empresa-card .card-text {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;  
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-height: 72px; /* Garante uma altura mínima mesmo com pouco texto, ajudando no alinhamento */
 }

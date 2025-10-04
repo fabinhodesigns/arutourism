@@ -106,11 +106,10 @@ HUMAN_LABEL_BY_CANON = {c: label for (label, _req, c) in TEMPLATE_HEADERS}
 def get_base_empresas_queryset():
     return Empresa.objects.select_related('user__perfil').prefetch_related(
         'tags',
-        'avaliacoes',
         Prefetch('imagens', queryset=ImagemEmpresa.objects.filter(principal=True), to_attr='imagem_principal_list')
     ).annotate(
         avg_nota=Avg('avaliacoes__nota'),
-        count_avaliacoes=Count('avaliacoes__id', distinct=True)
+        count_avaliacoes=Count('avaliacoes')
     )
     
 def _clip(model_cls, field_name, value):
@@ -289,8 +288,11 @@ def _first_url_in_text(s):
 
 def _wants_json(request):
     h = (request.headers.get("Accept") or "").lower()
-    return request.headers.get("x-requested-with") == "XMLHttpRequest" or "application/json" in h
-
+    return (
+        request.GET.get('ajax') == '1' or  
+        request.headers.get("x-requested-with") == "XMLHttpRequest" or
+        "application/json" in h
+    )
 
 def _ident_kind(ident: str) -> str:
     ident = (ident or "").strip()
@@ -596,6 +598,7 @@ def empresa_detalhe(request, slug):
 
 def listar_empresas(request):
     empresas = get_base_empresas_queryset()
+
     q = (request.GET.get('q') or '').strip()
     tag_id = (request.GET.get('tag') or '').strip()
     cidade = (request.GET.get('cidade') or '').strip()
@@ -622,6 +625,7 @@ def listar_empresas(request):
         empresas = empresas.filter(cidade__iexact=cidade)
 
     empresas = empresas.order_by('-id')
+
     paginator = Paginator(empresas, 12)
     page_obj = paginator.get_page(request.GET.get('page') or 1)
 

@@ -3,6 +3,7 @@
 {% block title %}Suas Empresas Cadastradas{% endblock %}
 
 {% block extra_css %}
+  {# Pode adicionar estilos específicos para esta página se precisar #}
   <link rel="stylesheet" href="{% static 'css/pages/suas_empresas.css' %}">
 {% endblock %} 
 
@@ -11,38 +12,40 @@
   <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4 w-100">
     <h2 class="fw-bold m-0">Suas Empresas Cadastradas</h2>
     <a class="btn btn-primary d-inline-flex align-items-center gap-2" href="{% url 'cadastrar_empresa' %}">
-      <i class="bi bi-plus-lg"></i> Cadastrar empresa
+      <i class="bi bi-plus-lg"></i> Cadastrar nova empresa
     </a>
   </div>
 
-   {% if not page_obj.object_list %}
+  {% if page_obj %}
+    <div class="row" id="empresas-container">
+      {% include 'core/partials/empresas_cards.html' %}
+    </div>
+
+    {% if page_obj.has_next %}
+      <div class="d-flex justify-content-center mt-4">
+        <button id="load-more-btn" class="btn btn-primary btn-lg"
+                data-url="{% url 'suas_empresas' %}"
+                data-next-page="{{ page_obj.next_page_number }}">
+            Carregar mais
+        </button>
+      </div>
+    {% endif %}
+
+  {% else %}
     <div class="row justify-content-center">
       <div class="col-12 col-md-10 col-lg-8">
         <div class="empty-state text-center">
-          <i class="bi bi-building fs-1 d-block mb-2"></i>
+          <i class="bi bi-building-slash fs-1 d-block mb-3"></i>
           <h5 class="mb-2">Você ainda não cadastrou nenhuma empresa.</h5>
-          <p class="text-muted mb-4">Clique no botão acima para adicionar sua primeira empresa.</p>
+          <p class="text-muted mb-4">Clique no botão acima para adicionar seu primeiro estabelecimento.</p>
           <a class="btn btn-primary" href="{% url 'cadastrar_empresa' %}">
-            <i class="bi bi-plus-circle"></i> Cadastrar empresa
+            <i class="bi bi-plus-circle"></i> Cadastrar primeira empresa
           </a>
         </div>
       </div>
     </div>
-  {% else %}
-    {% with qtd=page_obj.object_list|length %}
-    <div class="row g-4 {% if qtd == 1 %}justify-content-center{% endif %}" id="empresas-container">
-      {% include 'core/partials/empresas_cards.html' %}
-    </div>
-    {% endwith %}
-
-    {% if page_obj.has_next %}
-      <div class="d-flex justify-content-center mt-4">
-        <button id="load-more-btn" class="btn btn-primary btn-lg">Carregar mais</button>
-      </div>
-    {% endif %}
   {% endif %}
 </div>
-
 {% endblock %}
 
 {% block extra_js %}

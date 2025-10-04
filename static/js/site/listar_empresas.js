@@ -1,28 +1,16 @@
-
 document.addEventListener('DOMContentLoaded', function() {
 
-    document.addEventListener('keydown', function(e) {
-        const card = e.target.closest('.empresa-card');
-        if (card && (e.key === 'Enter' || e.key === ' ')) {
-            e.preventDefault();
-            const href = card.dataset.href;
-            if (href) {
-                window.location.href = href;
-            }
-        }
-    });
-
-    document.addEventListener('click', function(e) {
+    document.body.addEventListener('click', function(e) {
         const card = e.target.closest('.empresa-card');
         if (card) {
             const link = card.querySelector('.card-link-overlay');
-            if (link && link.href) {
+            if (link && link.href && !e.target.closest('a, .btn')) {
                 window.location.href = link.href;
             }
         }
     });
 
-    document.addEventListener('keydown', function(e) {
+    document.body.addEventListener('keydown', function(e) {
         const card = e.target.closest('.empresa-card');
         if (card && (e.key === 'Enter' || e.key === ' ')) {
             e.preventDefault();
@@ -34,7 +22,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     const loadMoreBtn = document.getElementById('load-more-btn');
-    if (!loadMoreBtn) return;
+    if (!loadMoreBtn) return; 
 
     const url = loadMoreBtn.dataset.url;
     let nextPage = loadMoreBtn.dataset.nextPage;
@@ -51,11 +39,13 @@ document.addEventListener('DOMContentLoaded', function() {
         if (statusEl) {
             statusEl.textContent = isLoading ? 'Carregando mais resultados…' : '';
         }
+        if(isLoading) {
+            loadMoreBtn.querySelector('span:last-child').textContent = 'Carregando...';
+        }
     }
 
     loadMoreBtn.addEventListener('click', async function() {
         if (!nextPage || !url) return;
-
         setLoading(true);
 
         try {
@@ -71,7 +61,10 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             const response = await fetch(fetchUrl);
-            if (!response.ok) throw new Error('Network response was not ok.');
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`O servidor respondeu com um erro: ${errorText.substring(0, 200)}...`);
+            }
             
             const data = await response.json();
             
@@ -81,6 +74,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (data.has_next) {
                 nextPage = data.next_page_number;
+                loadMoreBtn.querySelector('span:last-child').textContent = 'Carregar mais';
             } else {
                 nextPage = null;
                 loadMoreBtn.classList.add('disabled');
@@ -89,7 +83,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } catch (error) {
             console.error('Erro ao carregar mais empresas:', error);
-            alert('Erro ao carregar mais empresas. Tente novamente.');
+            alert('Ocorreu um erro ao carregar mais empresas. Verifique o console para mais detalhes.');
+            loadMoreBtn.querySelector('span:last-child').textContent = 'Tentar Novamente';
         } finally {
             setLoading(false);
         }
