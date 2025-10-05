@@ -1,0 +1,42 @@
+{% extends 'base2.html' %}
+{% load static %}
+
+{% block title %}Meus Favoritos{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/listar_empresas.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="hero-bar py-4 mt-5">
+  <div class="container d-flex flex-wrap justify-content-between align-items-center gap-3">
+    <nav aria-label="breadcrumb" class="m-0">
+      <ol class="breadcrumb m-0" style="font-size: x-large;">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Meus Favoritos</li>
+      </ol>
+    </nav>
+    <div class="results-count" aria-live="polite">
+      {{ page_obj.paginator.count }} local salvo{% if page_obj.paginator.count != 1 %}s{% endif %}
+    </div>
+  </div>
+</div>
+
+<main class="container page-shell py-4">
+  {% if page_obj.paginator.count == 0 %}
+  <section class="empty-state text-center py-5">
+    <i class="bi bi-heart fs-1 d-block mb-3 text-muted"></i>
+    <h2 class="h5 mb-2">Você ainda não salvou nenhum favorito</h2>
+    <p class="text-muted mb-4">Explore os pontos turísticos e clique no coração para salvá-los aqui.</p>
+    <a class="btn btn-primary" href="{% url 'listar_empresas' %}">
+      <i class="bi bi-search me-1"></i> Explorar Pontos Turísticos
+    </a>
+  </section>
+  {% else %}
+  <div class="row g-4">
+    {% include 'core/partials/empresas_cards.html' %}
+  </div>
+  
+  {% endif %}
+</main>
+{% endblock %}

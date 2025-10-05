@@ -310,9 +310,15 @@ def _ident_kind(ident: str) -> str:
 def home(request):
     empresas_list = get_base_empresas_queryset().order_by('-data_cadastro')[:6]
     total_empresas = Empresa.objects.count()
+
+    favorito_ids = []
+    if request.user.is_authenticated:
+        favorito_ids = request.user.perfil.favoritos.values_list('id', flat=True)
+
     return render(request, 'home.html', {
         'page_obj': empresas_list,
-        'total_empresas': total_empresas
+        'total_empresas': total_empresas,
+        'favorito_ids': list(favorito_ids)
     })
 
 
@@ -584,14 +590,19 @@ def empresa_detalhe(request, slug):
 
     avaliacao_form = AvaliacaoForm()
     user_ja_avaliou = False
+    is_favorito = False
+
     if request.user.is_authenticated:
         if Avaliacao.objects.filter(empresa=empresa, user=request.user).exists():
             user_ja_avaliou = True
+
+            is_favorito = request.user.perfil.favoritos.filter(slug=slug).exists()
 
     context = {
         'empresa': empresa,
         'avaliacao_form': avaliacao_form,
         'user_ja_avaliou': user_ja_avaliou,
+        'is_favorito': is_favorito, 
     }
     return render(request, 'core/empresa_detalhe.html', context)
 
@@ -636,10 +647,16 @@ def listar_empresas(request):
     filtros_aplicados = { 'q': q, 'tag': tag_id, 'cidade': cidade }
     filtros_legiveis = { 'q': q or None, 'tag': tag_label, 'cidade': cidade or None }
 
+    favorito_ids = []
+    if request.user.is_authenticated:
+        perfil, created = PerfilUsuario.objects.get_or_create(user=request.user)
+        favorito_ids = perfil.favoritos.values_list('id', flat=True)
+
     return render(request, 'core/listar_empresas.html', {
         'page_obj': page_obj,
         'filtros_aplicados': filtros_aplicados,
         'filtros_legiveis': filtros_legiveis,
+        'favorito_ids': list(favorito_ids),
     })
 
 def buscar_empresas(request):
@@ -1037,3 +1054,34 @@ def deletar_avaliacao(request, avaliacao_id):
 
     messages.success(request, "Sua avaliação foi removida com sucesso.")
     return JsonResponse({'status': 'success'})
+
+@login_required
+@require_POST
+def toggle_favorito(request, slug):
+    empresa = get_object_or_404(Empresa, slug=slug)
+    perfil = request.user.perfil
+
+    if empresa in perfil.favoritos.all():
+        perfil.favoritos.remove(empresa)
+        is_favorito = False
+    else:
+        perfil.favoritos.add(empresa)
+        is_favorito = True
+
+    return JsonResponse({'status': 'ok', 'is_favorito': is_favorito})
+
+
+@login_required
+def listar_favoritos(request):
+    perfil = request.user.perfil
+    
+    empresas_favoritas = get_base_empresas_queryset().filter(
+        id__in=perfil.favoritos.values_list('id', flat=True)
+    ).order_by('-data_cadastro')
+
+    paginator = Paginator(empresas_favoritas, 12)
+    page_obj = paginator.get_page(request.GET.get('page') or 1)
+
+    return render(request, 'core/listar_favoritos.html', {
+        'page_obj': page_obj
+    })

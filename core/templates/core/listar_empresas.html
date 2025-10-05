@@ -30,6 +30,7 @@
 </div>
 
 <main class="container page-shell py-4">
+  {% if user.is_authenticated %}<input type="hidden" id="csrf-token-for-js" value="{{ csrf_token }}">{% endif %}
   {% if filtros_aplicados.q or filtros_aplicados.tag or filtros_aplicados.cidade or filtros_aplicados.com_imagem_real or filtros_aplicados.meus %}
   <section class="filters-wrap mb-4" aria-label="Filtros aplicados">
     <div class="d-flex flex-wrap align-items-center gap-2">

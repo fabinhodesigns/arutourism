@@ -52,6 +52,8 @@ urlpatterns = [
     path('imagem-empresa/deletar/<int:imagem_id>/', views.deletar_imagem_empresa, name='deletar_imagem_empresa'),
     path('empresa/<slug:slug>/avaliar/', views.adicionar_avaliacao, name='adicionar_avaliacao'),
     path('avaliacao/deletar/<int:avaliacao_id>/', views.deletar_avaliacao, name='deletar_avaliacao'),
+    path('empresa/<slug:slug>/favoritar/', views.toggle_favorito, name='toggle_favorito'),
+    path('meus-favoritos/', views.listar_favoritos, name='listar_favoritos'),
 ]
 
 # servir mídia local quando DEBUG=True

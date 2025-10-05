@@ -11,6 +11,7 @@ class PerfilUsuario(models.Model):
     full_name = models.CharField(max_length=255, blank=True, null=True)
     telefone = models.CharField(max_length=20, blank=True, null=True)
     avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
+    favoritos = models.ManyToManyField('Empresa', blank=True, related_name='favoritado_por')
     def __str__(self):
         return self.user.username
     

@@ -2,34 +2,46 @@
 <div class="col-12 col-md-6 col-lg-4 col-xl-3 mb-4 d-flex align-items-stretch">
 
   <div class="card h-100 shadow-sm empresa-card w-100">
-    
-    <a href="{% url 'empresa_detalhe' empresa.slug %}" class="card-link-overlay" aria-label="Ver detalhes de {{ empresa.nome }}"></a>
+
+    <a href="{% url 'empresa_detalhe' empresa.slug %}" class="card-link-overlay"
+      aria-label="Ver detalhes de {{ empresa.nome }}"></a>
+
+    {% if user.is_authenticated and favorito_ids is not None %}
+      <button
+        class="btn btn-sm position-absolute top-0 end-0 m-2 z-1 {% if empresa.id in favorito_ids %}btn-danger{% else %}btn-light{% endif %}"
+        data-url="{% url 'toggle_favorito' empresa.slug %}"
+        aria-pressed="{% if empresa.id in favorito_ids %}true{% else %}false{% endif %}"
+        aria-label="{% if empresa.id in favorito_ids %}Remover dos favoritos{% else %}Adicionar aos favoritos{% endif %}"
+        data-action="toggle-favorito">
+        <i class="bi {% if empresa.id in favorito_ids %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
+      </button>
+    {% endif %}
 
     {% if empresa.imagem_principal_list %}
-      <img src="{{ empresa.imagem_principal_list.0.imagem.url }}" class="card-img-top" alt="{{ empresa.nome }}">
+    <img src="{{ empresa.imagem_principal_list.0.imagem.url }}" class="card-img-top" alt="{{ empresa.nome }}">
     {% else %}
-      <div class="card-img-top-placeholder d-flex align-items-center justify-content-center">
-        <i class="bi bi-image-alt"></i>
-      </div>
+    <div class="card-img-top-placeholder d-flex align-items-center justify-content-center">
+      <i class="bi bi-image-alt"></i>
+    </div>
     {% endif %}
 
     <div class="card-body d-flex flex-column">
       {% if empresa.tags.all %}
-        <div class="badge bg-primary bg-gradient rounded-pill mb-2">{{ empresa.tags.first.nome }}</div>
+      <div class="badge bg-primary bg-gradient rounded-pill mb-2">{{ empresa.tags.first.nome }}</div>
       {% else %}
-        <div class="badge bg-secondary bg-gradient rounded-pill mb-2">Sem Categoria</div>
+      <div class="badge bg-secondary bg-gradient rounded-pill mb-2">Sem Categoria</div>
       {% endif %}
-      
+
       <h5 class="card-title">{{ empresa.nome }}</h5>
-      
+
       <p class="card-text mb-4 flex-grow-1">{{ empresa.descricao|truncatechars:100 }}</p>
 
       <div class="mt-auto">
         {% if empresa.count_avaliacoes > 0 %}
         <div class="card-rating mb-2">
-            <i class="bi bi-star-fill"></i>
-            <span class="fw-bold">{{ empresa.avg_nota|floatformat:1 }}</span>
-            <span class="text-muted small">({{ empresa.count_avaliacoes }} avaliaç{% if empresa.count_avaliacoes > 1 %}ões{% else %}ão{% endif %})</span>
+          <i class="bi bi-star-fill"></i>
+          <span class="fw-bold">{{ empresa.avg_nota|floatformat:1 }}</span>
+          <span class="text-muted small">({{ empresa.count_avaliacoes }} avaliaç{% if empresa.count_avaliacoes > 1 %}ões{% else %}ão{% endif %})</span>
         </div>
         {% endif %}
         <div class="d-flex align-items-center text-muted small">
