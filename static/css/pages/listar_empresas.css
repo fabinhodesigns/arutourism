@@ -7,23 +7,9 @@
     min-height: 65vh
 }
 
-.hero-bar {
-    background: linear-gradient(135deg, #f8f9fa, #eef4ff);
-    border-bottom: 1px solid #e9ecef
-}
-
 .results-count {
     font-size: .95rem;
     color: #6c757d
-}
-
-.hero-bar .breadcrumb .breadcrumb-item.active {
-    color: #212529;
-    font-weight: 700;
-}
-
-.hero-bar .breadcrumb a {
-    text-decoration: none;
 }
 
 .filters-wrap {
