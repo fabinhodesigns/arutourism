@@ -12,6 +12,8 @@ from .models import Tag, PerfilUsuario, Empresa
 from django.core.validators import EmailValidator
 from django.contrib.auth.password_validation import validate_password
 from .models import Avaliacao
+from django.utils.html import format_html
+from django.urls import reverse
 
 User = get_user_model()
 
@@ -68,8 +70,6 @@ class UserRegistrationForm(UserCreationForm):
     full_name = forms.CharField(label="Nome Completo", max_length=255)
     email = forms.EmailField(label="Email", required=True)
     cpf_cnpj = forms.CharField(label="CPF ou CNPJ", max_length=18)
-    
-    
 
     class Meta(UserCreationForm.Meta):
         model = User
@@ -88,12 +88,10 @@ class UserRegistrationForm(UserCreationForm):
             'password2': 'Confirme sua senha',   
         }
         
-        
         self.fields['username'].label = 'Usuário'
         self.fields['password1'].label = 'Senha' 
         self.fields['password2'].label = 'Confirmar Senha'
 
-        
         for field_name, field in self.fields.items():
             field.widget.attrs['class'] = 'form-control'
             if field_name in placeholders:
@@ -156,7 +154,11 @@ class ProfileForm(forms.ModelForm):
         self.fields['avatar'].widget.attrs.setdefault('class', 'form-control')
 
         
-        self.fields['email'].initial = self.user.email
+        self.fields['email'].error_messages['unique'] = format_html(
+            'Este e-mail já está em uso. <a href="{}">Esqueceu sua senha?</a>', 
+            reverse('esqueci_senha_email')
+        )
+        self.fields['username'].error_messages['unique'] = 'Este nome de usuário já está em uso. Por favor, escolha outro.'
         self.fields['first_name'].initial = self.user.first_name
         self.fields['telefone'].initial = self.instance.telefone
 
@@ -190,6 +192,14 @@ class StartResetByCpfForm(forms.Form):
             raise forms.ValidationError("Informe o CPF ou CNPJ.")
         if len(digits) not in (11, 14):
             raise forms.ValidationError("Digite um CPF (11) ou CNPJ (14) válido.")
+        if PerfilUsuario.objects.filter(cpf_cnpj=cpf_cnpj).exists():
+            raise forms.ValidationError(
+                format_html(
+                    'Este CPF/CNPJ já está cadastrado. <a href="{}">Precisa recuperar o acesso?</a>', 
+                    reverse('esqueci_senha_cpf')
+                ),
+                code='unique'
+            )
         return digits
     
 class TagForm(forms.ModelForm):
@@ -273,14 +283,11 @@ class EmpresaForm(forms.ModelForm):
     class Meta:
         model = Empresa
         fields = [
-            'nome', 'tags', 'descricao',
-            'cnpj', 'cadastrur',
-            'rua', 'bairro', 'cidade', 'numero', 'cep', 'endereco_full',
-            'latitude', 'longitude',
-            'telefone', 'email', 'contato_direto',
-            'site', 'digital', 'maps_url', 'app_url', 'facebook', 'instagram',
-            'sem_telefone', 'sem_email',
-            'horario_semana', 'horario_sabado', 'horario_domingo', 'horario_observacoes',
+            'nome', 'tags', 'descricao', 'rua', 'bairro', 'cidade', 'numero', 'cep',
+            'latitude', 'longitude', 'telefone', 'email', 'contato_direto', 'site',
+            'facebook', 'instagram', 'horario_semana', 'horario_sabado', 'horario_domingo',
+            'horario_observacoes', 'cnpj', 'cadastrur', 'app_url', 'sem_telefone', 'sem_email',
+            'imagem_inicial'
         ]
         
         widgets = {
@@ -300,10 +307,7 @@ class EmpresaForm(forms.ModelForm):
             'horario_sabado': forms.TextInput(attrs={'placeholder': 'Ex: 08:00 - 12:00 ou Fechado'}),
             'horario_domingo': forms.TextInput(attrs={'placeholder': 'Ex: Fechado'}),
             'horario_observacoes': forms.Textarea(attrs={'rows': 2, 'placeholder': 'Ex: Fechamos para almoço das 12h às 13h30.'}),
-            'tags': forms.SelectMultiple(attrs={
-                'id': 'tom-select-tags',
-                'placeholder': 'Pesquise ou selecione as tags...'
-            }),
+            'tags': forms.CheckboxSelectMultiple(),
         }
 
     def __init__(self, *args, **kwargs):
@@ -330,6 +334,17 @@ class EmpresaForm(forms.ModelForm):
             if (imagens_atuais_count + len(novas_imagens)) > 5:
                 raise ValidationError(f"Você só pode ter no máximo 5 imagens. Você já tem {imagens_atuais_count} e está tentando adicionar mais {len(novas_imagens)}.")
         return novas_imagens
+    
+    def clean_cnpj(self):
+        cnpj = self.cleaned_data.get('cnpj')
+        if cnpj:
+            cleaned_cnpj = ''.join(filter(str.isdigit, cnpj))
+            
+            query = Empresa.objects.filter(cnpj=cleaned_cnpj).exclude(pk=self.instance.pk)
+            
+            if query.exists():
+                raise forms.ValidationError("Já existe uma empresa cadastrada com este CNPJ.")
+        return cnpj
     
     # Suas outras funções de validação (clean_*, etc.) permanecem aqui...
     def clean_cep(self):

@@ -106,36 +106,58 @@
     border: 0
 }
 
+/* Adicione no final do seu CSS da página de cadastro/edição */
+
 .tag-select-widget .tag-list-container {
-  max-height: 250px; /* Altura máxima da caixa */
-  overflow-y: auto;  /* Adiciona o scroll vertical */
+  max-height: 200px; /* Define uma altura máxima para a caixa */
+  overflow-y: auto;  /* Adiciona a barra de rolagem vertical quando necessário */
   padding: 0.75rem;
 }
 
-/* Organiza os checkboxes em colunas */
-.tag-select-widget #id_tags {
+/* * Organiza os checkboxes em colunas responsivas:
+ * - 1 coluna em telas pequenas
+ * - 2 colunas em telas médias
+ * - 3 colunas em telas grandes
+*/
+.tag-select-widget ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: 1fr; /* 1 coluna por padrão */
   gap: 0.5rem;
 }
 
-/* Estiliza cada item da lista (label + checkbox) */
+@media (min-width: 768px) {
+  .tag-select-widget ul {
+    grid-template-columns: repeat(2, 1fr); /* 2 colunas em telas médias */
+  }
+}
+
+@media (min-width: 992px) {
+  .tag-select-widget ul {
+    grid-template-columns: repeat(3, 1fr); /* 3 colunas em telas grandes */
+  }
+}
+
+/* Estiliza cada item (li) que o Django cria para o checkbox */
+.tag-select-widget li {
+  padding: 0;
+}
+
+/* Melhora a aparência do label e do input dentro da lista */
 .tag-select-widget .form-check {
   display: block;
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
   transition: background-color 0.2s;
+  cursor: pointer;
 }
 
 .tag-select-widget .form-check:hover {
-  background-color: #f8f9fa;
+  background-color: #f1f3f5; /* Cor de fundo suave no hover */
 }
 
-.tag-select-widget ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-.tag-select-widget li {
-  padding: 0;
+.dark-mode .tag-select-widget .form-check:hover {
+    background-color: rgba(255, 255, 255, 0.1);
 }

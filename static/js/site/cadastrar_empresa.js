@@ -190,7 +190,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         if (loading) loading.style.display = 'none';
-        
+
         let data = {};
         try {
             data = await response.json();
@@ -216,7 +216,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const errorList = data.mensagens.map(msg => `<li><small>${msg}</small></li>`).join('');
                 reportMessages.push(`<ul class="mt-1 mb-0" style="max-height: 150px; overflow-y: auto;">${errorList}</ul>`);
             }
-            
+
             showImportReport(reportMessages, reportTitle, alertClass);
 
             if (fileInput) fileInput.value = '';
@@ -252,7 +252,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <hr>
             <ul class="mb-0">${Array.isArray(list) ? list.map(m => `<li>${m}</li>`).join('') : list}</ul>
         `;
-        
+
         importErrors.setAttribute('tabindex', '-1');
         importErrors.focus();
 
@@ -289,6 +289,38 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 }
             });
+        });
+    }
+
+    const cepInput = document.getElementById('id_cep');
+    const btnBuscarCep = document.getElementById('btn-buscar-cep');
+    if (btnBuscarCep && cepInput) {
+        btnBuscarCep.addEventListener('click', async () => {
+            const cep = cepInput.value.replace(/\D/g, '');
+            if (cep.length !== 8) {
+                Swal.fire({ icon: 'error', title: 'CEP Inválido', text: 'Por favor, digite um CEP com 8 dígitos.' });
+                return;
+            }
+            const spinner = btnBuscarCep.querySelector('.spinner-border');
+            const icon = btnBuscarCep.querySelector('i');
+            spinner.classList.remove('d-none');
+            icon.classList.add('d-none');
+            try {
+                const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+                if (!response.ok) throw new Error('Serviço de CEP indisponível.');
+                const data = await response.json();
+                if (data.erro) throw new Error('CEP não encontrado.');
+                document.getElementById('id_rua').value = data.logradouro || '';
+                document.getElementById('id_bairro').value = data.bairro || '';
+                document.getElementById('id_cidade').value = data.localidade || '';
+                document.getElementById('id_numero').focus();
+            } catch (error) {
+                console.error("Erro ao buscar CEP:", error);
+                Swal.fire({ icon: 'warning', title: 'Busca de CEP', text: `Não foi possível preencher o endereço. ${error.message}` });
+            } finally {
+                spinner.classList.add('d-none');
+                icon.classList.remove('d-none');
+            }
         });
     }
 });

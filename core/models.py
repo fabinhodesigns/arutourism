@@ -62,7 +62,7 @@ class Empresa(models.Model):
     nome = models.CharField(max_length=255, db_index=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True, null=True, help_text="Usado na URL da empresa. Deixe em branco para gerar automaticamente.")
     tags = models.ManyToManyField(Tag, blank=True, related_name='empresas')
-    cnpj = models.CharField(max_length=18, blank=True, null=True, db_index=True)
+    cnpj = models.CharField(max_length=18, unique=True, blank=True, null=True, db_index=True)
     cadastrur = models.CharField(max_length=80, blank=True, null=True)
     descricao = models.TextField(blank=True, default='')
     rua = models.CharField(max_length=255, blank=True, default='')

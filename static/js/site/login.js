@@ -7,37 +7,46 @@
     const errIdentificador = document.getElementById('err-identificador');
     const errPassword = document.getElementById('err-password');
     const globalError = document.getElementById('login-error');
-    
-    const validators = window.validators || {};
+    const submitButton = loginForm.querySelector('button[type="submit"]');
 
+    // Função para controlar o estado de loading do botão
+    function setButtonLoading(isLoading) {
+        if (isLoading) {
+            submitButton.disabled = true;
+            submitButton.innerHTML = `
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                <span class="ms-2">Entrando...</span>
+            `;
+        } else {
+            submitButton.disabled = false;
+            submitButton.innerHTML = 'Entrar';
+        }
+    }
+    
+    // Função para exibir erros nos campos
     function setFieldError(input, errorElement, message) {
         if (message) {
             input.classList.add('is-invalid');
-            input.setAttribute('aria-invalid', 'true');
             errorElement.textContent = message;
-            // Garante que o feedback seja visível
-            errorElement.style.display = 'block'; 
         } else {
             input.classList.remove('is-invalid');
-            input.removeAttribute('aria-invalid');
             errorElement.textContent = '';
-            errorElement.style.display = 'none';
         }
     }
 
+    // Função para limpar todos os erros
+    function clearAllErrors() {
+        setFieldError(identificadorInput, errIdentificador, '');
+        setFieldError(passwordInput, errPassword, '');
+        globalError.textContent = '';
+    }
+
+    // Funções de validação em tempo real
     function validateIdentificador() {
         const value = identificadorInput.value.trim();
         if (!value) {
             setFieldError(identificadorInput, errIdentificador, 'Por favor, informe seu e-mail ou CPF.');
             return false;
-        }
-        if (value.includes('@') && validators.isEmail && !validators.isEmail(value)) {
-            setFieldError(identificadorInput, errIdentificador, 'O e-mail informado é inválido.');
-            return false;
-        }
-        if (!value.includes('@') && validators.isCPF && !validators.isCPF(value)) {
-             setFieldError(identificadorInput, errIdentificador, 'O CPF informado é inválido.');
-             return false;
         }
         setFieldError(identificadorInput, errIdentificador, '');
         return true;
@@ -52,27 +61,24 @@
         return true;
     }
 
+    // Adiciona os eventos de validação "on blur"
     identificadorInput.addEventListener('blur', validateIdentificador);
-    passwordInput.addEventListener('input', () => {
-        if (passwordInput.classList.contains('is-invalid')) {
-            validatePassword();
-        }
-    });
+    passwordInput.addEventListener('blur', validatePassword);
 
+    // Evento de submissão do formulário
     loginForm.addEventListener('submit', async (event) => {
         event.preventDefault();
-        
-        globalError.textContent = '';
-        setFieldError(passwordInput, errPassword, ''); // Limpa erro da senha antes de revalidar
+        clearAllErrors();
 
+        // Roda as validações uma última vez antes de enviar
         const isIdentificadorValid = validateIdentificador();
         const isPasswordValid = validatePassword();
 
         if (!isIdentificadorValid || !isPasswordValid) {
-            (identificadorInput.classList.contains('is-invalid') ? identificadorInput : passwordInput).focus();
-            return;
+            return; // Para se algum campo estiver vazio
         }
 
+        setButtonLoading(true);
         const formData = new FormData(loginForm);
 
         try {
@@ -87,36 +93,22 @@
 
             const data = await response.json();
 
-            if (response.ok) {
-                if (data.redirect) {
-                    window.location.href = data.redirect;
-                }
+            if (response.ok && data.ok && data.redirect) {
+                // Sucesso
+                window.location.href = data.redirect;
             } else {
-                if (data.errors) {
-                    // Verifica se há um erro específico para identificador
-                    if (data.errors.user_not_found) {
-                        setFieldError(identificadorInput, errIdentificador, data.errors.user_not_found);
-                        identificadorInput.focus();
-                    }
-                    // Verifica se há um erro específico para senha
-                    if (data.errors.bad_password) {
-                        setFieldError(passwordInput, errPassword, data.errors.bad_password);
-                        passwordInput.focus();
-                    }
-                     // Se houver outros erros não específicos de campo, mostre globalmente
-                    if (Object.keys(data.errors).length === 0 || (!data.errors.user_not_found && !data.errors.bad_password)) {
-                         globalError.textContent = data.detail || 'Não foi possível autenticar. Verifique suas credenciais.';
-                         globalError.style.display = 'block';
-                    }
-                } else {
-                    globalError.textContent = data.detail || 'Falha no login. Tente novamente mais tarde.';
-                    globalError.style.display = 'block';
-                }
+                // Erro retornado pelo backend
+                const errorMessage = (data.errors && data.errors.length > 0) ? data.errors[0].message : 'Credenciais inválidas. Tente novamente.';
+                globalError.textContent = errorMessage;
+                // Destaca os campos para o usuário saber onde corrigir
+                identificadorInput.classList.add('is-invalid');
+                passwordInput.classList.add('is-invalid');
+                setButtonLoading(false);
             }
         } catch (error) {
             console.error('Login request failed:', error);
             globalError.textContent = 'Falha de conexão. Verifique sua internet e tente novamente.';
-            globalError.style.display = 'block';
+            setButtonLoading(false);
         }
     });
 

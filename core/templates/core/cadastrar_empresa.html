@@ -58,163 +58,181 @@
             {% endif %}
 
             <form id="empresa-form" method="POST" enctype="multipart/form-data" novalidate>
-              {% csrf_token %}
-              <div class="row g-3">
+  {% csrf_token %}
+  <div class="row g-3">
 
-                <div class="col-md-12">
-                  <label for="{{ form.nome.id_for_label }}" class="form-label fw-semibold">Nome da Empresa</label>
-                  {{ form.nome|add_class:"form-control form-control-lg"|attr:"autocomplete:organization" }}
-                </div>
+    <div class="col-12">
+      <label for="{{ form.nome.id_for_label }}" class="form-label fw-semibold">Nome da Empresa <span class="text-danger">*</span></label>
+      {% render_field form.nome class="form-control form-control-lg" autocomplete="organization" %}
+    </div>
 
-                <div class="col-12">
-                  <label for="tag-search-input" class="form-label fw-semibold">{{ form.tags.label }}</label>
-                  <div class="tag-select-widget border rounded">
-                    <div class="tag-search-wrapper p-2 border-bottom">
-                      <input type="text" id="tag-search-input" class="form-control" placeholder="Buscar tags...">
-                    </div>
-                    <div class="tag-list-container">
-                      {{ form.tags }}
-                    </div>
-                  </div>
-                  <small class="text-muted">Selecione uma ou mais opções.</small>
-                </div>
+    <div class="col-12">
+      <label for="{{ form.tags.id_for_label }}" class="form-label fw-semibold">{{ form.tags.label }}</label>
+      <div class="tag-select-widget border rounded p-2">
+        <div class="tag-list-container">
+          {{ form.tags }}
+        </div>
+      </div>
+      <small class="text-muted">Selecione uma ou mais opções.</small>
+    </div>
 
-                <div class="col-12">
-                  <label for="{{ form.descricao.id_for_label }}" class="form-label fw-semibold">Descrição</label>
-                  {{ form.descricao|add_class:"form-control form-control-lg"|attr:"rows:3" }}
-                  <small class="text-muted">Se deixar em branco, colocaremos uma descrição padrão
-                    automaticamente.</small>
-                </div>
+    <div class="col-12">
+      <label for="{{ form.descricao.id_for_label }}" class="form-label fw-semibold">Descrição</label>
+      {% render_field form.descricao class="form-control" rows="3" %}
+      <small class="text-muted">Se deixar em branco, colocaremos uma descrição padrão automaticamente.</small>
+    </div>
 
-                <div class="col-12">
-                  <hr class="my-3">
-                  <h5 class="mb-3">Horário de Funcionamento</h5>
-                </div>
+    <div class="col-12">
+      <hr class="my-3">
+      <h5 class="mb-3">Horário de Funcionamento</h5>
+    </div>
 
-                <div class="col-md-6 col-lg-3">
-                  <label for="{{ form.horario_semana.id_for_label }}" class="form-label">Segunda a Sexta</label>
-                  {{ form.horario_semana }}
-                </div>
+    <div class="col-md-4">
+      <label for="{{ form.horario_semana.id_for_label }}" class="form-label">Segunda a Sexta <span class="text-danger">*</span></label>
+      {{ form.horario_semana }}
+    </div>
 
-                <div class="col-md-6 col-lg-3">
-                  <label for="{{ form.horario_sabado.id_for_label }}" class="form-label">Sábado</label>
-                  {{ form.horario_sabado }}
-                </div>
+    <div class="col-md-4">
+      <label for="{{ form.horario_sabado.id_for_label }}" class="form-label">Sábado <span class="text-danger">*</span></label>
+      {{ form.horario_sabado }}
+    </div>
 
-                <div class="col-md-6 col-lg-3">
-                  <label for="{{ form.horario_domingo.id_for_label }}" class="form-label">Domingo</label>
-                  {{ form.horario_domingo }}
-                </div>
+    <div class="col-md-4">
+      <label for="{{ form.horario_domingo.id_for_label }}" class="form-label">Domingo <span class="text-danger">*</span></label>
+      {{ form.horario_domingo }}
+    </div>
 
-                <div class="col-lg-12">
-                  <label for="{{ form.horario_observacoes.id_for_label }}" class="form-label">Observações sobre o
-                    Horário</label>
-                  {{ form.horario_observacoes }}
-                </div>
+    <div class="col-12">
+      <label for="{{ form.horario_observacoes.id_for_label }}" class="form-label">Observações sobre o Horário</label>
+      {{ form.horario_observacoes }}
+    </div>
 
-                <div class="col-md-6">
-                  <label for="{{ form.rua.id_for_label }}" class="form-label fw-semibold">Rua</label>
-                  {{ form.rua|add_class:"form-control form-control-lg"|attr:"autocomplete:address-line1" }}
-                </div>
-                <div class="col-md-6">
-                  <label for="{{ form.bairro.id_for_label }}" class="form-label fw-semibold">Bairro</label>
-                  {{ form.bairro|add_class:"form-control form-control-lg"|attr:"autocomplete:address-level3" }}
-                </div>
+    <div class="col-12">
+        <hr class="my-3">
+        <h5 class="mb-3">Endereço</h5>
+    </div>
 
-                <div class="col-md-6">
-                  <label for="{{ form.cidade.id_for_label }}" class="form-label fw-semibold">Cidade</label>
-                  {{ form.cidade|add_class:"form-control form-control-lg"|attr:"autocomplete:address-level2" }}
-                </div>
-                <div class="col-md-3">
-                  <label for="{{ form.numero.id_for_label }}" class="form-label fw-semibold">Número</label>
-                  {{ form.numero|add_class:"form-control form-control-lg"|attr:"inputmode:numeric" }}
-                </div>
-                <div class="col-md-3">
-                  <label for="{{ form.cep.id_for_label }}" class="form-label fw-semibold">CEP</label>
-                  {{ form.cep|add_class:"form-control form-control-lg"|attr:"inputmode:numeric" }}
-                </div>
+    <div class="col-md-4">
+      <label for="{{ form.cep.id_for_label }}" class="form-label fw-semibold">CEP <span class="text-danger">*</span></label>
+      <div class="input-group">
+        {% render_field form.cep class="form-control" inputmode="numeric" aria-describedby="error-cep" %}
+        <button class="btn btn-outline-secondary" type="button" id="btn-buscar-cep" title="Buscar endereço pelo CEP">
+          <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+          <i class="bi bi-search"></i>
+        </button>
+      </div>
+      <div id="error-cep" class="invalid-feedback"></div>
+    </div>
 
-                <div class="col-md-6">
-                  <label for="{{ form.telefone.id_for_label }}" class="form-label fw-semibold">Telefone</label>
-                  {{ form.telefone|add_class:"form-control form-control-lg"|attr:"inputmode:tel" }}
-                  <div class="form-check form-check-inline mt-1">
-                    {{ form.sem_telefone|add_class:"form-check-input" }}
-                    <label class="form-check-label" for="{{ form.sem_telefone.id_for_label }}">Sem Telefone</label>
-                  </div>
-                </div>
+    <div class="col-md-8">
+      <label for="{{ form.rua.id_for_label }}" class="form-label fw-semibold">Rua <span class="text-danger">*</span></label>
+      {% render_field form.rua class="form-control" autocomplete="address-line1" %}
+    </div>
+    
+    <div class="col-md-6">
+      <label for="{{ form.bairro.id_for_label }}" class="form-label fw-semibold">Bairro <span class="text-danger">*</span></label>
+      {% render_field form.bairro class="form-control" autocomplete="address-level3" %}
+    </div>
 
-                <div class="col-md-6">
-                  <label for="{{ form.email.id_for_label }}" class="form-label fw-semibold">Email de Contato</label>
-                  {{ form.email|add_class:"form-control form-control-lg"|attr:"inputmode:email" }}
-                  <div class="form-check form-check-inline mt-1">
-                    {{ form.sem_email|add_class:"form-check-input" }}
-                    <label class="form-check-label" for="{{ form.sem_email.id_for_label }}">Sem Email</label>
-                  </div>
-                </div>
+    <div class="col-md-4">
+        <label for="{{ form.cidade.id_for_label }}" class="form-label fw-semibold">Cidade <span class="text-danger">*</span></label>
+        {% render_field form.cidade class="form-control" autocomplete="address-level2" %}
+    </div>
 
-                {% if form.fields.cnpj %}
-                <div class="col-md-4">
-                  <label for="{{ form.cnpj.id_for_label }}" class="form-label fw-semibold">CNPJ</label>
-                  {{ form.cnpj|add_class:"form-control form-control-lg"|attr:"inputmode:numeric" }}
-                </div>
-                {% endif %}
-                {% if form.fields.cadastrur %}
-                <div class="col-md-4">
-                  <label for="{{ form.cadastrur.id_for_label }}" class="form-label fw-semibold">Cadastur</label>
-                  {{ form.cadastrur|add_class:"form-control form-control-lg" }}
-                </div>
-                {% endif %}
-                {% if form.fields.app_url %}
-                <div class="col-md-4">
-                  <label for="{{ form.app_url.id_for_label }}" class="form-label fw-semibold">App (link)</label>
-                  {{ form.app_url|add_class:"form-control form-control-lg"|attr:"inputmode:url" }}
-                </div>
-                {% endif %}
+    <div class="col-md-2">
+      <label for="{{ form.numero.id_for_label }}" class="form-label fw-semibold">Número <span class="text-danger">*</span></label>
+      {% render_field form.numero class="form-control" inputmode="numeric" %}
+    </div>
+    
+    <div class="col-12">
+        <hr class="my-3">
+        <h5 class="mb-3">Contato e Links</h5>
+    </div>
 
-                <div class="col-12">
-                  <label for="{{ form.site.id_for_label }}" class="form-label fw-semibold">Site (opcional)</label>
-                  {{ form.site|add_class:"form-control form-control-lg"|attr:"inputmode:url" }}
-                </div>
+    <div class="col-md-6">
+      <label for="{{ form.telefone.id_for_label }}" class="form-label fw-semibold">Telefone <span class="text-danger">*</span></label>
+      {% render_field form.telefone class="form-control" inputmode="tel" %}
+      <div class="form-check form-check-inline mt-1">
+        {% render_field form.sem_telefone class="form-check-input" %}
+        <label class="form-check-label" for="{{ form.sem_telefone.id_for_label }}">Sem Telefone</label>
+      </div>
+    </div>
 
-                <div class="col-12">
-                  <label for="{{ form.imagem_inicial.id_for_label }}" class="form-label fw-semibold">Imagem da
-                    Empresa</label>
-                  <div class="preview-wrap">
-                    <img id="img-preview" src="{% static 'core/images/sem_imagem.png' %}"
-                      alt="Pré-visualização da imagem" />
-                    {{ form.imagem_inicial|add_class:"form-control form-control-sm" }}
-                  </div>
-                  <small class="form-text text-muted fst-italic mt-1">
-                    Esta será a imagem principal. Você poderá adicionar mais imagens na galeria após o cadastro.
-                  </small>
-                </div>
+    <div class="col-md-6">
+      <label for="{{ form.email.id_for_label }}" class="form-label fw-semibold">Email de Contato <span class="text-danger">*</span></label>
+      {% render_field form.email class="form-control" inputmode="email" %}
+      <div class="form-check form-check-inline mt-1">
+        {% render_field form.sem_email class="form-check-input" %}
+        <label class="form-check-label" for="{{ form.sem_email.id_for_label }}">Sem Email</label>
+      </div>
+    </div>
+    
+    {% if form.fields.cnpj %}
+    <div class="col-md-4">
+      <label for="{{ form.cnpj.id_for_label }}" class="form-label fw-semibold">CNPJ</label>
+      {% render_field form.cnpj class="form-control" inputmode="numeric" %}
+    </div>
+    {% endif %}
 
-                <div class="col-md-6">
-                  <label for="{{ form.facebook.id_for_label }}" class="form-label fw-semibold">Facebook
-                    (opcional)</label>
-                  {{ form.facebook|add_class:"form-control form-control-lg"|attr:"inputmode:url" }}
-                </div>
-                <div class="col-md-6">
-                  <label for="{{ form.instagram.id_for_label }}" class="form-label fw-semibold">Instagram
-                    (opcional)</label>
-                  {{ form.instagram|add_class:"form-control form-control-lg"|attr:"inputmode:url" }}
-                </div>
+    {% if form.fields.cadastrur %}
+    <div class="col-md-4">
+      <label for="{{ form.cadastrur.id_for_label }}" class="form-label fw-semibold">Cadastur </label>
+      {% render_field form.cadastrur class="form-control" %}
+    </div>
+    {% endif %}
+    
+    {% if form.fields.app_url %}
+    <div class="col-md-4">
+      <label for="{{ form.app_url.id_for_label }}" class="form-label fw-semibold">App (link)</label>
+      {% render_field form.app_url class="form-control" inputmode="url" %}
+    </div>
+    {% endif %}
 
-                {{ form.latitude }} {{ form.longitude }}
+    <div class="col-12">
+      <label for="{{ form.site.id_for_label }}" class="form-label fw-semibold">Site</label>
+      {% render_field form.site class="form-control" inputmode="url" %}
+    </div>
+    
+    <div class="col-md-6">
+      <label for="{{ form.facebook.id_for_label }}" class="form-label fw-semibold">Facebook</label>
+      {% render_field form.facebook class="form-control" inputmode="url" %}
+    </div>
 
-                <div class="col-12 mt-3">
-                  <label class="form-label fw-semibold">Selecione a localização no mapa</label>
-                  <div id="map" style="height: 380px; border-radius: 10px;"></div>
-                </div>
-              </div>
+    <div class="col-md-6">
+      <label for="{{ form.instagram.id_for_label }}" class="form-label fw-semibold">Instagram</label>
+      {% render_field form.instagram class="form-control" inputmode="url" %}
+    </div>
 
-              <div class="d-flex flex-column flex-md-row gap-3 justify-content-center mt-4">
-                <button type="submit" name="save"
-                  class="btn btn-primary btn-lg rounded-3 fw-semibold px-4">Salvar</button>
-                <button type="submit" name="save_and_add"
-                  class="btn btn-outline-secondary btn-lg rounded-3 fw-semibold px-4">Salvar e Continuar</button>
-              </div>
-            </form>
+    <div class="col-12">
+        <hr class="my-3">
+        <h5 class="mb-3">Mídia e Localização</h5>
+    </div>
+
+    <div class="col-12">
+      <label for="{{ form.imagem_inicial.id_for_label }}" class="form-label fw-semibold">Imagem da Empresa <span class="text-danger">*</span></label>
+      <div class="preview-wrap">
+        <img id="img-preview" src="{% static 'core/images/sem_imagem.png' %}" alt="Pré-visualização da imagem" />
+        {% render_field form.imagem_inicial class="form-control form-control-sm" %}
+      </div>
+      <small class="form-text text-muted fst-italic mt-1">
+        Esta será a imagem principal. Você poderá adicionar mais imagens na galeria após o cadastro.
+      </small>
+    </div>
+
+    {{ form.latitude }}
+    {{ form.longitude }}
+
+    <div class="col-12 mt-3">
+      <label class="form-label fw-semibold">Selecione a localização no mapa <span class="text-danger">*</span></label>
+      <div id="map" style="height: 380px; border-radius: 10px;"></div>
+    </div>
+  </div>
+
+  <div class="d-flex flex-column flex-md-row gap-3 justify-content-center mt-4">
+    <button type="submit" name="save" class="btn btn-primary btn-lg rounded-3 fw-semibold px-4">Salvar</button>
+    <button type="submit" name="save_and_add" class="btn btn-outline-secondary btn-lg rounded-3 fw-semibold px-4">Salvar e Continuar</button>
+  </div>
+</form>
           </div>
         </div>
 
@@ -229,7 +247,7 @@
 
             <p class="text-muted mb-3">
               Preencha o arquivo seguindo os cabeçalhos do modelo. Campos vazios serão preenchidos com valores padrão
-              (ex.: descrição). A categoria será criada automaticamente se não existir.
+              (ex.: descrição). A Tag/Categoria será criada automaticamente se não existir.
             </p>
 
             <form id="form-import" method="post" enctype="multipart/form-data"

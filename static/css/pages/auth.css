@@ -451,3 +451,7 @@ body {
     .card-title { font-size: 1.5rem; }
     .card-subtitle { font-size: 0.85rem; margin-bottom: 1.5rem; }
 }
+
+.form-control.is-invalid ~ .invalid-feedback {
+    display: block;
+}

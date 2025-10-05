@@ -169,6 +169,24 @@ def _maxlen(model_cls, field_name):
         return getattr(f, "max_length", None)
     except Exception:
         return None
+    
+def _parse_row_padrao(data):
+    """Extrai e normaliza dados de uma linha do modelo padrão."""
+    parsed = {
+        'nome': data.get('nome'),
+        'cnpj': _digits(data.get('cnpj')),
+        'telefone': _digits(data.get('telefone')),
+        'rua': data.get('rua'),
+        'cidade': data.get('cidade'),
+        'cep': _digits(data.get('cep')),
+        'descricao': data.get('descricao') or DEFAULT_DESC,
+        'horario_semana': data.get('horario_semana'),
+        'horario_sabado': data.get('horario_sabado'),
+        'horario_domingo': data.get('horario_domingo'),
+        'horario_observacoes': data.get('horario_observacoes'),
+        'tags': [name.strip() for name in data.get('categoria', '').split(',') if name.strip()],
+    }
+    return {k: v for k, v in parsed.items() if v or k == 'nome'}
 
 def _norm_text(s: str | None) -> str:
     return re.sub(r"[\W_]+", " ", (s or "")).strip().lower()
@@ -573,60 +591,42 @@ def excluir_usuario(request, id):
     return render(request, '/excluir_usuario.html', {'usuario': usuario})
 
 @login_required(login_url='/login/')
-@require_http_methods(["GET", "POST"])
 def cadastrar_empresa(request):
     initial = {"latitude": "-28.937100", "longitude": "-49.484000"}
 
-    wants_json = (
-        'application/json' in (request.headers.get('Accept') or '')
-        or (request.headers.get('x-requested-with') == 'XMLHttpRequest')
-    )
+    if request.method == 'POST':
+        form = EmpresaForm(request.POST, request.FILES)
+        if form.is_valid():
+            empresa = form.save(commit=False)
+            empresa.user = request.user
+            empresa.save()
+            form.save_m2m() 
 
-    if request.method == 'GET':
-        form = EmpresaForm(initial=initial)
-        return render(request, 'core/cadastrar_empresa.html', {
-            'form': form,
-            'is_editing': False
-        })
+            imagem_file = request.FILES.get('imagem_inicial')
+            if imagem_file:
+                ImagemEmpresa.objects.create(
+                    empresa=empresa,
+                    imagem=imagem_file,
+                    principal=True
+                )
 
-    form = EmpresaForm(request.POST, request.FILES)
-    if form.is_valid():
-        empresa = form.save(commit=False)
-        empresa.user = request.user
-        empresa.save()
-
-        imagem_file = request.FILES.get('imagem_inicial')
-        if imagem_file:
-            ImagemEmpresa.objects.create(
-                empresa=empresa,
-                imagem=imagem_file,
-                principal=True 
-            )
-
-        if wants_json:
             action = 'reset' if 'save_and_add' in request.POST else 'redirect'
             return JsonResponse({
                 'ok': True,
                 'status': 'success',
                 'message': f"Empresa '{empresa.nome}' cadastrada com sucesso!",
                 'action': action,
-                'redirect_url': reverse('suas_empresas') if action == 'redirect' else ''
+                'redirect_url': reverse('suas_empresas')
             })
+        else:
+            html = render_to_string('core/partials/form_errors.html', {'form': form}, request=request)
+            return JsonResponse({'ok': False, 'html': html}, status=400)
 
-        messages.success(request, f"Empresa '{empresa.nome}' cadastrada com sucesso!")
-        return redirect('suas_empresas')
-
-    if wants_json:
-        html = render_to_string('core/partials/form_errors.html', {'form': form}, request=request)
-        return JsonResponse(
-            {'ok': False, 'error': 'Erros de validação no formulário.', 'html': html},
-            status=400
-        )
-
+    form = EmpresaForm(initial=initial)
     return render(request, 'core/cadastrar_empresa.html', {
         'form': form,
         'is_editing': False
-    }, status=400)
+    })
 
 @login_required(login_url='/login/')
 @require_http_methods(["GET", "POST"])
@@ -896,119 +896,85 @@ def download_template_empresas(request):
 
 @login_required
 @require_POST
-@transaction.atomic
+@transaction.atomic # O decorator principal que gerencia a transação inteira
 def importar_empresas_arquivo(request):
-    # Contadores para o relatório final
-    criados = 0
-    atualizados = 0
-    sem_alteracao = 0
-    erros = 0
+    criados, atualizados, sem_alteracao, erros = 0, 0, 0, 0
     msgs = []
-
-    # --- LOG INICIAL ---
-    print("\n--- INICIANDO NOVA IMPORTAÇÃO DE ARQUIVO ---")
-
+    
     try:
         up = request.FILES.get("arquivo")
-        if not up:
-            print("[ERRO] Nenhum arquivo foi enviado.")
-            return JsonResponse({"ok": False, "error": "Envie um arquivo .xlsx ou .csv."}, status=400)
-
-        print(f"Arquivo recebido: {up.name}")
+        if not up: return JsonResponse({"ok": False, "error": "Envie um arquivo."}, status=400)
+        
         headers_raw, rows = _read_rows_from_upload(up, up.name)
-        if not rows:
-            print("[ERRO] Arquivo está vazio ou não pôde ser lido.")
-            return JsonResponse({"ok": False, "error": "Arquivo vazio ou em formato inválido."}, status=400)
+        if not rows: return JsonResponse({"ok": False, "error": "Arquivo vazio."}, status=400)
 
-        # DETECÇÃO DO FORMATO
         is_google_format = len(headers_raw) > 30
-        print(f"Detectado formato: {'Google Contacts' if is_google_format else 'Padrão'}")
-        
         header_map = _build_header_map(headers_raw)
-        print(f"Mapeamento de cabeçalho: {header_map}")
         
-        print(f"\nIniciando processamento de {len(rows)} linhas...")
         for line_no, r in enumerate(rows, start=2):
-            print(f"\n--- Processando Linha {line_no} ---")
-            data = {}
-            for idx, canon in header_map.items():
-                if idx < len(r): data[canon] = (r[idx] or "").strip()
+            # Envolve cada linha em seu próprio bloco try/except para isolar erros
+            try:
+                with transaction.atomic(): # Cria uma sub-transação para cada linha
+                    data = {}
+                    for idx, canon in header_map.items():
+                        if idx < len(r): data[canon] = (r[idx] or "").strip()
 
-            if is_google_format:
-                dados_empresa = _parse_row_google(data)
-            else:
-                dados_empresa = _parse_row_padrao(data)
-            
-            print(f"Dados extraídos da linha: {dados_empresa}")
-
-            nome = dados_empresa.get('nome')
-            if not nome:
-                erros += 1
-                msg = f"Linha {line_no}: O campo 'nome' é obrigatório e não foi encontrado."
-                msgs.append(msg)
-                print(f"[ERRO] {msg}")
-                continue
-
-            # Extrai chaves de busca
-            telefone = dados_empresa.get('telefone', '')
-            cnpj = dados_empresa.get('cnpj', '')
-            tag_names = dados_empresa.pop('tags', [])
-
-            # Lógica de verificação por prioridade
-            empresa_existente = None
-            if telefone: empresa_existente = Empresa.objects.filter(telefone=telefone).first()
-            if not empresa_existente and cnpj: empresa_existente = Empresa.objects.filter(cnpj=cnpj).first()
-            if not empresa_existente and nome: empresa_existente = Empresa.objects.filter(nome__iexact=nome).first()
-
-            if empresa_existente:
-                print(f"Empresa encontrada no banco: '{empresa_existente.nome}' (ID: {empresa_existente.id}). Verificando atualizações...")
-                emp = empresa_existente
-                alterado = False
-                for campo, valor in dados_empresa.items():
-                    if getattr(emp, campo) != valor:
-                        print(f"  -> Campo '{campo}' alterado de '{getattr(emp, campo)}' para '{valor}'")
-                        setattr(emp, campo, valor)
-                        alterado = True
-                
-                if alterado:
-                    emp.save()
-                    atualizados += 1
-                    print("  -> Empresa ATUALIZADA.")
-                else:
-                    sem_alteracao += 1
-                    print("  -> Nenhuma alteração encontrada.")
-            else:
-                print(f"Empresa '{nome}' não encontrada. Tentando criar novo registro...")
-                try:
-                    # Adiciona dados obrigatórios que não podem ser nulos
-                    dados_empresa['user'] = request.user
-                    # Exemplo: Se 'descricao' for obrigatório e não vier, usa o DEFAULT_DESC
-                    dados_empresa.setdefault('descricao', DEFAULT_DESC)
+                    if is_google_format:
+                        dados_empresa = _parse_row_google(data)
+                    else:
+                        dados_empresa = _parse_row_padrao(data)
                     
-                    emp = Empresa.objects.create(**dados_empresa)
-                    criados += 1
-                    print(f"  -> Empresa '{nome}' CRIADA com sucesso (ID: {emp.id}).")
+                    nome = dados_empresa.get('nome')
+                    if not nome: raise ValueError("O campo 'nome' é obrigatório.")
+
+                    telefone = dados_empresa.get('telefone', '')
+                    cnpj = dados_empresa.get('cnpj', '')
+                    tag_names = dados_empresa.pop('tags', [])
+
+                    empresa_existente = None
+                    if telefone: empresa_existente = Empresa.objects.filter(telefone=telefone).first()
+                    # Garante que só procuramos por CNPJ se ele não for vazio
+                    if not empresa_existente and cnpj: empresa_existente = Empresa.objects.filter(cnpj=cnpj).first()
+                    if not empresa_existente and nome: empresa_existente = Empresa.objects.filter(nome__iexact=nome).first()
                     
+                    model_fields = [f.name for f in Empresa._meta.get_fields()]
+                    dados_para_salvar = {k: v for k, v in dados_empresa.items() if k in model_fields}
+
+                    if empresa_existente:
+                        emp = empresa_existente
+                        alterado = False
+                        for campo, valor in dados_para_salvar.items():
+                            if getattr(emp, campo) != valor:
+                                setattr(emp, campo, valor)
+                                alterado = True
+                        
+                        if alterado:
+                            emp.save()
+                            atualizados += 1
+                    else:
+                        dados_para_salvar['user'] = request.user
+                        dados_para_salvar.setdefault('descricao', DEFAULT_DESC)
+                        emp = Empresa.objects.create(**dados_para_salvar)
+                        criados += 1
+
                     if tag_names:
-                        tag_objects = [Tag.objects.get_or_create(nome=name.strip())[0] for name in tag_names]
-                        emp.tags.set(tag_objects)
-                        print(f"  -> Tags associadas: {[tag.nome for tag in tag_objects]}")
+                        tags_obj = [Tag.objects.get_or_create(nome=name.strip())[0] for name in tag_names if name.strip()]
+                        if tags_obj: emp.tags.set(tags_obj)
+            
+            except IntegrityError as e:
+                # Captura especificamente o erro de CNPJ duplicado
+                erros += 1
+                msg = f"Linha {line_no}: Erro de integridade. Provavelmente um CNPJ duplicado não identificado. Detalhe: {e}"
+                msgs.append(msg)
+            except Exception as e:
+                # Captura todos os outros erros da linha
+                erros += 1
+                msg = f"Linha {line_no}: Erro ao processar: {e}"
+                msgs.append(msg)
 
-                except Exception as e:
-                    erros += 1
-                    msg = f"Linha {line_no} ('{nome}'): Erro ao criar no banco: {e}"
-                    msgs.append(msg)
-                    print(f"[ERRO GRAVE] {msg}")
-                    continue
-
-        print("\n--- FIM DA IMPORTAÇÃO ---")
-        print(f"Resultado: {criados} criados, {atualizados} atualizados, {sem_alteracao} sem alteração, {erros} erros.")
-        
         return JsonResponse({ "ok": True, "criados": criados, "atualizados": atualizados, "sem_alteracao": sem_alteracao, "erros": erros, "mensagens": msgs })
         
     except Exception as e:
-        # Este 'except' pega erros maiores que acontecem ANTES do loop (ex: erro ao ler o arquivo)
-        print(f"[ERRO CATASTRÓFICO] Erro inesperado durante a importação: {e}")
         logger.error(f"Erro catastrófico na importação: {e}", exc_info=True)
         return JsonResponse({"ok": False, "error": f"Erro inesperado: {e}"}, status=500)
     
