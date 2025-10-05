@@ -144,7 +144,7 @@ HUMAN_LABEL_BY_CANON = {c: label for (label, _req, c) in TEMPLATE_HEADERS}
 def get_base_empresas_queryset():
     return Empresa.objects.select_related('user__perfil').prefetch_related(
         'tags',
-        Prefetch('imagens', queryset=ImagemEmpresa.objects.filter(principal=True), to_attr='imagem_principal_list')
+        'imagens' 
     ).annotate(
         avg_nota=Avg('avaliacoes__nota'),
         count_avaliacoes=Count('avaliacoes')

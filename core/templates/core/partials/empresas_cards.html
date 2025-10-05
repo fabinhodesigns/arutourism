@@ -17,8 +17,8 @@
       </button>
     {% endif %}
 
-    {% if empresa.imagem_principal_list %}
-    <img src="{{ empresa.imagem_principal_list.0.imagem.url }}" class="card-img-top" alt="{{ empresa.nome }}">
+    {% if empresa.imagem_principal %}
+    <img src="{{ empresa.imagem_principal.imagem.url }}" class="card-img-top" alt="{{ empresa.nome }}">
     {% else %}
     <div class="card-img-top-placeholder d-flex align-items-center justify-content-center">
       <i class="bi bi-image-alt"></i>
