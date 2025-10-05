@@ -9,6 +9,7 @@
 :root {
   /* Cores de Texto */
   --cor-texto-primario: #212529;
+  --cor-texto-custom: #ffffff;
   --cor-texto-secundario: #6c757d;
   --cor-texto-links: #007bff;
   --cor-texto-links-hover: #0056b3;
@@ -41,6 +42,7 @@
    ========================================================================== */
 body.dark-mode {
   --cor-texto-primario: #e0e0e0;
+  --cor-texto-custom: #000000;
   --cor-texto-secundario: #9e9e9e;
   --cor-texto-links: #42a5f5; /* Azul mais claro para contraste */
   --cor-texto-links-hover: #90caf9;
@@ -67,6 +69,7 @@ body.dark-mode {
    ========================================================================== */
 body.high-contrast {
   --cor-texto-primario: #ffffff;
+  --cor-texto-custom: #000000;
   --cor-texto-secundario: #ffffff;
   --cor-texto-links: #ffff00; /* Amarelo puro */
   --cor-texto-links-hover: #ffffff;
@@ -584,11 +587,6 @@ body.high-contrast .btn-light:hover {
 
 /* 3. Dropdown Menu (Menu do Usuário)
 -------------------------------------------------- */
-.dropdown-menu {
-    background-color: var(--cor-fundo-secundario);
-    border-color: var(--cor-borda);
-    box-shadow: 0 .5rem 1rem var(--cor-sombra);
-}
 
 .dropdown-item {
     color: var(--cor-texto-primario);
@@ -614,13 +612,9 @@ body.high-contrast .dropdown-item:focus {
     color: #000000 !important;         /* Texto preto */
 }
 
-.dropdown-divider {
-    border-top-color: var(--cor-borda);
-}
-
 /* Define a cor padrão para todos os links de navegação no header */
 header .navbar-nav .nav-link {
-    color: var(--cor-texto-inverso);
+    color: var(--cor-texto-custom);
     opacity: 0.85; /* Deixa um pouco mais sutil que o texto branco puro */
     transition: opacity 0.2s ease;
 }
@@ -682,4 +676,40 @@ body.high-contrast .fw-bolder,
 body.high-contrast strong,
 body.high-contrast b {
     color: var(--cor-texto-primario);
+}
+
+.dropdown-menu {
+    background-color: var(--cor-fundo-secundario);
+    border: 1px solid var(--cor-borda);
+    box-shadow: 0 .5rem 1rem var(--cor-sombra);
+}
+
+/* Regra mais específica para garantir que a cor do nosso tema seja aplicada */
+.dropdown-menu .dropdown-item {
+    /* Usamos !important para garantir que esta regra de tema sempre vença o Bootstrap */
+    color: var(--cor-texto-primario) !important;
+}
+
+/* Cor do Hover para Modo Claro */
+.dropdown-menu .dropdown-item:hover,
+.dropdown-menu .dropdown-item:focus {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: var(--cor-texto-primario) !important;
+}
+
+/* Cor do Hover para Modo Escuro */
+body.dark-mode .dropdown-menu .dropdown-item:hover,
+body.dark-mode .dropdown-menu .dropdown-item:focus {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Cor do Hover para Alto Contraste */
+body.high-contrast .dropdown-menu .dropdown-item:hover,
+body.high-contrast .dropdown-menu .dropdown-item:focus {
+    background-color: #ffff00 !important;
+    color: #000000 !important;
+}
+
+.dropdown-divider {
+    border-top-color: var(--cor-borda);
 }

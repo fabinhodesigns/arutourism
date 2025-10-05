@@ -57,6 +57,7 @@ urlpatterns = [
     path('ferramentas/gerador-qrcode/', views.gerador_qrcode_view, name='gerador_qrcode'),
 
     path('perfil/salvar-tema/', views.salvar_tema_preferido, name='salvar_tema'),
+    path('empresa/<slug:slug>/deletar/', views.deletar_empresa, name='deletar_empresa'),
 ]
 
 # servir mídia local quando DEBUG=True

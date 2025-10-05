@@ -788,6 +788,38 @@ def buscar_empresas(request):
     """Rota legada: redireciona para a listagem com os mesmos GETs."""
     return listar_empresas(request)
 
+@login_required
+@require_POST
+def deletar_avaliacao(request, avaliacao_id):
+    avaliacao = get_object_or_404(Avaliacao, id=avaliacao_id)
+
+    if (request.user != avaliacao.user and 
+        request.user != avaliacao.empresa.user and 
+        not request.user.is_superuser):
+        return JsonResponse({'status': 'error', 'message': 'Permissão negada.'}, status=403)
+
+    avaliacao.delete()
+
+    return JsonResponse({'status': 'success', 'message': 'Avaliação removida com sucesso.'})
+
+@require_POST
+@login_required
+def deletar_empresa(request, slug):
+    # Encontra a empresa pelo slug
+    empresa = get_object_or_404(Empresa, slug=slug)
+
+    # Verifica permissão: somente o dono ou um superusuário pode deletar
+    if not request.user.is_superuser and empresa.user != request.user:
+        messages.error(request, "Você não tem permissão para deletar esta empresa.")
+        return redirect('suas_empresas') # Ou outra página de erro
+
+    nome_empresa = empresa.nome
+    empresa.delete()
+
+    messages.success(request, f'A empresa "{nome_empresa}" foi deletada com sucesso.')
+    # Redireciona para a lista de empresas do usuário após a exclusão
+    return redirect('suas_empresas')
+
 @require_GET
 def filtros_empresas(request):
     """Retorna tags e cidades em JSON."""

@@ -14,7 +14,7 @@
 
 {% block content %}
 
-<header class="hero py-4 mt-5" style="margin-top: 100px !important;">
+<header class="hero-bar py-4 mt-5" style="margin-top: 65px !important;">
   <div class="container d-flex justify-content-between align-items-center gap-3">
     <nav aria-label="breadcrumb" class="m-0">
       <ol class="breadcrumb m-0">
@@ -24,7 +24,14 @@
       </ol>
     </nav>
     <div class="d-flex align-items-center gap-2">
-      <a class="btn btn-outline-secondary" href="{% url 'empresa_detalhe' empresa.slug %}">Ver página</a>
+      <a class="btn btn-outline-themed" href="{% url 'empresa_detalhe' empresa.slug %}">Ver página</a>
+
+      <form id="delete-empresa-form" action="{% url 'deletar_empresa' empresa.slug %}" method="POST" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">
+          <i class="bi bi-trash"></i> Excluir Empresa
+        </button>
+      </form>
     </div>
   </div>
 </header>
@@ -201,18 +208,47 @@
           <div class="mt-2"><span class="badge badge-muted">Telefone</span> {{ empresa.telefone|default:"—" }}</div>
           <hr>
           <div class="small text-muted">Proprietário: {{ empresa.user.username }}</div>
-          <div class="small text-muted">Atualizado em: {{
-            empresa.atualizado_em|default:empresa.data_cadastro|date:"d/m/Y H:i" }}</div>
+          <div class="small text-muted">Atualizado em: {{ empresa.atualizado_em|default:empresa.data_cadastro|date:"d/m/Y H:i" }}</div>
         </div>
+
+        
+        <div class="section-card bg-white p-4 mt-4">
+          <h2 class="h5 fw-bold mb-3">Moderar Avaliações (<span id="review-count">{{ empresa.avaliacoes.count }}</span>)</h2>
+          <div id="review-list-moderation">
+              {% for avaliacao in empresa.avaliacoes.all %}
+                <div class="d-flex gap-3 {% if not forloop.last %}mb-4 pb-4 border-bottom{% endif %}" id="review-card-{{ avaliacao.id }}">
+                  <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-start">
+                      <div>
+                        <span class="fw-bold">{{ avaliacao.user.perfil.display_name|default:avaliacao.user.username }}</span>
+                        <div class="star-rating-display text-warning">
+                          {% for i in "12345"|make_list %}<i class="bi {% if forloop.counter <= avaliacao.nota %}bi-star-fill{% else %}bi-star{% endif %}"></i>{% endfor %}
+                        </div>
+                      </div>
+                      <button type="button" class="btn btn-sm btn-outline-danger btn-delete-review" data-url="{% url 'deletar_avaliacao' avaliacao.id %}" title="Remover esta avaliação">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                    <p class="mb-1 mt-2 fst-italic">"{{ avaliacao.comentario|linebreaksbr|default:"Nenhum comentário." }}"</p>
+                    <small class="text-muted">{{ avaliacao.data_criacao|date:"d M, Y" }}</small>
+                  </div>
+                </div>
+              {% empty %}
+                <p class="text-muted">Esta empresa ainda não recebeu nenhuma avaliação.</p>
+              {% endfor %}
+            </div>
+        </div>
+
+
       </aside>
     </div>
   </form>
 </main>
 
 {% block extra_js %}
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-     crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="{% static 'js/site/editar_empresa.js' %}"></script>
 {% endblock %}
 

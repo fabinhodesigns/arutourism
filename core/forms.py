@@ -300,6 +300,10 @@ class EmpresaForm(forms.ModelForm):
             'horario_sabado': forms.TextInput(attrs={'placeholder': 'Ex: 08:00 - 12:00 ou Fechado'}),
             'horario_domingo': forms.TextInput(attrs={'placeholder': 'Ex: Fechado'}),
             'horario_observacoes': forms.Textarea(attrs={'rows': 2, 'placeholder': 'Ex: Fechamos para almoço das 12h às 13h30.'}),
+            'tags': forms.SelectMultiple(attrs={
+                'id': 'tom-select-tags',
+                'placeholder': 'Pesquise ou selecione as tags...'
+            }),
         }
 
     def __init__(self, *args, **kwargs):
