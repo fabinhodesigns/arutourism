@@ -1,7 +1,7 @@
 # core/urls.py
 from django.conf import settings
 from django.conf.urls.static import static
-from django.urls import path
+from django.urls import path, include
 from django.contrib import admin
 
 from . import views
@@ -58,6 +58,8 @@ urlpatterns = [
 
     path('perfil/salvar-tema/', views.salvar_tema_preferido, name='salvar_tema'),
     path('empresa/<slug:slug>/deletar/', views.deletar_empresa, name='deletar_empresa'),
+
+    path('', include('pwa.urls')),
 ]
 
 # servir mídia local quando DEBUG=True

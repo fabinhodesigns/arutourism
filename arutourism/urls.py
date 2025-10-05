@@ -5,7 +5,7 @@ from django.conf.urls.static import static
 # from django.contrib import admin
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
-from django.urls import path, include, reverse_lazy
+from django.urls import path, include, reverse_lazy 
 from core.views import senha_redefinida_redirect
 
 urlpatterns = [
@@ -24,6 +24,8 @@ urlpatterns = [
         senha_redefinida_redirect,
         name='password_reset_complete',
     ),
+
+    path('', include('pwa.urls'))
 ]
 
 if settings.DEBUG:

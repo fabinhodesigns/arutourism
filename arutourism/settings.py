@@ -71,7 +71,8 @@ INSTALLED_APPS = [
     "widget_tweaks",
     "cloudinary",
     'core.apps.CoreConfig',
-    "cloudinary_storage"
+    "cloudinary_storage",
+    "pwa"
     ]
 
 # ===========================
@@ -263,3 +264,22 @@ LOGGING = {
 }
 
 WHITENOISE_MANIFEST_STRICT = False
+
+PWA_APP_NAME = 'ARUTOURISM'
+PWA_APP_DESCRIPTION = "Sistema de Inventário Turístico Municipal de Araranguá"
+PWA_APP_THEME_COLOR = '#1e3c72'  
+PWA_APP_BACKGROUND_COLOR = '#ffffff'
+PWA_APP_DISPLAY = 'standalone'
+PWA_APP_SCOPE = '/'
+PWA_APP_START_URL = '/'
+PWA_APP_ICONS = [
+    {
+        'src': '/static/images/icons/icon-192x192.png',
+        'sizes': '192x192'
+    },
+    {
+        'src': '/static/images/icons/icon-512x512.png',
+        'sizes': '512x512'
+    }
+]
+PWA_SERVICE_WORKER_PATH = 'static/js/serviceworker.js' # Caminho para o Service Worker

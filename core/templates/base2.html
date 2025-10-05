@@ -1,4 +1,5 @@
 {% load static %}
+{% load pwa %}
 <!DOCTYPE html>
 <html lang="pt">
 
@@ -6,7 +7,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    {% csrf_token %}
+    {% progressive_web_app_meta %} {% csrf_token %}
     <meta name="csrf-token" content="{{ csrf_token }}">
     
     <title>{% block title %}ARUTOURISM{% endblock %}</title>
