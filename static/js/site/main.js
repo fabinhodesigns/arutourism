@@ -189,7 +189,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!favButton) return;
 
-        console.log('--- FAVORITO CLICADO ---');
         const url = favButton.dataset.url;
         const csrfToken = getCsrfToken();
 
@@ -199,7 +198,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            console.log('Enviando requisição POST para:', url);
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
@@ -208,24 +206,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
             });
 
-            console.log('Resposta do servidor recebida com status:', response.status);
             if (!response.ok) throw new Error('Falha na requisição ao servidor.');
 
             const data = await response.json();
-            console.log('Dados recebidos do servidor:', data);
 
             if (data.status === 'ok') {
-                console.log('Atualizando a aparência do botão para is_favorito =', data.is_favorito);
-                console.log('Classes do botão ANTES:', favButton.className);
                 updateFavoriteButton(favButton, data.is_favorito);
-                console.log('Classes do botão DEPOIS:', favButton.className);
-                console.log('--- FIM DA AÇÃO ---');
             } else {
                 throw new Error('Servidor respondeu com status de erro.');
             }
 
         } catch (error) {
-            console.error("Erro CRÍTICO ao favoritar:", error);
             alert("Ocorreu um erro ao tentar favoritar. Verifique o console para mais detalhes.");
         }
     });
