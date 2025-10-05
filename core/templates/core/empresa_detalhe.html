@@ -59,7 +59,6 @@
 </header>
 
 <main class="container my-5">
-  {# ✅ ESTRUTURA DE LAYOUT RESTAURADA #}
   <div class="row g-4">
     <div class="col-12 col-lg-7">
       <div class="card section-card p-3 p-md-4 mb-4">
@@ -76,6 +75,32 @@
         <h2 class="h5 fw-bold mb-3">Detalhes</h2>
         <dl class="detail-dl row"><dt class="col-sm-4">Tags</dt><dd class="col-sm-8">{% for t in empresa.tags.all %}{{ t.nome }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</dd><dt class="col-sm-4">CNPJ</dt><dd class="col-sm-8">{{ empresa.cnpj|default:"—" }}</dd><dt class="col-sm-4">CADASTUR</dt><dd class="col-sm-8">{{ empresa.cadastrur|default:"—" }}</dd><dt class="col-sm-4">Contato direto</dt><dd class="col-sm-8">{{ empresa.contato_direto|default:"—" }}</dd>{% if empresa.site %}<dt class="col-sm-4">Site</dt><dd class="col-sm-8"><a href="{{ empresa.site }}" target="_blank" rel="noopener">{{ empresa.site }}</a></dd>{% endif %}</dl>
       </div>
+
+      {% if empresa.horario_semana or empresa.horario_sabado or empresa.horario_domingo or empresa.horario_observacoes %}
+      <div class="card section-card p-3 p-md-4 mb-4">
+        <h2 class="h5 fw-bold mb-3">Horário de Funcionamento</h2>
+        <dl class="detail-dl row">
+          {% if empresa.horario_semana %}
+          <dt class="col-sm-4">Segunda a Sexta</dt>
+          <dd class="col-sm-8">{{ empresa.horario_semana }}</dd>
+          {% endif %}
+          {% if empresa.horario_sabado %}
+          <dt class="col-sm-4">Sábado</dt>
+          <dd class="col-sm-8">{{ empresa.horario_sabado }}</dd>
+          {% endif %}
+          {% if empresa.horario_domingo %}
+          <dt class="col-sm-4">Domingo</dt>
+          <dd class="col-sm-8">{{ empresa.horario_domingo }}</dd>
+          {% endif %}
+        </dl>
+        {% if empresa.horario_observacoes %}
+        <div class="mt-2 text-muted small">
+          <i class="bi bi-info-circle me-1"></i>
+          {{ empresa.horario_observacoes|linebreaksbr }}
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
 
       <div class="card section-card p-3 p-md-4 mb-4">
         <h2 class="h5 fw-bold mb-3">Deixe sua avaliação</h2>

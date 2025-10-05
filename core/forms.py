@@ -280,6 +280,7 @@ class EmpresaForm(forms.ModelForm):
             'telefone', 'email', 'contato_direto',
             'site', 'digital', 'maps_url', 'app_url', 'facebook', 'instagram',
             'sem_telefone', 'sem_email',
+            'horario_semana', 'horario_sabado', 'horario_domingo', 'horario_observacoes',
         ]
         
         widgets = {
@@ -295,6 +296,10 @@ class EmpresaForm(forms.ModelForm):
             'instagram': forms.URLInput(attrs={'placeholder': 'https://instagram.com/suaempresa'}),
             'latitude': forms.TextInput(attrs={'placeholder': 'Latitude', 'inputmode': 'decimal'}),
             'longitude': forms.TextInput(attrs={'placeholder': 'Longitude', 'inputmode': 'decimal'}),
+            'horario_semana': forms.TextInput(attrs={'placeholder': 'Ex: 08:00 - 18:00'}),
+            'horario_sabado': forms.TextInput(attrs={'placeholder': 'Ex: 08:00 - 12:00 ou Fechado'}),
+            'horario_domingo': forms.TextInput(attrs={'placeholder': 'Ex: Fechado'}),
+            'horario_observacoes': forms.Textarea(attrs={'rows': 2, 'placeholder': 'Ex: Fechamos para almoço das 12h às 13h30.'}),
         }
 
     def __init__(self, *args, **kwargs):

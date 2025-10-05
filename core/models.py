@@ -76,6 +76,23 @@ class Empresa(models.Model):
     sem_telefone = models.BooleanField(default=False)
     sem_email = models.BooleanField(default=False)
 
+    horario_semana = models.CharField(
+        max_length=100, blank=True, null=True, 
+        help_text="Ex: 09:00 - 18:00"
+    )
+    horario_sabado = models.CharField(
+        max_length=100, blank=True, null=True, 
+        help_text="Ex: 09:00 - 12:00 ou Fechado"
+    )
+    horario_domingo = models.CharField(
+        max_length=100, blank=True, null=True, 
+        help_text="Ex: Fechado"
+    )
+    horario_observacoes = models.TextField(
+        blank=True, null=True, 
+        help_text="Informações adicionais, como 'Fechado para almoço das 12h às 13h'."
+    )
+
     data_cadastro = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:

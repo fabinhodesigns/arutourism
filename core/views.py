@@ -696,6 +696,10 @@ def download_template_empresas(request):
         "NÚMERO",
         "CEP",
         "CIDADE",
+        "HORÁRIO SEMANA (seg-sex)",
+        "HORÁRIO SÁBADO",
+        "HORÁRIO DOMINGO",
+        "OBSERVAÇÕES HORÁRIO",
     ]
     ws.append(headers)
 
@@ -715,6 +719,10 @@ def download_template_empresas(request):
         "123",
         "88900-000",
         "Araranguá",
+        "09:00 - 18:00",
+        "09:00 - 12:00",
+        "Fechado",
+        "Fechado para almoço das 12h às 13h",
     ]
     ws.append(exemplo)
 
@@ -752,7 +760,11 @@ def importar_empresas_arquivo(request):
             data = {
                 'cnpj': '', 'categoria': '', 'nome': '', 'bairro': '', 'endereco': '', 'numero': '',
                 'cidade': '', 'cep': '', 'telefone': '', 'contato': '', 'digital': '',
-                'cadastrur': '', 'maps': '', 'app': '', 'descricao': ''
+                'cadastrur': '', 'maps': '', 'app': '', 'descricao': '',
+                "horario_semana": ["horario semana", "horário semana", "horario seg-sex", "horário seg-sex"],
+                "horario_sabado": ["horario sabado", "horário sábado"],
+                "horario_domingo": ["horario domingo", "horário domingo"],
+                "horario_observacoes": ["horario observacoes", "horário observações", "observacoes horario", "observações horário"]
             }
             for idx, canon in header_map.items():
                 if idx < len(r): data[canon] = (r[idx] or "").strip()
@@ -788,6 +800,11 @@ def importar_empresas_arquivo(request):
             app_url  = app_txt if _looks_url(app_txt) else None
             lat, lng = _extract_latlng_from_maps(maps_txt)
 
+            horario_semana = _clip(Empresa, "horario_semana", data.get("horario_semana"))
+            horario_sabado = _clip(Empresa, "horario_sabado", data.get("horario_sabado"))
+            horario_domingo = _clip(Empresa, "horario_domingo", data.get("horario_domingo"))
+            horario_observacoes = _clip(Empresa, "horario_observacoes", data.get("horario_observacoes"))
+
             try:
                 emp = Empresa(
                     user=request.user, nome=nome, descricao=descricao,
@@ -797,6 +814,10 @@ def importar_empresas_arquivo(request):
                     telefone=telefone, contato_direto=contato,
                     cadastrur=cadastrur, cnpj=cnpj, site=site_url, digital=site_url,
                     maps_url=maps_url, app_url=app_url,
+                    horario_semana=horario_semana,
+                    horario_sabado=horario_sabado,
+                    horario_domingo=horario_domingo,
+                    horario_observacoes=horario_observacoes
                 )
                 emp.save()
                 
