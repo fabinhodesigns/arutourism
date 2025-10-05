@@ -128,57 +128,54 @@ class UserRegistrationForm(UserCreationForm):
     
 
 class ProfileForm(forms.ModelForm):
-    
     email = forms.EmailField(required=True, label="Email")
-    first_name = forms.CharField(required=False, label="Nome de Exibição")
-    telefone = forms.CharField(required=False, label="Telefone")
+    first_name = forms.CharField(required=False, label="Nome de exibição (apelido)")
 
     class Meta:
         model = PerfilUsuario
         fields = ['full_name', 'telefone', 'avatar']
         widgets = {
             'full_name': forms.TextInput(attrs={'placeholder': 'Seu nome completo'}),
+            'telefone': forms.TextInput(attrs={'placeholder': 'Seu número com DDD'}),
         }
         labels = {
             'full_name': 'Nome completo',
+            'telefone': 'Telefone',
             'avatar': 'Foto/Avatar'
         }
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user')
         super().__init__(*args, **kwargs)
-        
-        for name, field in self.fields.items():
-            if not isinstance(field.widget, (forms.ClearableFileInput,)):
-                field.widget.attrs.setdefault('class', 'form-control')
-        self.fields['avatar'].widget.attrs.setdefault('class', 'form-control')
 
-        
+        self.fields['first_name'].initial = self.user.first_name
+        self.fields['email'].initial = self.user.email
+
+        for name, field in self.fields.items():
+            if not isinstance(field.widget, forms.ClearableFileInput):
+                field.widget.attrs.setdefault('class', 'form-control')
+
         self.fields['email'].error_messages['unique'] = format_html(
-            'Este e-mail já está em uso. <a href="{}">Esqueceu sua senha?</a>', 
+            'Este e-mail já está em uso. <a href="{}">Esqueceu sua senha?</a>',
             reverse('esqueci_senha_email')
         )
-        self.fields['username'].error_messages['unique'] = 'Este nome de usuário já está em uso. Por favor, escolha outro.'
-        self.fields['first_name'].initial = self.user.first_name
-        self.fields['telefone'].initial = self.instance.telefone
-
+        
     def clean_email(self):
         email = (self.cleaned_data.get('email') or '').lower()
         if User.objects.filter(email=email).exclude(pk=self.user.pk).exists():
-            raise ValidationError('Este e-mail já está em uso.')
+            raise ValidationError('Este e-mail já está em uso por outra conta.')
         return email
 
     def save(self, commit=True):
         perfil = super().save(commit=False)
-        
+
         self.user.email = self.cleaned_data['email'].lower()
         self.user.first_name = self.cleaned_data.get('first_name', '')
+        
         if commit:
             self.user.save()
-        
-        perfil.telefone = self.cleaned_data.get('telefone') or perfil.telefone
-        if commit:
             perfil.save()
+            
         return perfil
 
 
