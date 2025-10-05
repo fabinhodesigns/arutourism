@@ -83,6 +83,16 @@
           <dd class="col-7">{{ request.user.last_login|date:"d/m/Y H:i"|default:"—" }}</dd>
         </dl>
       </div>
+
+      <div class="metric-card p-4 bg-white mt-4">
+        <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
+          <i class="bi bi-tools text-primary"></i> Ferramentas de Marketing
+        </h5>
+        <p class="text-muted">Gere links personalizados e QR Codes para suas campanhas de divulgação e materiais impressos.</p>
+        <a href="{% url 'gerador_qrcode' %}" class="btn btn-primary">
+          <i class="bi bi-qr-code-scan me-1"></i> Acessar Gerador de QR Code
+        </a>
+      </div>
     </div>
 
     <div class="col-md-8">

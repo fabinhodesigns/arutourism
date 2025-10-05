@@ -78,70 +78,75 @@
   </nav>
 </header>
 
-<div id="searchOverlay" class="search-overlay" aria-hidden="true">
+<div id="searchOverlay" class="search-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="search-title">
   <div class="search-panel">
     <div class="container py-3">
-      <div class="search-titlebar mb-3">
+      <div class="search-titlebar mb-4">
         <div class="left">
           <i class="bi bi-search text-white"></i>
-          <h5 class="text-white mb-0">Buscar Pontos</h5>
+          <h5 id="search-title" class="text-white mb-0">Buscar Pontos Turísticos</h5>
         </div>
         <button id="close-search" class="btn btn-outline-light btn-sm" aria-label="Fechar busca">
           <i class="bi bi-x-lg"></i>
         </button>
       </div>
 
-      <form class="row g-3 align-items-end" method="get" action="{% url 'listar_empresas' %}" role="search">
-        <div class="col-12 col-lg-6">
-          <label class="form-label text-white" for="f-q">Termo (nome, categoria, bairro)</label>
-          <div class="input-group">
-            <span class="input-group-text"><i class="bi bi-search"></i></span>
-            <input id="f-q" name="q" class="form-control" type="search" placeholder="Ex.: Holaria, Morro, praia..."
-              value="{{ request.GET.q|default_if_none:'' }}">
+      <form id="filter-form" method="get" action="{% url 'listar_empresas' %}" role="search">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label text-white" for="f-q">Termo de busca</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-search"></i></span>
+              <input id="f-q" name="q" class="form-control" type="search" placeholder="Ex.: Pousada, Morro, praia..."
+                     value="{{ request.GET.q|default_if_none:'' }}">
+            </div>
+          </div>
+
+          <div class="col-12">
+            <label class="form-label text-white">Categorias / Tags</label>
+            <div class="position-relative">
+              <div id="tag-selection-area" class="tag-selection-area" aria-haspopup="listbox" aria-expanded="false">
+                <span class="text-white-50">Clique para selecionar...</span>
+              </div>
+              <div id="categoria-list" class="dropdown-list" role="listbox">
+                {% for tag in GLOBAL_TAGS %}
+                  <div class="dropdown-item" role="option" data-value="{{ tag.id }}" tabindex="0">{{ tag.nome }}</div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <label class="form-label text-white" for="cidade-select">Cidade</label>
+            <select id="cidade-select" name="cidade" class="form-select">
+                <option value="">Todas as cidades</option>
+                {% for ci in GLOBAL_CITIES %}
+                    <option value="{{ ci }}" {% if request.GET.cidade == ci %}selected{% endif %}>{{ ci }}</option>
+                {% endfor %}
+            </select>
+          </div>
+          
+          <div class="col-12 mt-4">
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="checkbox" id="f-img" name="com_imagem_real" value="1" {% if request.GET.com_imagem_real %}checked{% endif %}>
+              <label class="form-check-label text-white" for="f-img">Somente com imagem</label>
+            </div>
+            {% if user.is_authenticated %}
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="checkbox" id="f-meus" name="meus" value="1" {% if request.GET.meus %}checked{% endif %}>
+              <label class="form-check-label text-white" for="f-meus">Somente minhas empresas</label>
+            </div>
+            {% endif %}
           </div>
         </div>
 
-        <div class="col-12 col-lg-3 position-relative">
-          <label class="form-label text-white" for="categoria-input">Categoria / Tag</label>
-          <input id="categoria-input" type="text" class="form-control"
-            placeholder="{{ GLOBAL_TAGS|length|yesno:'Filtrar tags...,Sem tags' }}">
-          <input type="hidden" id="categoria-hidden" name="tag" value="{{ request.GET.tag|default_if_none:'' }}">
-          <div id="categoria-list" class="dropdown-list" role="listbox" aria-label="Tags" tabindex="-1">
-            <div class="dropdown-item" data-value="">Todas</div>
-            {% for tag in GLOBAL_TAGS %}
-            <div class="dropdown-item" data-value="{{ tag.id }}">{{ tag.nome }}</div>
-            {% endfor %}
+        <div class="mt-4 pt-3 border-top border-light border-opacity-25 search-actions">
+          <div class="d-flex gap-2 justify-content-end">
+            <a class="btn btn-light" href="{% url 'listar_empresas' %}">Limpar</a>
+            <button type="submit" class="btn btn-primary d-inline-flex align-items-center gap-2">
+              <i class="bi bi-search"></i> Aplicar filtros
+            </button>
           </div>
-        </div>
-
-        <div class="col-12 col-lg-3 position-relative">
-          <label class="form-label text-white" for="cidade-input">Cidade</label>
-          <input id="cidade-input" type="text" class="form-control" placeholder="Filtrar cidades...">
-          <input type="hidden" id="cidade-hidden" name="cidade" value="{{ request.GET.cidade|default_if_none:'' }}">
-          <div id="cidade-list" class="dropdown-list" role="listbox" aria-label="Cidades" tabindex="-1">
-            <div class="dropdown-item" data-value="">Todas</div>
-            {% for ci in GLOBAL_CITIES %}
-            <div class="dropdown-item" data-value="{{ ci }}">{{ ci }}</div>
-            {% endfor %}
-          </div>
-        </div>
-
-        <div class="col-12 col-lg-6">\
-          <div class="form-check form-check-inline">
-            <input class="form-check-input" type="checkbox" id="f-img" name="com_imagem_real" value="1" {% if request.GET.com_imagem_real == '1' %}checked{% endif %}>
-            <label class="form-check-label text-white" for="f-img">Somente com imagem real</label>
-          </div>
-          {% if user.is_authenticated %}
-          <div class="form-check form-check-inline">
-            <input class="form-check-input" type="checkbox" id="f-meus" name="meus" value="1" {% if request.GET.meus == '1' %}checked{% endif %}>
-            <label class="form-check-label text-white" for="f-meus">Somente minhas empresas</label>
-          </div>
-          {% endif %}
-        </div>
-
-        <div class="col-12 col-lg-6 d-flex gap-2 justify-content-end">
-          <a class="btn btn-light" href="{% url 'listar_empresas' %}">Limpar</a>
-          <button type="submit" class="btn btn-success"><i class="bi bi-search"></i> Aplicar filtros</button>
         </div>
       </form>
     </div>

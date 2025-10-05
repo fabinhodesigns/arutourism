@@ -54,6 +54,7 @@ urlpatterns = [
     path('avaliacao/deletar/<int:avaliacao_id>/', views.deletar_avaliacao, name='deletar_avaliacao'),
     path('empresa/<slug:slug>/favoritar/', views.toggle_favorito, name='toggle_favorito'),
     path('meus-favoritos/', views.listar_favoritos, name='listar_favoritos'),
+    path('ferramentas/gerador-qrcode/', views.gerador_qrcode_view, name='gerador_qrcode'),
 ]
 
 # servir mídia local quando DEBUG=True

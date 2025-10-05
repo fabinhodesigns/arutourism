@@ -1,93 +1,123 @@
 document.addEventListener('DOMContentLoaded', function () {
 
-  const overlay = document.getElementById('searchOverlay');
-  if (overlay) {
-    const panel = overlay.querySelector('.search-panel');
+    const searchOverlay = document.getElementById('searchOverlay');
     const openBtn = document.getElementById('open-search');
     const closeBtn = document.getElementById('close-search');
+    const body = document.body;
     const qInput = document.getElementById('f-q');
 
     function openSearch() {
-      overlay.classList.add('open');
-      overlay.setAttribute('aria-hidden', 'false');
-      document.body.classList.add('no-scroll');
-      setTimeout(() => qInput && qInput.focus(), 30);
+        if (searchOverlay) {
+            searchOverlay.classList.add('open');
+            searchOverlay.setAttribute('aria-hidden', 'false');
+            body.classList.add('no-scroll');
+            setTimeout(() => qInput && qInput.focus(), 180);
+        }
     }
+
     function closeSearch() {
-      overlay.classList.remove('open');
-      overlay.setAttribute('aria-hidden', 'true');
-      document.body.classList.remove('no-scroll');
-      openBtn && openBtn.focus();
+        if (searchOverlay) {
+            searchOverlay.classList.remove('open');
+            searchOverlay.setAttribute('aria-hidden', 'true');
+            body.classList.remove('no-scroll');
+            openBtn && openBtn.focus();
+        }
     }
 
     if (openBtn) openBtn.addEventListener('click', openSearch);
     if (closeBtn) closeBtn.addEventListener('click', closeSearch);
 
     document.addEventListener('keydown', e => {
-      if (e.key === 'Escape' && overlay.classList.contains('open')) {
-        closeSearch();
-      }
+        if (e.key === 'Escape' && searchOverlay && searchOverlay.classList.contains('open')) {
+            closeSearch();
+        }
     });
 
-    overlay.addEventListener('click', (e) => {
-      if (!panel.contains(e.target)) closeSearch();
-    });
-  }
-
-  function wireFilter(inputId, listId, hiddenId, selectedValue) {
-    const input = document.getElementById(inputId);
-    const list = document.getElementById(listId);
-    const hidden = document.getElementById(hiddenId);
-    if (!input || !list || !hidden) return;
-
-    if (selectedValue) {
-      const el = list.querySelector(`.dropdown-item[data-value="${CSS.escape(selectedValue)}"]`);
-      if (el) { input.placeholder = el.textContent.trim(); }
-      hidden.value = selectedValue;
+    if (searchOverlay) {
+        searchOverlay.addEventListener('click', (e) => {
+            if (e.target === searchOverlay) {
+                closeSearch();
+            }
+        });
     }
 
-    input.addEventListener('focus', () => list.classList.add('show'));
-    input.addEventListener('click', () => list.classList.toggle('show'));
 
-    input.addEventListener('input', () => {
-      const q = input.value.toLowerCase();
-      list.querySelectorAll('.dropdown-item').forEach(it => {
-        const txt = it.textContent.toLowerCase();
-        it.style.display = txt.includes(q) ? '' : 'none';
-      });
-      list.classList.add('show');
-    });
+    const filterForm = document.getElementById('filter-form');
+    const tagSelectionArea = document.getElementById('tag-selection-area');
+    const categoriaList = document.getElementById('categoria-list');
+    
+    if (filterForm && tagSelectionArea && categoriaList) {
+        const placeholderText = tagSelectionArea.querySelector('span');
 
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowDown') { e.preventDefault(); const first = list.querySelector('.dropdown-item:not([style*="display: none"])'); (first || input).focus(); }
-      if (e.key === 'Escape') { list.classList.remove('show'); }
-    });
+        function loadInitialTags() {
+            const params = new URLSearchParams(window.location.search);
+            const tagIds = params.getAll('tag');
+            
+            if (tagIds.length > 0) {
+                tagIds.forEach(tagId => {
+                    const item = categoriaList.querySelector(`.dropdown-item[data-value="${tagId}"]`);
+                    if (item) {
+                        addTag(item.dataset.value, item.textContent);
+                    }
+                });
+            }
+        }
+        
+        function addTag(value, name) {
+            if (filterForm.querySelector(`input[name="tag"][value="${value}"]`)) return;
 
-    list.addEventListener('click', (e) => {
-      const item = e.target.closest('.dropdown-item'); if (!item) return;
-      hidden.value = item.dataset.value;
-      input.value = '';
-      input.placeholder = item.textContent.trim();
-      list.classList.remove('show');
-    });
+            if (placeholderText) placeholderText.style.display = 'none';
 
-    list.addEventListener('keydown', (e) => {
-      const items = [...list.querySelectorAll('.dropdown-item')].filter(i => i.style.display !== 'none');
-      const idx = items.indexOf(document.activeElement);
-      if (e.key === 'ArrowDown') { e.preventDefault(); (items[idx + 1] || items[0]).focus(); }
-      if (e.key === 'ArrowUp') { e.preventDefault(); (items[idx - 1] || items[items.length - 1]).focus(); }
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); document.activeElement.click(); }
-      if (e.key === 'Escape') { e.preventDefault(); list.classList.remove('show'); input.focus(); }
-    });
+            const tagPill = document.createElement('div');
+            tagPill.className = 'selected-tag';
+            tagPill.innerHTML = `<span>${name}</span><button type="button" class="remove-tag" data-value="${value}" aria-label="Remover ${name}">&times;</button>`;
+            tagSelectionArea.appendChild(tagPill);
 
-    document.addEventListener('click', (e) => {
-      if (!list.contains(e.target) && e.target !== input) { list.classList.remove('show'); }
-    });
-  }
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'tag';
+            hiddenInput.value = value;
+            filterForm.appendChild(hiddenInput);
+        }
 
-  const initialCategoria = document.getElementById('categoria-hidden')?.value;
-  const initialCidade = document.getElementById('cidade-hidden')?.value;
+        function removeTag(value) {
+            const inputToRemove = filterForm.querySelector(`input[name="tag"][value="${value}"]`);
+            if (inputToRemove) inputToRemove.remove();
+            
+            const pillToRemove = tagSelectionArea.querySelector(`.remove-tag[data-value="${value}"]`);
+            if (pillToRemove) pillToRemove.parentElement.remove();
+            
+            if (tagSelectionArea.querySelectorAll('.selected-tag').length === 0) {
+                if (placeholderText) placeholderText.style.display = 'inline';
+            }
+        }
 
-  wireFilter('categoria-input', 'categoria-list', 'categoria-hidden', initialCategoria);
-  wireFilter('cidade-input', 'cidade-list', 'cidade-hidden', initialCidade);
+        tagSelectionArea.addEventListener('click', () => {
+            const isExpanded = tagSelectionArea.getAttribute('aria-expanded') === 'true';
+            tagSelectionArea.setAttribute('aria-expanded', String(!isExpanded));
+            categoriaList.classList.toggle('show');
+        });
+
+        categoriaList.addEventListener('click', (e) => {
+            const item = e.target.closest('.dropdown-item');
+            if (!item) return;
+            addTag(item.dataset.value, item.textContent);
+        });
+
+        tagSelectionArea.addEventListener('click', (e) => {
+            const removeBtn = e.target.closest('.remove-tag');
+            if (!removeBtn) return;
+            e.stopPropagation(); // Impede que o clique no 'x' feche/abra a lista
+            removeTag(removeBtn.dataset.value);
+        });
+        
+        document.addEventListener('click', (e) => {
+            if (!tagSelectionArea.contains(e.target) && !categoriaList.contains(e.target)) {
+                categoriaList.classList.remove('show');
+                tagSelectionArea.setAttribute('aria-expanded', 'false');
+            }
+        });
+
+        loadInitialTags();
+    }
 });

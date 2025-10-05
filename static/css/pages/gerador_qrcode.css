@@ -1,0 +1,35 @@
+#qr-result-area {
+    min-height: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.5s ease;
+}
+
+.qr-placeholder-content {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.qr-generated-content {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    width: 100%;
+}
+
+#qr-result-area.active .qr-placeholder-content {
+    opacity: 0;
+    transform: scale(0.9);
+    display: none;
+}
+
+#qr-result-area.active .qr-generated-content {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+#qr-copy-btn.copied {
+    background-color: #198754;
+    color: white;
+    border-color: #198754;
+}

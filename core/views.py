@@ -308,7 +308,7 @@ def _ident_kind(ident: str) -> str:
 # ============================================================
 
 def home(request):
-    empresas_list = get_base_empresas_queryset().order_by('-data_cadastro')[:6]
+    empresas_list = get_base_empresas_queryset().order_by('-data_cadastro')[:8]
     total_empresas = Empresa.objects.count()
 
     favorito_ids = []
@@ -611,7 +611,7 @@ def listar_empresas(request):
     empresas = get_base_empresas_queryset()
 
     q = (request.GET.get('q') or '').strip()
-    tag_id = (request.GET.get('tag') or '').strip()
+    tag_ids = request.GET.getlist('tag')
     cidade = (request.GET.get('cidade') or '').strip()
     
     if q:
@@ -623,14 +623,12 @@ def listar_empresas(request):
             Q(tags__nome__icontains=q)
         ).distinct()
 
-    tag_label = None
-    if tag_id:
-        try:
-            selected_tag = Tag.objects.get(id=tag_id)
-            tag_label = selected_tag.nome
-            empresas = empresas.filter(tags__id=tag_id)
-        except (Tag.DoesNotExist, ValueError):
-            pass
+    tag_labels = []
+    if tag_ids:
+        empresas = empresas.filter(tags__id__in=tag_ids).distinct()
+        
+        selected_tags = Tag.objects.filter(id__in=tag_ids)
+        tag_labels = [tag.nome for tag in selected_tags]
     
     if cidade:
         empresas = empresas.filter(cidade__iexact=cidade)
@@ -644,8 +642,8 @@ def listar_empresas(request):
         html = render_to_string('core/partials/empresas_cards.html', {'page_obj': page_obj}, request=request)
         return JsonResponse({'html': html, 'has_next': page_obj.has_next(), 'next_page_number': page_obj.next_page_number() if page_obj.has_next() else None})
 
-    filtros_aplicados = { 'q': q, 'tag': tag_id, 'cidade': cidade }
-    filtros_legiveis = { 'q': q or None, 'tag': tag_label, 'cidade': cidade or None }
+    filtros_aplicados = { 'q': q, 'tag': tag_ids, 'cidade': cidade }
+    filtros_legiveis = { 'q': q or None, 'tag': ", ".join(tag_labels), 'cidade': cidade or None }
 
     favorito_ids = []
     if request.user.is_authenticated:
@@ -1106,3 +1104,17 @@ def listar_favoritos(request):
     return render(request, 'core/listar_favoritos.html', {
         'page_obj': page_obj
     })
+
+@login_required
+def gerador_qrcode_view(request):
+    all_tags = list(Tag.objects.order_by('nome').values('id', 'nome'))
+    all_cidades = list(
+        Empresa.objects.exclude(cidade__isnull=True).exclude(cidade__exact='')
+        .order_by('cidade').values_list('cidade', flat=True).distinct()
+    )
+    
+    context = {
+        'all_tags': all_tags,
+        'all_cidades': all_cidades,
+    }
+    return render(request, 'core/gerador_qrcode.html', context)
