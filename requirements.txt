@@ -17,3 +17,4 @@ python-dotenv==1.0.1
 openpyxl==3.1.5
 django-environ
 psycopg2-binary
+django-pwa==2.0.1 
