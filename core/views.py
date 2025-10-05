@@ -52,21 +52,58 @@ from core.models import Tag, Empresa
 
 # nomes aceitos (mantém os seus sinônimos)
 COLUMN_ALIASES = {
-    "cnpj":        ["cnpj"],
-    "categoria":   ["ramo atividade", "ramo de atividade", "categoria", "ramo"],
-    "nome":        ["nome", "razão social", "razao social"],
-    "bairro":      ["bairro", "endereço 2", "endereco 2"],
-    "endereco":    ["endereço", "endereco", "logradouro", "endereço completo", "endereco completo", "rua"],
-    "numero":      ["número", "numero", "nº", "nro"],
-    "cidade":      ["cidade", "municipio", "município"],
-    "cep":         ["cep", "c.e.p."],
-    "telefone":    ["telefone", "fone", "whatsapp"],
-    "contato":     ["contato direto", "contato"],
-    "digital":     ["digital", "site / redes", "redes sociais", "site", "instagram", "facebook"],
-    "cadastrur":   ["cadastur", "cadas tur", "cadastro tur"],
-    "maps":        ["maps", "google maps", "mapa", "link mapa"],
-    "app":         ["app", "aplicativo"],
-    "descricao":   ["descrição", "descricao", "observacao", "observação", "obs"],
+    # --- Modelo Padrão (Mantido para compatibilidade) ---
+    "nome": ["nome", "razão social", "razao social"],
+    "categoria": ["ramo atividade", "ramo de atividade", "categoria", "ramo"],
+    "bairro": ["bairro"], "rua": ["endereço", "endereco", "logouro", "endereço completo"],
+    "numero": ["número", "numero", "nº"], "cidade": ["cidade", "municipio", "município"],
+    "cep": ["cep", "c.e.p."], "telefone": ["telefone", "fone", "whatsapp"],
+    "contato": ["contato direto", "contato"], "descricao": ["descrição", "descricao", "observacao", "obs"],
+    # ... outros do modelo padrão
+
+    # --- MAPEAMENTO COMPLETO PARA GOOGLE CONTACTS ---
+    # Nomes
+    "google_nome_contato": ["Name"],
+    "google_tag": ["First Name"], 
+    "google_nome_do_meio": ["Middle Name"],
+    "google_sobrenome": ["Last Name"],
+    "google_apelido": ["Nickname"],
+    "google_file_as": ["File As"],
+    
+    # Organização
+    "google_nome_empresa": ["Organization Name"],
+    "google_cargo": ["Organization Title"],
+    "google_departamento": ["Organization Department"],
+    
+    # Contatos
+    "google_email_1": ["E-mail 1 - Value"],
+    "google_email_2": ["E-mail 2 - Value"],
+    "google_telefone_1": ["Phone 1 - Value"],
+    "google_telefone_2": ["Phone 2 - Value"],
+    "google_telefone_3": ["Phone 3 - Value"],
+    
+    # Endereços
+    "google_endereco_formatado": ["Address 1 - Formatted"],
+    "google_rua": ["Address 1 - Street"],
+    "google_cidade": ["Address 1 - City"],
+    "google_estado": ["Address 1 - Region"],
+    "google_cep": ["Address 1 - Postal Code"],
+    "google_pais": ["Address 1 - Country"],
+    
+    # Websites
+    "google_website_1": ["Website 1 - Value"],
+    "google_website_2": ["Website 2 - Value"],
+    
+    # Outros
+    "google_aniversario": ["Birthday"],
+    "google_notas": ["Notes"],
+    
+    "google_custom_1_label": ["Custom Field 1 - Label"], 
+    "google_custom_1_value": ["Custom Field 1 - Value"], 
+    "google_custom_2_label": ["Custom Field 2 - Label"],
+    "google_custom_2_value": ["Custom Field 2 - Value"],
+    "google_custom_3_label": ["Custom Field 3 - Label"],
+    "google_custom_3_value": ["Custom Field 3 - Value"],
 }
 
 TEMPLATE_HEADERS = [
@@ -303,6 +340,95 @@ def _ident_kind(ident: str) -> str:
     if len(digits) >= 11:
         return "cpf"
     return "username"
+
+def _parse_row_google(data):
+    """
+    Extrai e normaliza dados de uma linha do Google Contacts, capturando todos os campos
+    não mapeados e adicionando-os à descrição.
+    """
+    parsed = {}
+    extra_descricao_parts = []
+    
+    # Lista de chaves que já têm um tratamento especial e não devem ser repetidas na descrição.
+    handled_keys = {
+        'google_nome_empresa', 'google_file_as', 'google_nome_contato', 'google_tag',
+        'google_email_1', 'google_email_2', 'google_telefones', 'google_telefone_1', 
+        'google_telefone_2', 'google_telefone_3', 'google_website_1', 'google_website_2',
+        'google_endereco_formatado', 'google_rua', 'google_cidade', 'google_cep', 'google_notas',
+        'google_custom_1_label', 'google_custom_1_value', 'google_custom_2_label', 
+        'google_custom_2_value', 'google_custom_3_label', 'google_custom_3_value',
+    }
+
+    # --- 1. MAPEAMENTO DE CAMPOS PRINCIPAIS ---
+    
+    # Nome da Empresa (com fallbacks)
+    parsed['nome'] = data.get('google_nome_empresa') or data.get('google_file_as') or data.get('google_nome_contato')
+    
+    # Tag (Primeiro Nome)
+    if data.get('google_tag'):
+        parsed['tags'] = [data.get('google_tag')]
+
+    # E-mail (pega o primeiro encontrado)
+    parsed['email'] = data.get('google_email_1') or data.get('google_email_2')
+
+    # Telefones (pega o primeiro para o campo principal, os outros vão para a descrição)
+    all_phones = [data.get('google_telefone_1', ''), data.get('google_telefone_2', ''), data.get('google_telefone_3', '')]
+    valid_phones = [phone for phone in all_phones if phone]
+    if valid_phones:
+        parsed['telefone'] = _digits(valid_phones[0])
+        if len(valid_phones) > 1:
+            extra_descricao_parts.append(f"Telefones Adicionais: {', '.join(valid_phones[1:])}")
+
+    # Endereço
+    parsed['rua'] = data.get('google_rua')
+    parsed['cidade'] = data.get('google_cidade')
+    parsed['cep'] = _digits(data.get('google_cep'))
+
+    # Websites (lógica para Instagram/Facebook)
+    website_url = data.get('google_website_1', '')
+    if 'instagram.com' in website_url: parsed['instagram'] = website_url
+    elif 'facebook.com' in website_url: parsed['facebook'] = website_url
+    elif website_url: parsed['site'] = website_url
+
+    # Campos Customizados (CNPJ e CADASTUR)
+    for i in range(1, 4):
+        label = data.get(f'google_custom_{i}_label', '').lower().strip()
+        value = data.get(f'google_custom_{i}_value', '').strip()
+        if label in ['cpf', 'cnpj', 'cpf ou cnpj']:
+            parsed['cnpj'] = _digits(value)
+        elif label == 'cadastur':
+            parsed['cadastrur'] = "Sim" if value.lower() in ['sim', 's'] else "Não"
+
+    # --- 2. CAPTURA DE TODOS OS CAMPOS NÃO MAPEADOS ---
+    
+    unmapped_data = []
+    for key, value in data.items():
+        if key not in handled_keys and value and 'label' not in key:
+            # Transforma a chave (ex: 'google_sobrenome') em um rótulo legível (ex: 'Sobrenome')
+            label_legivel = key.replace('google_', '').replace('_', ' ').title()
+            unmapped_data.append(f"{label_legivel}: {value}")
+    
+    # --- 3. MONTAGEM DA DESCRIÇÃO FINAL ---
+    
+    # Começa com o campo "Notas" do Google
+    descricao_final = data.get('google_notas', '')
+    
+    # Adiciona o endereço formatado, se existir
+    if data.get('google_endereco_formatado'):
+        descricao_final += f"\n\nEndereço Completo: {data.get('google_endereco_formatado')}"
+
+    # Adiciona a lista de telefones extras (se houver)
+    if any("Telefones Adicionais" in part for part in extra_descricao_parts):
+        descricao_final += "\n" + "\n".join(part for part in extra_descricao_parts if "Telefones Adicionais" in part)
+        
+    # Adiciona todos os outros campos não mapeados
+    if unmapped_data:
+        descricao_final += "\n\n--- Outras Informações ---\n"
+        descricao_final += "\n".join(unmapped_data)
+        
+    parsed['descricao'] = descricao_final or DEFAULT_DESC
+    
+    return parsed
 
 # ============================================================
 # Páginas básicas / Auth
@@ -569,7 +695,7 @@ def deletar_imagem_empresa(request, imagem_id):
 @login_required(login_url='/login/')
 def suas_empresas(request):
     empresas_list = get_base_empresas_queryset().filter(user=request.user).order_by('-data_cadastro')
-    paginator = Paginator(empresas_list, 6)
+    paginator = Paginator(empresas_list, 8)
     page_obj = paginator.get_page(request.GET.get('page') or 1)
 
     if _wants_json(request):
@@ -740,104 +866,121 @@ def download_template_empresas(request):
 @require_POST
 @transaction.atomic
 def importar_empresas_arquivo(request):
-    created = 0
-    errors = 0
+    # Contadores para o relatório final
+    criados = 0
+    atualizados = 0
+    sem_alteracao = 0
+    erros = 0
     msgs = []
+
+    # --- LOG INICIAL ---
+    print("\n--- INICIANDO NOVA IMPORTAÇÃO DE ARQUIVO ---")
 
     try:
         up = request.FILES.get("arquivo")
         if not up:
+            print("[ERRO] Nenhum arquivo foi enviado.")
             return JsonResponse({"ok": False, "error": "Envie um arquivo .xlsx ou .csv."}, status=400)
 
+        print(f"Arquivo recebido: {up.name}")
         headers_raw, rows = _read_rows_from_upload(up, up.name)
         if not rows:
-            return JsonResponse({"ok": False, "error": "Arquivo vazio."}, status=400)
+            print("[ERRO] Arquivo está vazio ou não pôde ser lido.")
+            return JsonResponse({"ok": False, "error": "Arquivo vazio ou em formato inválido."}, status=400)
 
+        # DETECÇÃO DO FORMATO
+        is_google_format = len(headers_raw) > 30
+        print(f"Detectado formato: {'Google Contacts' if is_google_format else 'Padrão'}")
+        
         header_map = _build_header_map(headers_raw)
-
+        print(f"Mapeamento de cabeçalho: {header_map}")
+        
+        print(f"\nIniciando processamento de {len(rows)} linhas...")
         for line_no, r in enumerate(rows, start=2):
-            data = {
-                'cnpj': '', 'categoria': '', 'nome': '', 'bairro': '', 'endereco': '', 'numero': '',
-                'cidade': '', 'cep': '', 'telefone': '', 'contato': '', 'digital': '',
-                'cadastrur': '', 'maps': '', 'app': '', 'descricao': '',
-                "horario_semana": ["horario semana", "horário semana", "horario seg-sex", "horário seg-sex"],
-                "horario_sabado": ["horario sabado", "horário sábado"],
-                "horario_domingo": ["horario domingo", "horário domingo"],
-                "horario_observacoes": ["horario observacoes", "horário observações", "observacoes horario", "observações horário"]
-            }
+            print(f"\n--- Processando Linha {line_no} ---")
+            data = {}
             for idx, canon in header_map.items():
                 if idx < len(r): data[canon] = (r[idx] or "").strip()
 
-            nome = _clip(Empresa, "nome", data.get("nome"))
+            if is_google_format:
+                dados_empresa = _parse_row_google(data)
+            else:
+                dados_empresa = _parse_row_padrao(data)
+            
+            print(f"Dados extraídos da linha: {dados_empresa}")
+
+            nome = dados_empresa.get('nome')
             if not nome:
-                errors += 1
-                msgs.append(f"Linha {line_no}: O campo 'nome' é obrigatório.")
+                erros += 1
+                msg = f"Linha {line_no}: O campo 'nome' é obrigatório e não foi encontrado."
+                msgs.append(msg)
+                print(f"[ERRO] {msg}")
                 continue
 
-            tags_str = data.get("categoria", "")
-            tag_names = [name.strip() for name in tags_str.split(',') if name.strip()]
-            tag_objects = []
-            for name in tag_names:
-                tag, _ = Tag.objects.get_or_create(nome=name)
-                tag_objects.append(tag)
+            # Extrai chaves de busca
+            telefone = dados_empresa.get('telefone', '')
+            cnpj = dados_empresa.get('cnpj', '')
+            tag_names = dados_empresa.pop('tags', [])
 
-            bairro    = _clip(Empresa, "bairro", data.get("bairro"))
-            endereco  = _clip(Empresa, "rua", data.get("endereco"))
-            numero    = _clip(Empresa, "numero", data.get("numero"))
-            cidade    = _clip(Empresa, "cidade", (data.get("cidade") or "Araranguá"))
-            cep       = _clip(Empresa, "cep", _digits(data.get("cep")))
-            telefone  = _clip(Empresa, "telefone", _digits(data.get("telefone")))
-            contato   = _clip(Empresa, "contato_direto", data.get("contato"))
-            cadastrur = _clip(Empresa, "cadastrur", data.get("cadastrur"))
-            cnpj      = _clip(Empresa, "cnpj", _digits(data.get("cnpj")))
-            descricao = (data.get("descricao") or DEFAULT_DESC)
-            digital_txt = data.get("digital", "").strip()
-            site_url = _first_url_in_text(digital_txt)
-            maps_txt = data.get("maps", "").strip()
-            maps_url = maps_txt if _looks_url(maps_txt) else None
-            app_txt  = data.get("app", "").strip()
-            app_url  = app_txt if _looks_url(app_txt) else None
-            lat, lng = _extract_latlng_from_maps(maps_txt)
+            # Lógica de verificação por prioridade
+            empresa_existente = None
+            if telefone: empresa_existente = Empresa.objects.filter(telefone=telefone).first()
+            if not empresa_existente and cnpj: empresa_existente = Empresa.objects.filter(cnpj=cnpj).first()
+            if not empresa_existente and nome: empresa_existente = Empresa.objects.filter(nome__iexact=nome).first()
 
-            horario_semana = _clip(Empresa, "horario_semana", data.get("horario_semana"))
-            horario_sabado = _clip(Empresa, "horario_sabado", data.get("horario_sabado"))
-            horario_domingo = _clip(Empresa, "horario_domingo", data.get("horario_domingo"))
-            horario_observacoes = _clip(Empresa, "horario_observacoes", data.get("horario_observacoes"))
-
-            try:
-                emp = Empresa(
-                    user=request.user, nome=nome, descricao=descricao,
-                    rua=endereco, bairro=bairro, cidade=cidade, numero=numero, cep=cep,
-                    latitude=str(lat) if lat is not None else None, 
-                    longitude=str(lng) if lng is not None else None,
-                    telefone=telefone, contato_direto=contato,
-                    cadastrur=cadastrur, cnpj=cnpj, site=site_url, digital=site_url,
-                    maps_url=maps_url, app_url=app_url,
-                    horario_semana=horario_semana,
-                    horario_sabado=horario_sabado,
-                    horario_domingo=horario_domingo,
-                    horario_observacoes=horario_observacoes
-                )
-                emp.save()
+            if empresa_existente:
+                print(f"Empresa encontrada no banco: '{empresa_existente.nome}' (ID: {empresa_existente.id}). Verificando atualizações...")
+                emp = empresa_existente
+                alterado = False
+                for campo, valor in dados_empresa.items():
+                    if getattr(emp, campo) != valor:
+                        print(f"  -> Campo '{campo}' alterado de '{getattr(emp, campo)}' para '{valor}'")
+                        setattr(emp, campo, valor)
+                        alterado = True
                 
-                if tag_objects:
-                    emp.tags.set(tag_objects)
-                
-                created += 1
-            except Exception as e:
-                errors += 1
-                msgs.append(f"Linha {line_no}: Erro ao salvar no banco: {e}")
+                if alterado:
+                    emp.save()
+                    atualizados += 1
+                    print("  -> Empresa ATUALIZADA.")
+                else:
+                    sem_alteracao += 1
+                    print("  -> Nenhuma alteração encontrada.")
+            else:
+                print(f"Empresa '{nome}' não encontrada. Tentando criar novo registro...")
+                try:
+                    # Adiciona dados obrigatórios que não podem ser nulos
+                    dados_empresa['user'] = request.user
+                    # Exemplo: Se 'descricao' for obrigatório e não vier, usa o DEFAULT_DESC
+                    dados_empresa.setdefault('descricao', DEFAULT_DESC)
+                    
+                    emp = Empresa.objects.create(**dados_empresa)
+                    criados += 1
+                    print(f"  -> Empresa '{nome}' CRIADA com sucesso (ID: {emp.id}).")
+                    
+                    if tag_names:
+                        tag_objects = [Tag.objects.get_or_create(nome=name.strip())[0] for name in tag_names]
+                        emp.tags.set(tag_objects)
+                        print(f"  -> Tags associadas: {[tag.nome for tag in tag_objects]}")
 
-        if errors > 0:
-            return JsonResponse({"ok": False, "importados": created, "erros": errors, "mensagens": msgs[:100]}, status=400)
-            
-        return JsonResponse({"ok": True, "importados": created, "erros": 0, "mensagens": []})
+                except Exception as e:
+                    erros += 1
+                    msg = f"Linha {line_no} ('{nome}'): Erro ao criar no banco: {e}"
+                    msgs.append(msg)
+                    print(f"[ERRO GRAVE] {msg}")
+                    continue
+
+        print("\n--- FIM DA IMPORTAÇÃO ---")
+        print(f"Resultado: {criados} criados, {atualizados} atualizados, {sem_alteracao} sem alteração, {erros} erros.")
+        
+        return JsonResponse({ "ok": True, "criados": criados, "atualizados": atualizados, "sem_alteracao": sem_alteracao, "erros": erros, "mensagens": msgs })
         
     except Exception as e:
+        # Este 'except' pega erros maiores que acontecem ANTES do loop (ex: erro ao ler o arquivo)
+        print(f"[ERRO CATASTRÓFICO] Erro inesperado durante a importação: {e}")
         logger.error(f"Erro catastrófico na importação: {e}", exc_info=True)
         return JsonResponse({"ok": False, "error": f"Erro inesperado: {e}"}, status=500)
     
-    
+
 @login_required
 def perfil(request):
     perfil, _ = PerfilUsuario.objects.get_or_create(

@@ -46,6 +46,7 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             const fetchUrl = new URL(url, window.location.origin);
             fetchUrl.searchParams.set('page', nextPage);
+            fetchUrl.searchParams.set('ajax', '1');
 
             const response = await fetch(fetchUrl);
             if (!response.ok) throw new Error('A resposta da rede não foi OK.');

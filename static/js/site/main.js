@@ -1,17 +1,28 @@
+// ARQUIVO: static/js/site/main.js (VERSÃO FINAL COMPLETA)
+
 document.addEventListener('DOMContentLoaded', () => {
 
-        /**
-     * Função auxiliar para pegar o CSRF token dos cookies do navegador.
+    /**
+     * Função auxiliar para pegar o CSRF token.
+     * Tenta 3 métodos em ordem de prioridade para máxima compatibilidade.
      */
     function getCsrfToken() {
+        // 1. Tenta pegar da meta tag (método preferido e mais confiável)
+        const meta = document.querySelector('meta[name="csrf-token"]');
+        if (meta) return meta.getAttribute('content');
+        
+        // 2. Fallback: Tenta pegar do cookie
         const cookie = document.cookie.split('; ').find(row => row.startsWith('csrftoken='));
-        return cookie ? cookie.split('=')[1] : null;
+        if (cookie) return cookie.split('=')[1];
+
+        console.warn('CSRF token não encontrado.');
+        return null;
     }
 
     const body = document.body;
 
     // ========================================================================
-    // LÓGICA DO PAINEL DE BUSCA (DO ANTIGO header.js)
+    // LÓGICA DO PAINEL DE BUSCA
     // ========================================================================
     const searchOverlay = document.getElementById('searchOverlay');
     const openBtn = document.getElementById('open-search');
@@ -50,13 +61,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Lógica para seleção de múltiplas tags
+        // Lógica de seleção de múltiplas tags
         const filterForm = document.getElementById('filter-form');
         const tagSelectionArea = document.getElementById('tag-selection-area');
         const categoriaList = document.getElementById('categoria-list');
         
         if (filterForm && tagSelectionArea && categoriaList) {
-            // ... (toda a lógica de seleção de tags que já tínhamos)
             const placeholderText = tagSelectionArea.querySelector('span');
             
             function loadInitialTags() {
@@ -123,23 +133,41 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-
     // ========================================================================
     // LÓGICA DO SELETOR DE TEMA DE ACESSIBILIDADE
     // ========================================================================
     const themeRadios = document.querySelectorAll('.theme-switcher__radio');
 
     if (themeRadios.length > 0) {
-        // ... (toda a lógica do seletor de temas que já tínhamos)
         function applyTheme(theme) {
             body.classList.remove('dark-mode', 'high-contrast');
             if (theme === 'dark') body.classList.add('dark-mode');
             else if (theme === 'contrast') body.classList.add('high-contrast');
         }
 
-        async function saveThemePreference(theme) { /* ... */ } // A função completa está no seu código
+        async function saveThemePreference(theme) {
+            const csrfToken = getCsrfToken();
+            if (!csrfToken) return;
+
+            try {
+                await fetch('/perfil/salvar-tema/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                    body: JSON.stringify({ theme: theme })
+                });
+            } catch (error) {
+                console.error('Erro ao salvar preferência de tema:', error);
+            }
+        }
         
-        function syncRadioState() { /* ... */ } // A função completa está no seu código
+        function syncRadioState() {
+            let currentTheme = 'light';
+            if (body.classList.contains('dark-mode')) currentTheme = 'dark';
+            else if (body.classList.contains('high-contrast')) currentTheme = 'contrast';
+            
+            const activeRadio = document.getElementById(`theme-${currentTheme}`);
+            if (activeRadio) activeRadio.checked = true;
+        }
         
         themeRadios.forEach(radio => {
             radio.addEventListener('change', () => {
@@ -157,15 +185,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // ========================================================================
     // LÓGICA DE FAVORITAR EMPRESAS (EVENT DELEGATION)
     // ========================================================================
-    
     function updateFavoriteButton(button, isFavorito) {
         button.setAttribute('aria-pressed', String(isFavorito));
         button.setAttribute('aria-label', isFavorito ? 'Remover dos favoritos' : 'Adicionar aos favoritos');
-        
         button.classList.toggle('btn-danger', isFavorito);
         button.classList.toggle('btn-outline-light', !isFavorito && button.classList.contains('btn-lg'));
         button.classList.toggle('btn-light', !isFavorito && !button.classList.contains('btn-lg'));
-        
         const icon = button.querySelector('i');
         if (icon) {
             icon.classList.toggle('bi-heart-fill', isFavorito);
@@ -175,35 +200,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     body.addEventListener('click', async (event) => {
         const favButton = event.target.closest('#btn-favorito, [data-action="toggle-favorito"]');
-        
         if (!favButton) return;
-
         const url = favButton.dataset.url;
         const csrfToken = getCsrfToken();
-
         if (!url || !csrfToken) return;
-
         try {
             const response = await fetch(url, {
                 method: 'POST',
-                headers: {
-                    'X-CSRFToken': csrfToken,
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
+                headers: { 'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
             });
-
             if (!response.ok) throw new Error('Falha na requisição ao servidor.');
-
             const data = await response.json();
-            
             if (data.status === 'ok') {
                 updateFavoriteButton(favButton, data.is_favorito);
             }
-
         } catch (error) {
             console.error("Erro ao favoritar:", error);
             alert("Ocorreu um erro ao tentar favoritar. Tente novamente.");
         }
     });
-
 });
