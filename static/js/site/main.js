@@ -182,7 +182,32 @@ document.addEventListener('DOMContentLoaded', () => {
         syncRadioState();
     }
 
-    function updateFavoriteButton(button, isFavorito) { }
+    function updateFavoriteButton(button, isFavorito) {
+        button.setAttribute('aria-pressed', String(isFavorito));
+        button.setAttribute('aria-label', isFavorito ? 'Remover dos favoritos' : 'Adicionar aos favoritos');
+
+        const icon = button.querySelector('i');
+
+        if (isFavorito) {
+            button.classList.remove('btn-light', 'btn-outline-light');
+            button.classList.add('btn-danger');
+            if (icon) {
+                icon.classList.remove('bi-heart');
+                icon.classList.add('bi-heart-fill');
+            }
+        } else {
+            button.classList.remove('btn-danger');
+            if (button.classList.contains('btn-lg')) {
+                button.classList.add('btn-outline-light');
+            } else {
+                button.classList.add('btn-light');
+            }
+            if (icon) {
+                icon.classList.remove('bi-heart-fill');
+                icon.classList.add('bi-heart');
+            }
+        }
+    }
 
     body.addEventListener('click', async (event) => {
         const favButton = event.target.closest('#btn-favorito, [data-action="toggle-favorito"]');
