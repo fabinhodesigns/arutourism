@@ -8,7 +8,7 @@
 
     {% if user.is_authenticated and favorito_ids is not None %}
       <button
-        class="btn btn-sm position-absolute top-0 end-0 m-2 z-1 {% if empresa.id in favorito_ids %}btn-danger{% else %}btn-light{% endif %}"
+        class="btn btn-sm position-absolute top-0 end-0 m-2 z-2 {% if empresa.id in favorito_ids %}btn-danger{% else %}btn-light{% endif %}"
         data-url="{% url 'toggle_favorito' empresa.slug %}"
         aria-pressed="{% if empresa.id in favorito_ids %}true{% else %}false{% endif %}"
         aria-label="{% if empresa.id in favorito_ids %}Remover dos favoritos{% else %}Adicionar aos favoritos{% endif %}"

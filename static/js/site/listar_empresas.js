@@ -4,8 +4,11 @@ document.addEventListener('DOMContentLoaded', function () {
         const card = e.target.closest('.empresa-card');
         if (card) {
             const link = card.querySelector('.card-link-overlay');
-            if (link && link.href && !e.target.closest('a, .btn')) {
-                window.location.href = link.href;
+            if (link && link.href) {
+                if (!e.target.closest('button, .btn')) {
+                    e.preventDefault();
+                    window.location.href = link.href;
+                }
             }
         }
     });

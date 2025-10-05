@@ -1254,8 +1254,9 @@ def deletar_avaliacao(request, avaliacao_id):
 @require_POST
 def toggle_favorito(request, slug):
     empresa = get_object_or_404(Empresa, slug=slug)
-    perfil = request.user.perfil
-
+    perfil, created = PerfilUsuario.objects.get_or_create(user=request.user)
+    
+    is_favorito = False
     if empresa in perfil.favoritos.all():
         perfil.favoritos.remove(empresa)
         is_favorito = False
