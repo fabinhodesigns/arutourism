@@ -1,29 +1,53 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="pt">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}ARUTOURISM{% endblock %}</title>
 
-        <link rel="icon" href="{% static 'core/images/at-transparent-blue.png' %}" type="image/x-icon">
-        <link rel="stylesheet" href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}">
-        <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="icon" href="{% static 'core/images/at-transparent-blue.png' %}" type="image/x-icon">
+    <link rel="stylesheet" href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
 
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     {% block extra_css %}{% endblock %}
 
     <script type="text/javascript">
-        (function(c,l,a,r,i,t,y){
-            c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-            t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-            y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+        (function (c, l, a, r, i, t, y) {
+            c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments) };
+            t = l.createElement(r); t.async = 1; t.src = "https://www.clarity.ms/tag/" + i;
+            y = l.getElementsByTagName(r)[0]; y.parentNode.insertBefore(t, y);
         })(window, document, "clarity", "script", "s8czoyqqee");
     </script>
 </head>
-<body>
+
+<body class="{% if user.is_authenticated and user.perfil.tema_preferido == 'dark' %}dark-mode{% elif user.is_authenticated and user.perfil.tema_preferido == 'contrast' %}high-contrast{% endif %}">
+
+  <aside class="theme-switcher" aria-label="Opções de Acessibilidade Visual">
+    <fieldset>
+      <legend class="visually-hidden">Selecione um tema visual</legend>
+      
+      <input type="radio" id="theme-light" name="theme" value="light" class="theme-switcher__radio">
+      <label for="theme-light" class="theme-switcher__label" title="Tema Claro (Padrão)">
+        <i class="bi bi-sun-fill"></i>
+      </label>
+
+      <input type="radio" id="theme-dark" name="theme" value="dark" class="theme-switcher__radio">
+      <label for="theme-dark" class="theme-switcher__label" title="Tema Escuro">
+        <i class="bi bi-moon-stars-fill"></i>
+      </label>
+
+      <input type="radio" id="theme-contrast" name="theme" value="contrast" class="theme-switcher__radio">
+      <label for="theme-contrast" class="theme-switcher__label" title="Tema de Alto Contraste">
+        <i class="bi bi-circle-half"></i>
+      </label>
+
+    </fieldset>
+  </aside>
 
     {% include 'components/header.html' %}
     {% block content %}{% endblock %}
@@ -38,4 +62,5 @@
     {% block extra_js %}{% endblock %}
 
 </body>
+
 </html>

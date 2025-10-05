@@ -1,6 +1,8 @@
 .profile-hero {
-    background: linear-gradient(135deg, #1e3c72, #2a5298);
-    color: #fff;
+    background: var(--gradiente-fundo);
+    background-size: 400% 400%;
+    animation: gradient-animation 15s ease infinite;
+    color: var(--cor-texto-inverso);
     border-radius: 18px;
 }
 
@@ -9,10 +11,60 @@
     height: 104px;
     object-fit: cover;
     border-radius: 999px;
-    border: 3px solid #fff;
+    border: 3px solid var(--cor-fundo-secundario);
 }
 
 .metric-card {
     border-radius: 14px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, .06);
+}
+
+.profile-hero {
+    background: var(--gradiente-fundo);
+    background-size: 400% 400%;
+    animation: gradient-animation 15s ease infinite;
+
+    color: var(--cor-texto-inverso);
+}
+
+.profile-hero h3, .profile-hero div {
+    color: var(--cor-texto-primario);
+}
+
+
+.form-text {
+    color: var(--cor-texto-secundario) !important;
+}
+
+.form-control::placeholder {
+    color: var(--cor-texto-secundario);
+    opacity: 0.7;
+}
+
+.form-control:disabled, .form-control[readonly] {
+    background-color: var(--cor-fundo-principal);
+    opacity: 0.7;
+}
+
+body.dark-mode .form-control:disabled, 
+body.dark-mode .form-control[readonly] {
+    background-color: #2a2a2a; 
+}
+
+body.dark-mode .btn-outline-secondary {
+    color: #adb5bd;
+    border-color: #495057;
+}
+body.dark-mode .btn-outline-secondary:hover {
+    background-color: #495057;
+    color: #f8f9fa;
+}
+
+body.high-contrast .btn-outline-secondary {
+    color: #ffffff !important;
+    border-color: #ffffff !important;
+}
+body.high-contrast .btn-outline-secondary:hover {
+    background-color: #ffffff !important;
+    color: #000000 !important;
 }

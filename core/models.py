@@ -12,6 +12,19 @@ class PerfilUsuario(models.Model):
     telefone = models.CharField(max_length=20, blank=True, null=True)
     avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
     favoritos = models.ManyToManyField('Empresa', blank=True, related_name='favoritado_por')
+
+    TEMA_ESCOLHAS = [
+        ('light', 'Claro'),
+        ('dark', 'Escuro'),
+        ('contrast', 'Alto Contraste'),
+    ]
+    tema_preferido = models.CharField(
+        max_length=10,
+        choices=TEMA_ESCOLHAS,
+        default='light',
+        verbose_name="Tema de preferência"
+    )
+    
     def __str__(self):
         return self.user.username
     

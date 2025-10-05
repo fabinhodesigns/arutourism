@@ -1,22 +1,172 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 * {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
     -webkit-font-smoothing: antialiased !important;
     -moz-osx-font-smoothing: grayscale !important;
 }
 
-body {
-    background-color: #f4f5f7;
-    margin: 0;
-    padding-top: 35px !important;
-    min-height: 100vh;
+:root {
+  /* Cores de Texto */
+  --cor-texto-primario: #212529;
+  --cor-texto-secundario: #6c757d;
+  --cor-texto-links: #007bff;
+  --cor-texto-links-hover: #0056b3;
+  --cor-texto-inverso: #ffffff; /* Para botões e fundos escuros */
+
+  /* Cores de Fundo */
+  --cor-fundo-principal: #f8f9fa; /* Cinza bem claro, quase branco */
+  --cor-fundo-secundario: #ffffff; /* Fundo de cards, etc. */
+  --cor-fundo-header: rgba(30, 60, 114, 0.9);
+  --cor-fundo-hero-bar: #eef2ff; /* Barra de "Home / Pontos Turísticos" */
+  --cor-fundo-input: #f8f9fa;
+
+  /* Cores de Ação e UI */
+  --cor-primaria: #007bff;
+  --cor-primaria-hover: #0056b3;
+  --cor-sucesso: #198754;
+  --cor-erro: #dc3545;
+  
+  /* Cores de Borda e Divisórias */
+  --cor-borda: #dee2e6;
+  --cor-sombra: rgba(0, 0, 0, 0.08);
+  --cor-foco: rgba(0, 123, 255, 0.25);
+  
+  /* Gradiente para páginas de login/registro */
+  --gradiente-fundo: linear-gradient(-45deg, #1d2b4b, #2a5298, #1e3c72, #2a5298);
 }
 
-header,
-footer {
-    background-color: #1e3c72;
-    color: white;
-    padding: 20px;
-    text-align: center;
+/* ==========================================================================
+   TEMA ESCURO (DARK MODE)
+   ========================================================================== */
+body.dark-mode {
+  --cor-texto-primario: #e0e0e0;
+  --cor-texto-secundario: #9e9e9e;
+  --cor-texto-links: #42a5f5; /* Azul mais claro para contraste */
+  --cor-texto-links-hover: #90caf9;
+  --cor-texto-inverso: #121212;
+
+  --cor-fundo-principal: #121212;
+  --cor-fundo-secundario: #1e1e1e; /* Fundo de cards */
+  --cor-fundo-header: rgba(10, 20, 40, 0.9);
+  --cor-fundo-hero-bar: #1c2533;
+  --cor-fundo-input: #2a2a2a;
+
+  --cor-primaria: #42a5f5;
+  --cor-primaria-hover: #64b5f6;
+
+  --cor-borda: #444;
+  --cor-sombra: rgba(255, 255, 255, 0.08);
+  --cor-foco: rgba(66, 165, 245, 0.3);
+
+  --gradiente-fundo: linear-gradient(-45deg, #0d1117, #161b22, #010409, #161b22);
+}
+
+/* ==========================================================================
+   TEMA ALTO CONTRASTE
+   ========================================================================== */
+body.high-contrast {
+  --cor-texto-primario: #ffffff;
+  --cor-texto-secundario: #ffffff;
+  --cor-texto-links: #ffff00; /* Amarelo puro */
+  --cor-texto-links-hover: #ffffff;
+  --cor-texto-inverso: #000000;
+
+  --cor-fundo-principal: #000000;
+  --cor-fundo-secundario: #000000;
+  --cor-fundo-header: #000000;
+  --cor-fundo-hero-bar: #000000;
+  --cor-fundo-input: #000000;
+
+  --cor-primaria: #ffff00;
+  --cor-primaria-hover: #ffffff;
+  --cor-sucesso: #0f0;
+  --cor-erro: #ff5555;
+
+  --cor-borda: #ffffff;
+  --cor-sombra: rgba(255, 255, 255, 0.5);
+  --cor-foco: #ffff00;
+}
+
+
+/* RESTANTE CSS */
+
+body {
+    font-family: 'Inter', sans-serif;
+    line-height: 1.6;
+    background-color: var(--cor-fundo-principal);
+    color: var(--cor-texto-primario);
+    transition: background-color 0.3s ease, color 0.3s ease;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: var(--cor-texto-links);
+  transition: color 0.2s ease;
+}
+a:hover {
+  color: var(--cor-texto-links-hover);
+}
+
+:focus-visible {
+  outline: 3px solid var(--cor-primaria);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--cor-foco);
+}
+
+.card, .metric-card, .section-card, .bg-light, .bg-white {
+  background-color: var(--cor-fundo-secundario) !important;
+  color: var(--cor-texto-primario);
+  border: 1px solid var(--cor-borda);
+  box-shadow: 0 8px 24px var(--cor-sombra);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.text-muted {
+  color: var(--cor-texto-secundario) !important;
+}
+
+/* Formulários */
+.form-control {
+  background-color: var(--cor-fundo-input);
+  border: 1px solid var(--cor-borda);
+  color: var(--cor-texto-primario);
+}
+.form-control:focus {
+  background-color: var(--cor-fundo-secundario);
+  border-color: var(--cor-primaria);
+  box-shadow: 0 0 0 0.25rem var(--cor-foco);
+}
+
+/* Botões */
+.btn-primary {
+  background-color: var(--cor-primaria);
+  color: var(--cor-texto-inverso);
+  border-color: var(--cor-primaria);
+}
+.btn-primary:hover {
+  background-color: var(--cor-primaria-hover);
+  border-color: var(--cor-primaria-hover);
+}
+
+header, footer {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  background-color: var(--cor-fundo-header);
+  box-shadow: 0 2px 5px var(--cor-sombra);
+}
+
+/* Páginas de Autenticação */
+.auth-page-container {
+    background: var(--gradiente-fundo);
+    background-size: 400% 400%;
+    animation: gradient-animation 15s ease infinite;
+}
+@keyframes gradient-animation {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
 }
 
 .responsive-card {
@@ -83,7 +233,7 @@ p {
 }
 
 .navbar-nav .nav-link:hover {
-    color: #ff9f00;
+    color: #00ccff;
     transform: scale(1.1);
 }
 
@@ -192,5 +342,344 @@ html {
     -webkit-box-orient: vertical;  
     overflow: hidden;
     text-overflow: ellipsis;
-    min-height: 72px; /* Garante uma altura mínima mesmo com pouco texto, ajudando no alinhamento */
+    min-height: 72px;
+}
+
+.empresa-card {
+  transition: transform .2s ease-in-out, box-shadow .2s ease-in-out;
+  position: relative; 
+  cursor: pointer;
+}
+
+.empresa-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 .5rem 1rem var(--cor-sombra) !important;
+}
+
+.empresa-card:focus-within {
+    outline: 2px solid var(--cor-primaria);
+    outline-offset: 2px;
+}
+
+.empresa-card .card-link-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1; 
+}
+
+.empresa-card .card-body {
+  position: relative;
+  z-index: 2;
+}
+
+.empresa-card .card-img-top {
+  height: 200px;
+  object-fit: cover;
+}
+
+.empresa-card .card-img-top-placeholder {
+  height: 200px;
+  background-color: var(--cor-fundo-principal);
+}
+
+.empresa-card .card-img-top-placeholder i {
+  font-size: 4rem; 
+  color: var(--cor-borda);
+}
+
+/* Barra de Herói (Home / Pontos Turísticos) */
+.hero-bar {
+    background: var(--cor-fundo-hero-bar);
+    border-bottom: 1px solid var(--cor-borda);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.hero-bar .breadcrumb .breadcrumb-item.active {
+    color: var(--cor-texto-primario);
+    font-weight: 700;
+}
+
+.hero-bar .breadcrumb a {
+    text-decoration: none;
+    color: var(--cor-texto-links);
+}
+
+
+
+/* ACESSIBILIDADE */
+
+.accessibility-toolbar {
+  position: fixed;
+  top: 150px;
+  right: 0;
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  background-color: rgba(255, 255, 255, 0.8);
+  padding: 8px;
+  border-radius: 8px 0 0 8px;
+  box-shadow: -2px 2px 10px rgba(0,0,0,0.1);
+}
+
+body.high-contrast {
+  background-color: #000 !important;
+  color: #fff !important;
+}
+
+body.high-contrast a {
+  color: #ffff00 !important;
+}
+
+body.high-contrast .card,
+body.high-contrast .metric-card,
+body.high-contrast .bg-light {
+  background-color: #000 !important;
+  border: 1px solid #fff;
+}
+
+body, .card, .metric-card, .section-card, .bg-light, .bg-white, header, .btn, .form-control {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease !important;
+}
+
+.theme-switcher {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1100;
+}
+
+
+.theme-switcher fieldset {
+  border: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  gap: 8px;
+  background-color: var(--cor-fundo-secundario);
+  padding: 8px;
+  border-radius: 999px;
+  box-shadow: 0 4px 12px var(--cor-sombra);
+  border: 1px solid var(--cor-borda);
+}
+
+.theme-switcher__radio {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.theme-switcher__label {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--cor-texto-secundario);
+  transition: all 0.2s ease;
+}
+
+.theme-switcher__label:hover {
+  color: var(--cor-texto-primario);
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.theme-switcher__radio:checked + .theme-switcher__label {
+  background-color: var(--cor-primaria);
+  color: var(--cor-texto-inverso);
+  transform: scale(1.1);
+  box-shadow: 0 0 10px var(--cor-primaria);
+}
+
+.dark-mode .theme-switcher__label:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.btn-outline-themed {
+    color: var(--cor-texto-primario);
+    border-color: var(--cor-texto-primario);
+}
+
+.btn-outline-themed:hover {
+    background-color: var(--cor-texto-primario);
+    color: var(--cor-fundo-secundario); 
+    border-color: var(--cor-texto-primario);
+}
+
+/* Garante que o botão primário seja sempre legível */
+body.high-contrast .btn-primary {
+    background-color: #ffff00 !important; /* Fundo amarelo vivo */
+    color: #000000 !important;           /* Texto preto */
+    border-color: #ffff00 !important;
+}
+
+/* Garante que o hover do botão primário também seja legível */
+body.high-contrast .btn-primary:hover {
+    background-color: #ffffff !important; /* Fundo branco no hover */
+    color: #000000 !important;           /* Texto continua preto */
+    border-color: #ffffff !important;
+}
+
+/* Garante que o botão secundário (contorno) seja legível */
+body.high-contrast .btn-outline-themed {
+    color: #ffffff !important;           /* Texto e borda brancos */
+    border-color: #ffffff !important;
+}
+
+body.high-contrast .btn-outline-themed:hover {
+    background-color: #ffffff !important; /* Fundo branco no hover */
+    color: #000000 !important;           /* Texto preto no hover */
+}
+
+/* ==========================================================================
+   AJUSTES FINOS DE TEMA PARA COMPONENTES
+   ========================================================================== */
+
+/* 1. Badge de Ícones (Telefone, E-mail, etc.)
+-------------------------------------------------- */
+.icon-badge {
+    /* Usa variáveis que se adaptam aos temas */
+    background-color: var(--cor-fundo-hero-bar);
+    color: var(--cor-primaria);
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
+/* 2. Botão Light (.btn-light) - para "EDITAR" e "Limpar"
+-------------------------------------------------- */
+/* Ajuste para o Modo Escuro */
+body.dark-mode .btn-light {
+    background-color: #343a40; /* Cinza escuro */
+    color: #f8f9fa;            /* Texto claro */
+    border-color: #495057;
+}
+body.dark-mode .btn-light:hover {
+    background-color: #495057;
+    border-color: #6c757d;
+    color: #ffffff;
+}
+
+/* Ajuste para o Alto Contraste */
+body.high-contrast .btn-light {
+    background-color: transparent !important;
+    color: #ffffff !important;
+    border: 2px solid #ffffff !important;
+}
+body.high-contrast .btn-light:hover {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+}
+
+
+/* 3. Dropdown Menu (Menu do Usuário)
+-------------------------------------------------- */
+.dropdown-menu {
+    background-color: var(--cor-fundo-secundario);
+    border-color: var(--cor-borda);
+    box-shadow: 0 .5rem 1rem var(--cor-sombra);
+}
+
+.dropdown-item {
+    color: var(--cor-texto-primario);
+}
+
+/* Cor do Hover para Modo Claro */
+.dropdown-item:hover,
+.dropdown-item:focus {
+    background-color: rgba(0, 0, 0, 0.05); /* Um overlay sutil funciona bem */
+    color: var(--cor-texto-primario);
+}
+
+/* Cor do Hover para Modo Escuro */
+body.dark-mode .dropdown-item:hover,
+body.dark-mode .dropdown-item:focus {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Cor do Hover para Alto Contraste */
+body.high-contrast .dropdown-item:hover,
+body.high-contrast .dropdown-item:focus {
+    background-color: #ffff00 !important; /* Fundo amarelo */
+    color: #000000 !important;         /* Texto preto */
+}
+
+.dropdown-divider {
+    border-top-color: var(--cor-borda);
+}
+
+/* Define a cor padrão para todos os links de navegação no header */
+header .navbar-nav .nav-link {
+    color: var(--cor-texto-inverso);
+    opacity: 0.85; /* Deixa um pouco mais sutil que o texto branco puro */
+    transition: opacity 0.2s ease;
+}
+
+/* Efeito hover para os links de navegação */
+header .navbar-nav .nav-link:hover {
+    opacity: 1;
+}
+
+/* Regra específica para o ícone de busca em ALTO CONTRASTE */
+body.high-contrast header #open-search {
+    /* Força o ícone a usar a cor de links do alto contraste (amarelo) */
+    color: var(--cor-texto-links) !important;
+    opacity: 1;
+}
+
+
+/* ACESSIBILIDADE */
+
+.site-footer {
+    background-color: var(--cor-fundo-header);
+    
+    color: var(--cor-texto-primario );
+    padding: 1.5rem 0;
+    font-size: 0.9rem;
+}
+
+.site-footer a {
+    color: var(--cor-texto-primario);
+    text-decoration: none;
+}
+
+.site-footer a:hover {
+    text-decoration: underline;
+}
+
+body.dark-mode h1,
+body.dark-mode h2,
+body.dark-mode h3,
+body.dark-mode h4,
+body.dark-mode h5,
+body.dark-mode h6,
+body.dark-mode .fw-bold,
+body.dark-mode .fw-bolder,
+body.dark-mode strong,
+body.dark-mode b {
+    color: var(--cor-texto-primario);
+}
+
+/* Garante o mesmo para o modo de alto contraste */
+body.high-contrast h1,
+body.high-contrast h2,
+body.high-contrast h3,
+body.high-contrast h4,
+body.high-contrast h5,
+body.high-contrast h6,
+body.high-contrast .fw-bold,
+body.high-contrast .fw-bolder,
+body.high-contrast strong,
+body.high-contrast b {
+    color: var(--cor-texto-primario);
 }

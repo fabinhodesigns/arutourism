@@ -4,7 +4,7 @@
 <link rel="stylesheet" href="{% static 'css/pages/header.css' %}">
 {% endblock %}
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
 <header class="fixed-top">
   <nav class="navbar navbar-expand-lg">
@@ -20,55 +20,71 @@
 
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav ms-auto text-start align-items-lg-center">
-          <li class="nav-item"><a class="nav-link text-light" href="/">Home</a></li>
-          <li class="nav-item"><a class="nav-link text-light" href="/sobre/">Sobre</a></li>
-          <li class="nav-item"><a class="nav-link text-light" href="{% url 'listar_empresas' %}">Pontos Turísticos</a>
-          </li>
-
-          <li class="nav-item dropdown">
-            {% if user.is_authenticated %}
-            <a class="nav-link dropdown-toggle text-light d-flex align-items-center gap-2" href="{% url 'perfil' %}"
-              id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-              {% if user.perfil and user.perfil.avatar and user.perfil.avatar.name %}
-              <img src="{{ user.perfil.avatar.url }}" alt="Avatar"
-                style="width:28px;height:28px;border-radius:999px;object-fit:cover;">
-              {% else %}
-              <i class="bi bi-person-circle" style="font-size:1.3rem;"></i>
-              {% endif %}
-              <span class="d-none d-sm-inline fw-medium text-uppercase">{{ user.perfil.display_name }}</span>
-            </a>
-            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-              <li><a class="dropdown-item d-flex align-items-center" href="{% url 'perfil' %}">
-                  <i class="bi bi-person-circle me-2" style="font-size:1.1rem;"></i> Meu Perfil
-                </a></li>
-              <li><a class="dropdown-item d-flex align-items-center" href="{% url 'suas_empresas' %}">
-                  <i class="bi bi-building me-2"></i> Suas Empresas
-                </a></li>
-              <li><a class="dropdown-item d-flex align-items-center" href="{% url 'listar_favoritos' %}">
-                  <i class="bi bi-heart me-2"></i> Meus Favoritos
-                </a></li>
-              <li>
-                <hr class="dropdown-divider">
-              </li>
-              <li><a class="dropdown-item d-flex align-items-center" href="{% url 'logout' %}">
-                  <i class="bi bi-box-arrow-right me-2"></i> Sair
-                </a></li>
-            </ul>
-            {% else %}
-            <a class="nav-link dropdown-toggle text-light" href="#" id="guestDropdown" role="button"
-              data-bs-toggle="dropdown" aria-expanded="false">Acessar</a>
-            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="guestDropdown">
-              <li><a class="dropdown-item" href="{% url 'register' %}"><i class="bi bi-person-plus me-2"></i> Criar uma
-                  conta</a></li>
-              <li><a class="dropdown-item" href="{% url 'login' %}"><i class="bi bi-box-arrow-in-right me-2"></i>
-                  Acessar sua conta</a></li>
-            </ul>
-            {% endif %}
-          </li>
-
           <li class="nav-item">
-            <button id="open-search" class="nav-link text-light bg-transparent border-0 p-0 d-flex align-items-center"
-              style="font-size:1.3rem">
+            <a class="nav-link text-light" href="/">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link text-light" href="/sobre/">Sobre</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link text-light" href="{% url 'listar_empresas' %}">Pontos Turísticos</a>
+          </li>
+
+          {% if user.is_authenticated %}
+
+            <li class="nav-item dropdown d-none d-lg-block">
+              <a class="nav-link dropdown-toggle d-flex align-items-center gap-2 text-light" href="#" id="userDropdownDesktop" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                {% if user.perfil and user.perfil.avatar and user.perfil.avatar.name %}
+                  <img src="{{ user.perfil.avatar.url }}" alt="Avatar de {{ user.perfil.display_name }}" style="width:28px;height:28px;border-radius:999px;object-fit:cover;">
+                {% else %}
+                  <i class="bi bi-person-circle" style="font-size:1.3rem;"></i>
+                {% endif %}
+                <span class="fw-medium text-uppercase">{{ user.perfil.display_name }}</span>
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdownDesktop">
+                <li><a class="dropdown-item text-light" href="{% url 'perfil' %}"><i class="bi bi-person-circle me-2"></i> Meu Perfil</a></li>
+                <li><a class="dropdown-item text-light" href="{% url 'suas_empresas' %}"><i class="bi bi-building me-2"></i> Suas Empresas</a></li>
+                <li><a class="dropdown-item text-light" href="{% url 'listar_favoritos' %}"><i class="bi bi-heart me-2"></i> Meus Favoritos</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item text-light" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right me-2"></i> Sair</a></li>
+              </ul>
+            </li>
+
+            <div class="d-lg-none w-100">
+              <li class="nav-item mt-3 border-top pt-3 w-100"></li>
+              <li class="nav-item">
+                <a class="nav-link d-flex align-items-center gap-2 text-light" href="{% url 'perfil' %}">
+                  {% if user.perfil and user.perfil.avatar and user.perfil.avatar.name %}
+                    <img src="{{ user.perfil.avatar.url }}" alt="Avatar de {{ user.perfil.display_name }}" style="width:28px;height:28px;border-radius:999px;object-fit:cover;">
+                  {% else %}
+                    <i class="bi bi-person-circle" style="font-size:1.3rem;"></i>
+                  {% endif %}
+                  <span class="fw-medium text-uppercase text-light">{{ user.perfil.display_name }}</span>
+                </a>
+              </li>
+              <li class="nav-item"><a class="nav-link text-light" href="{% url 'suas_empresas' %}"><i class="bi bi-building me-2"></i>Suas Empresas</a></li>
+              <li class="nav-item"><a class="nav-link text-light" href="{% url 'listar_favoritos' %}"><i class="bi bi-heart me-2"></i>Favoritos</a></li>
+              <li class="nav-item"><a class="nav-link text-light" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right me-2"></i>Sair</a></li>
+            </div>
+
+          {% else %}
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle text-light" href="#" id="guestDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Acessar</a>
+              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="guestDropdown">
+                <li><a class="dropdown-item text-light" href="{% url 'register' %}"><i class="bi bi-person-plus me-2"></i> Criar uma conta</a></li>
+                <li><a class="dropdown-item text-light" href="{% url 'login' %}"><i class="bi bi-box-arrow-in-right me-2"></i> Acessar sua conta</a></li>
+              </ul>
+            </li>
+          {% endif %}
+          
+          <li class="nav-item d-lg-none mt-3 border-top pt-3 w-100">
+              <button id="open-search-mobile" class="nav-link text-start w-100 d-flex align-items-center gap-2">
+                  <i class="bi bi-search text-light"></i> Pesquisar
+              </button>
+          </li>
+
+          <li class="nav-item d-none d-lg-block ms-lg-3">
+            <button id="open-search" class="nav-link bg-transparent border-0 p-0 d-flex align-items-center" style="font-size:1.3rem">
               <i class="bi bi-search"></i>
             </button>
           </li>
@@ -83,7 +99,7 @@
     <div class="container py-3">
       <div class="search-titlebar mb-4">
         <div class="left">
-          <i class="bi bi-search text-white"></i>
+          <i class="bi bi-search"></i>
           <h5 id="search-title" class="text-white mb-0">Buscar Pontos Turísticos</h5>
         </div>
         <button id="close-search" class="btn btn-outline-light btn-sm" aria-label="Fechar busca">
@@ -152,6 +168,7 @@
     </div>
   </div>
 </div>
+
 
 <script src="{% static 'js/jquery-3.6.0.min.js' %}"></script>
 <script src="{% static 'js/site/main.js' %}"></script>

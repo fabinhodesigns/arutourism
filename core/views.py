@@ -11,6 +11,7 @@ from .models import PerfilUsuario, Empresa, ImagemEmpresa
 from django.contrib.auth import authenticate
 from .models import Tag
 from django.contrib.admin.views.decorators import staff_member_required
+import json
 
 from .forms import AvaliacaoForm
 from .models import Avaliacao
@@ -1118,3 +1119,22 @@ def gerador_qrcode_view(request):
         'all_cidades': all_cidades,
     }
     return render(request, 'core/gerador_qrcode.html', context)
+
+@login_required
+@require_POST
+def salvar_tema_preferido(request):
+    try:
+        data = json.loads(request.body)
+        tema_escolhido = data.get('theme')
+
+        allowed_themes = [choice[0] for choice in PerfilUsuario.TEMA_ESCOLHAS]
+        if tema_escolhido not in allowed_themes:
+            return JsonResponse({'status': 'error', 'message': 'Tema inválido'}, status=400)
+
+        perfil = request.user.perfil
+        perfil.tema_preferido = tema_escolhido
+        perfil.save(update_fields=['tema_preferido'])
+        
+        return JsonResponse({'status': 'ok'})
+    except (json.JSONDecodeError, AttributeError):
+        return JsonResponse({'status': 'error', 'message': 'Requisição inválida'}, status=400)

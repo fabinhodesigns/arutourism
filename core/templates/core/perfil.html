@@ -20,8 +20,8 @@
      alt="Avatar do usuário">
 
     <div>
-      <h3 class="mb-1">Olá, {{ request.user.first_name|default:request.user.username }}!</h3>
-      <div class="opacity-75">Entrou em {{ entrou_fmt }}</div>
+      <h3 class="mb-1 text-light">Olá, {{ request.user.first_name|default:request.user.username }}!</h3>
+      <div class="opacity-75 text-light">Entrou em {{ entrou_fmt }}</div>
     </div>
   </div>
 

@@ -39,17 +39,6 @@
     color: #0b5ed7
 }
 
-.empresa-card .card-img-top {
-    height: 200px;
-    object-fit: cover
-}
-
-.empresa-card {
-    transition: transform .15s, box-shadow .15s;
-    cursor: pointer;
-    max-width: 22rem;
-}
-
 .empresa-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .12)
@@ -73,9 +62,3 @@
     padding: 2rem;
     background: #f8f9fa
 }
-
-.empresa-card .card-img-top-placeholder i {
-  font-size: 4rem; /* Ícone grande */
-  color: #dee2e6;
-}
-

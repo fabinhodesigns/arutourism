@@ -1,8 +1,8 @@
 document.addEventListener('DOMContentLoaded', function () {
-
-    const searchOverlay = document.getElementById('searchOverlay');
     const openBtn = document.getElementById('open-search');
+    const openBtnMobile = document.getElementById('open-search-mobile');
     const closeBtn = document.getElementById('close-search');
+    const searchOverlay = document.getElementById('searchOverlay');
     const body = document.body;
     const qInput = document.getElementById('f-q');
 
@@ -19,12 +19,15 @@ document.addEventListener('DOMContentLoaded', function () {
         if (searchOverlay) {
             searchOverlay.classList.remove('open');
             searchOverlay.setAttribute('aria-hidden', 'true');
-            body.classList.remove('no-scroll');
+            body.classList.remove('no-scroll'); // <<-- Bug corrigido aqui (era 'add')
+            
+            // CORREÇÃO DE ACESSIBILIDADE: Devolve o foco para o botão que abriu a busca
             openBtn && openBtn.focus();
         }
     }
 
     if (openBtn) openBtn.addEventListener('click', openSearch);
+    if (openBtnMobile) openBtnMobile.addEventListener('click', openSearch);
     if (closeBtn) closeBtn.addEventListener('click', closeSearch);
 
     document.addEventListener('keydown', e => {
@@ -41,18 +44,17 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-
+    // --- LÓGICA PARA SELEÇÃO DE MÚLTIPLAS TAGS (continua igual e correta) ---
     const filterForm = document.getElementById('filter-form');
     const tagSelectionArea = document.getElementById('tag-selection-area');
     const categoriaList = document.getElementById('categoria-list');
     
     if (filterForm && tagSelectionArea && categoriaList) {
         const placeholderText = tagSelectionArea.querySelector('span');
-
+        
         function loadInitialTags() {
             const params = new URLSearchParams(window.location.search);
             const tagIds = params.getAll('tag');
-            
             if (tagIds.length > 0) {
                 tagIds.forEach(tagId => {
                     const item = categoriaList.querySelector(`.dropdown-item[data-value="${tagId}"]`);
@@ -65,14 +67,11 @@ document.addEventListener('DOMContentLoaded', function () {
         
         function addTag(value, name) {
             if (filterForm.querySelector(`input[name="tag"][value="${value}"]`)) return;
-
             if (placeholderText) placeholderText.style.display = 'none';
-
             const tagPill = document.createElement('div');
             tagPill.className = 'selected-tag';
             tagPill.innerHTML = `<span>${name}</span><button type="button" class="remove-tag" data-value="${value}" aria-label="Remover ${name}">&times;</button>`;
             tagSelectionArea.appendChild(tagPill);
-
             const hiddenInput = document.createElement('input');
             hiddenInput.type = 'hidden';
             hiddenInput.name = 'tag';
@@ -83,10 +82,8 @@ document.addEventListener('DOMContentLoaded', function () {
         function removeTag(value) {
             const inputToRemove = filterForm.querySelector(`input[name="tag"][value="${value}"]`);
             if (inputToRemove) inputToRemove.remove();
-            
             const pillToRemove = tagSelectionArea.querySelector(`.remove-tag[data-value="${value}"]`);
             if (pillToRemove) pillToRemove.parentElement.remove();
-            
             if (tagSelectionArea.querySelectorAll('.selected-tag').length === 0) {
                 if (placeholderText) placeholderText.style.display = 'inline';
             }
@@ -107,7 +104,7 @@ document.addEventListener('DOMContentLoaded', function () {
         tagSelectionArea.addEventListener('click', (e) => {
             const removeBtn = e.target.closest('.remove-tag');
             if (!removeBtn) return;
-            e.stopPropagation(); // Impede que o clique no 'x' feche/abra a lista
+            e.stopPropagation();
             removeTag(removeBtn.dataset.value);
         });
         

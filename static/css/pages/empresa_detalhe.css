@@ -40,16 +40,6 @@
     box-shadow: 0 10px 30px rgba(0, 0, 0, .08)
 }
 
-.icon-badge {
-    width: 42px;
-    height: 42px;
-    border-radius: 10px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: #f1f5ff
-}
-
 .detail-dl dt {
     min-width: 140px;
     color: #6c757d

@@ -34,7 +34,7 @@ body.no-scroll {
 }
 
 .search-panel {
-    background: rgba(30, 60, 114, .98);
+    background: var(--cor-fundo-header);
     border-bottom: 1px solid rgba(255, 255, 255, .12);
     transform: translateY(-8px);
     opacity: 0;
@@ -69,9 +69,10 @@ body.no-scroll {
     overflow: auto;
     display: none;
     z-index: 1200;
-    background: #fff;
+    background: var(--cor-fundo-secundario);
     border-radius: .5rem;
-    box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15);
+    box-shadow: 0 .5rem 1rem var(--cor-sombra);
+    border: 1px solid var(--cor-borda);
     transition: transform 120ms ease-out, opacity 120ms ease-out;
     transform-origin: top;
     transform: scaleY(.98);
@@ -88,11 +89,17 @@ body.no-scroll {
     padding: .5rem .75rem;
     cursor: pointer;
     outline: 0;
+    color: var(--cor-texto-primario); 
 }
 
 .dropdown-item:hover,
 .dropdown-item:focus {
-    background: #f1f3f5;
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.dark-mode .dropdown-item:hover,
+.dark-mode .dropdown-item:focus {
+    background: rgba(255, 255, 255, 0.1);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -139,18 +146,73 @@ body.no-scroll {
 }
 
 /* Comportamento de tela cheia no mobile */
+/* SUBSTITUA O BLOCO @media INTEIRO POR ESTE */
 @media (max-width: 991.98px) {
+    .navbar-collapse {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        height: 100svh;
+        background-color: var(--cor-fundo-header);
+        display: flex !important;
+        
+        /* AJUSTE: Alinha os itens no topo e à esquerda */
+        flex-direction: column;
+        justify-content: flex-start; 
+        align-items: flex-start;
+        padding: 6rem 2rem 2rem 2rem; /* Adiciona espaçamento interno */
+
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-20px);
+        transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+    }
+
+    .navbar-collapse.show {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+
+    .navbar-nav {
+        /* AJUSTE: Alinha o texto de todos os itens à esquerda */
+        width: 100%;
+        text-align: left !important;
+    }
+
+    .navbar-nav .nav-item {
+        margin: 0.8rem 0; /* Ajusta a margem vertical */
+    }
+
+    .navbar-nav .nav-link {
+        font-size: 1.5rem;
+        font-weight: 500;
+        padding: 0.5rem 0; /* Adiciona padding para facilitar o clique */
+        display: inline-block; /* Garante que o padding seja aplicado */
+    }
+
+    .navbar-toggler {
+        z-index: 1050;
+        border: none;
+        position: relative;
+    }
+    .navbar-toggler:focus {
+        box-shadow: none;
+    }
+    .navbar-toggler[aria-expanded="true"] .navbar-toggler-icon {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23fff'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e");
+    }
+
+    /* O resto das suas regras de busca para mobile continuam iguais e funcionarão bem */
     .search-overlay.open .search-panel {
         height: 100vh;
-        height: 100svh; /* Altura da tela dinâmica */
+        height: 100svh;
         display: flex;
         flex-direction: column;
     }
-    .search-overlay.open .search-panel .container {
-        flex-grow: 1;
-        display: flex;
-        flex-direction: column;
-    }
+    .search-overlay.open .search-panel .container,
     .search-overlay.open .search-panel form {
         flex-grow: 1;
         display: flex;
