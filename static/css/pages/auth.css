@@ -98,16 +98,24 @@ body {
 /* Input com ícone */
 .input-with-icon {
     position: relative;
+    display: flex;       
+    flex-wrap: wrap;  
 }
 
 .input-with-icon i {
     position: absolute;
-    left: 1rem;
-    top: 50%;
+    z-index: 10;
+    top: 1.4rem;
     transform: translateY(-50%);
+    left: 1rem;
     color: var(--text-color-secondary);
-    font-size: 1.1rem;
-    pointer-events: none; /* Garante que o ícone não impeça o clique no input */
+    pointer-events: none;
+    transition: color 0.2s ease;
+}
+
+.input-with-icon .form-control.is-invalid + i,
+.input-with-icon .form-control.is-invalid ~ i {
+    color: var(--error-color);
 }
 
 /* Estilo dos inputs */
@@ -361,8 +369,6 @@ body {
 .card-subtitle { font-size: 0.95rem; color: var(--text-color-secondary); margin-bottom: 2rem; }
 .form-group { margin-bottom: 1.2rem; text-align: left; }
 .form-label { display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem; }
-.input-with-icon { position: relative; }
-.input-with-icon i { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-color-secondary); pointer-events: none; }
 
 /* NOVO: Linha de formulário para campos lado a lado */
 .form-row {

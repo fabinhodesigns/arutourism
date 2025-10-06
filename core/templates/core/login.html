@@ -40,7 +40,7 @@
                 <label for="{{ form.identificador.id_for_label }}" class="form-label">E-mail ou CPF</label>
                 <div class="input-with-icon">
                     <i class="bi bi-person-fill"></i>
-                    {{ form.identificador|add_class:"form-control form-control-lg"|attr:"aria-describedby:err-identificador" }}
+                    {{ form.identificador|add_class:"form-control form-control-lg"|attr:"aria-describedby:err-identificador"|attr:"placeholder:Digite seu e-mail, CPF ou usuário" }}
                 </div>
                 <div id="err-identificador" class="invalid-feedback"></div>
             </div>
@@ -49,7 +49,7 @@
                 <label for="{{ form.password.id_for_label }}" class="form-label">Senha</label>
                 <div class="input-with-icon">
                     <i class="bi bi-lock-fill"></i>
-                    {{ form.password|add_class:"form-control form-control-lg"|attr:"aria-describedby:err-password" }}
+                    {{ form.password|add_class:"form-control form-control-lg"|attr:"aria-describedby:err-password"|attr:"placeholder:Digite sua senha" }}
                 </div>
                 <div id="err-password" class="invalid-feedback"></div>
             </div>

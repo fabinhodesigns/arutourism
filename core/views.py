@@ -343,12 +343,8 @@ def _first_url_in_text(s):
     return m.group(1) if m else None
 
 def _wants_json(request):
-    h = (request.headers.get("Accept") or "").lower()
-    return (
-        request.GET.get('ajax') == '1' or  
-        request.headers.get("x-requested-with") == "XMLHttpRequest" or
-        "application/json" in h
-    )
+    return "application/json" in request.META.get("HTTP_ACCEPT", "") or \
+           request.headers.get('x-requested-with') == 'XMLHttpRequest'
 
 def _ident_kind(ident: str) -> str:
     ident = (ident or "").strip()
@@ -465,8 +461,7 @@ def home(request):
         'total_empresas': total_empresas,
         'favorito_ids': list(favorito_ids)
     })
-
-
+ 
 def sobre(request):
     return render(request, 'core/sobre.html')
 
@@ -481,11 +476,14 @@ def register(request):
         return redirect('home')
 
     if request.method == 'POST':
-        form = UserRegistrationForm(request.POST)
+        form = UserRegistrationForm(request.POST) 
         if form.is_valid():
             form.save()
             if _wants_json(request):
+                messages.success(request, 'Conta criada com sucesso! Faça login para continuar.')
                 return JsonResponse({"ok": True, "redirect": reverse("login")})
+            
+            messages.success(request, 'Conta criada com sucesso! Faça login para continuar.')
             return redirect('login')
 
         if _wants_json(request):
@@ -493,65 +491,39 @@ def register(request):
 
         for field, errors in form.errors.items():
             for error in errors:
-                messages.error(request, f"{field}: {error}")
+                messages.error(request, f"{error}") 
     else:
         form = UserRegistrationForm()
 
     return render(request, 'core/register.html', {'form': form})
 
-def login_view(request):
+def login_view(request): 
     if request.user.is_authenticated:
         return redirect('home')
 
     if request.method == 'POST':
-        ident = (request.POST.get('identificador') or "").strip()
-        pwd = request.POST.get('password') or ""
-        
-        user_obj = None
-        
-        if '@' in ident:
-            user_obj = User.objects.filter(email__iexact=ident).first()
-        elif re.match(r'^\d{11}$|^\d{14}$', re.sub(r'\D', '', ident)):
-            digits = re.sub(r'\D', '', ident)
-            perfil = PerfilUsuario.objects.select_related("user").filter(cpf_cnpj=digits).first()
-            if perfil:
-                user_obj = perfil.user
-        else:
-            user_obj = User.objects.filter(username__iexact=ident).first()
-
-        if user_obj:
-            user = authenticate(request, username=user_obj.username, password=pwd)
-            
-            if user is not None:
-                if user.is_active:
-                    print(f"[LOGIN] Autenticação manual OK para user.id={user.id}")
-                    auth_login(request, user)
-                    
-                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                        return JsonResponse({"ok": True, "redirect": reverse("home")})
-                    return redirect('home')
-                else:
-                    print(f"[LOGIN] Falha: usuário '{user.username}' está inativo.")
-                    messages.error(request, 'Esta conta está desativada.')
-            else:
-                print(f"[LOGIN] Falha: Senha incorreta para o usuário '{user_obj.username}'.")
-                messages.error(request, 'Por favor, verifique seu identificador e senha.')
-        else:
-            print(f"[LOGIN] Falha: Nenhum usuário encontrado para o identificador '{ident}'.")
-            messages.error(request, 'Por favor, verifique seu identificador e senha.')
-        
         form = CustomLoginForm(request.POST)
-        
-        if request.headers.get('X-Requested-with') == 'XMLHttpRequest':
-            error_message = str(list(messages.get_messages(request))[-1])
-            return JsonResponse({
-                "ok": False, 
-                "errors": [{"message": error_message}]
-            }, status=400)
+        if form.is_valid():
+            user = form.user
+            auth_login(request, user)
             
-        return render(request, 'core/login.html', {'form': form})
+            if _wants_json(request):
+                redirect_url = request.GET.get('next', reverse('home'))
+                return JsonResponse({"ok": True, "redirect": redirect_url})
+            
+            return redirect('dashboard')
+        
+        else: # O formulário é inválido
+            if _wants_json(request):
+                return JsonResponse({"ok": False, "errors": form.errors}, status=400)
+            
+            for field, messages in form.errors.items():
+                for message in messages:
+                    messages.error(request, message)
 
-    form = CustomLoginForm()
+    else:
+        form = CustomLoginForm()
+
     return render(request, 'core/login.html', {'form': form})
 
 def logout_view(request):

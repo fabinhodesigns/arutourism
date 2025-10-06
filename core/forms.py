@@ -21,7 +21,6 @@ def _digits(s: str | None) -> str:
     return re.sub(r"\D", "", s or "")
 
 def _clip_model(model_cls, field_name: str, value):
-    """Trunca strings conforme max_length do field (se houver)."""
     if value is None:
         return value
     try:
@@ -32,6 +31,39 @@ def _clip_model(model_cls, field_name: str, value):
     if maxlen and isinstance(value, str):
         return value[:maxlen]
     return value
+
+def clean_digits(value: str | None) -> str:
+    if not value:
+        return ""
+    return re.sub(r"\D", "", value)
+
+def is_valid_cpf(cpf: str) -> bool:
+    cpf = clean_digits(cpf)
+    if len(cpf) != 11 or cpf == cpf[0] * 11:
+        return False
+    
+    def calc_digit(digits: str) -> int:
+        s = sum(int(d) * w for d, w in zip(digits, range(len(digits) + 1, 1, -1)))
+        res = (s * 10) % 11
+        return 0 if res == 10 else res
+
+    return calc_digit(cpf[:9]) == int(cpf[9]) and calc_digit(cpf[:10]) == int(cpf[10])
+
+def is_valid_cnpj(cnpj: str) -> bool:
+    cnpj = clean_digits(cnpj)
+    if len(cnpj) != 14 or cnpj == cnpj[0] * 14:
+        return False
+
+    def calc_digit(digits: str, weights: list[int]) -> int:
+        s = sum(int(d) * w for d, w in zip(digits, weights))
+        res = s % 11
+        return 0 if res < 2 else 11 - res
+
+    weights1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
+    weights2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
+
+    return (calc_digit(cnpj[:12], weights1) == int(cnpj[12]) and
+            calc_digit(cnpj[:13], weights2) == int(cnpj[13]))
 
 _only_digits = lambda s: re.sub(r"\D", "", s or "")
 
@@ -61,23 +93,17 @@ def _cpf_is_valid(cpf_digits: str) -> bool:
         return 0 if r == 10 else r
     return dv(d[:9]) == int(d[9]) and dv(d[:10]) == int(d[10])
 
-
-
-
-
 class UserRegistrationForm(UserCreationForm):
-    
-    full_name = forms.CharField(label="Nome Completo", max_length=255)
+    full_name = forms.CharField(label="Nome Completo", max_length=150, required=True)
     email = forms.EmailField(label="Email", required=True)
-    cpf_cnpj = forms.CharField(label="CPF ou CNPJ", max_length=18)
+    cpf_cnpj = forms.CharField(label="CPF ou CNPJ", max_length=18, required=True)
 
     class Meta(UserCreationForm.Meta):
         model = User
-        fields = UserCreationForm.Meta.fields + ('email',)
+        fields = ('full_name', 'username', 'email', 'cpf_cnpj', 'password1', 'password2')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
         
         placeholders = {
             'full_name': 'Digite seu nome completo',
@@ -93,7 +119,6 @@ class UserRegistrationForm(UserCreationForm):
         self.fields['password2'].label = 'Confirmar Senha'
 
         for field_name, field in self.fields.items():
-            field.widget.attrs['class'] = 'form-control'
             if field_name in placeholders:
                 field.widget.attrs['placeholder'] = placeholders[field_name]
 
@@ -105,27 +130,42 @@ class UserRegistrationForm(UserCreationForm):
 
     def clean_cpf_cnpj(self):
         cpf_cnpj_raw = self.cleaned_data.get('cpf_cnpj', '')
-        digits_cpf = re.sub(r"\D", "", cpf_cnpj_raw)
+        digits = clean_digits(cpf_cnpj_raw) 
         
-        if PerfilUsuario.objects.filter(cpf_cnpj=digits_cpf).exists():
+        if len(digits) == 11:
+            if not is_valid_cpf(digits):
+                raise ValidationError('O CPF informado não é válido.')
+        elif len(digits) == 14:
+            if not is_valid_cnpj(digits):
+                raise ValidationError('O CNPJ informado não é válido.')
+        else:
+            raise ValidationError('O documento deve ter 11 (CPF) ou 14 (CNPJ) dígitos.')
+            
+        if PerfilUsuario.objects.filter(cpf_cnpj=digits).exists():
             raise ValidationError('Este CPF/CNPJ já está em uso.')
             
-        return digits_cpf
+        return digits
 
     def save(self, commit=True):
         user = super().save(commit=False)
         user.email = (self.cleaned_data.get('email') or '').lower()
-        user.first_name = (self.cleaned_data.get('full_name') or '').split(' ')[0]
         
+        full_name = self.cleaned_data.get('full_name', '').strip()
+        name_parts = full_name.split(' ', 1)
+        user.first_name = name_parts[0]
+        if len(name_parts) > 1:
+            user.last_name = name_parts[1]
+        else:
+            user.last_name = '' 
+
         if commit:
             user.save()
             perfil, _ = PerfilUsuario.objects.get_or_create(user=user)
-            perfil.cpf_cnpj = self.cleaned_data['cpf_cnpj']
-            perfil.full_name = self.cleaned_data.get('full_name')
+            perfil.cpf_cnpj = self.cleaned_data.get('cpf_cnpj')
+            perfil.full_name = full_name
             perfil.save()
 
-        return user
-    
+        return user    
 
 class ProfileForm(forms.ModelForm):
     email = forms.EmailField(required=True, label="Email")
@@ -189,7 +229,7 @@ class StartResetByCpfForm(forms.Form):
             raise forms.ValidationError("Informe o CPF ou CNPJ.")
         if len(digits) not in (11, 14):
             raise forms.ValidationError("Digite um CPF (11) ou CNPJ (14) válido.")
-        if PerfilUsuario.objects.filter(cpf_cnpj=cpf_cnpj).exists():
+        if PerfilUsuario.objects.filter(cpf_cnpj=digits).exists():
             raise forms.ValidationError(
                 format_html(
                     'Este CPF/CNPJ já está cadastrado. <a href="{}">Precisa recuperar o acesso?</a>', 
@@ -209,56 +249,51 @@ class CustomLoginForm(forms.Form):
     identificador = forms.CharField(label="E-mail, CPF ou usuário", max_length=150)
     password = forms.CharField(label="Senha", widget=forms.PasswordInput)
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['identificador'].widget.attrs.update(
+            {'placeholder': 'Digite seu e-mail, CPF ou usuário'}
+        )
+        self.fields['password'].widget.attrs.update(
+            {'placeholder': 'Digite sua senha'}
+        )
+    
     def clean(self):
-        cleaned = super().clean()
-        ident = (cleaned.get("identificador") or "").strip()
-        pwd = cleaned.get("password") or ""
+        cleaned_data = super().clean()
+        ident = cleaned_data.get("identificador", "").strip()
+        pwd = cleaned_data.get("password")
 
         if not ident or not pwd:
-            raise forms.ValidationError(_("Informe e-mail/CPF/usuário e a senha."), code="missing")
+            raise ValidationError("Preencha todos os campos.")
 
         user = None
-
         
         if "@" in ident:
-            try:
-                EmailValidator()(ident)
-            except forms.ValidationError:
-                raise forms.ValidationError(_("E-mail inválido."), code="invalid_email")
-            
             user = User.objects.filter(email__iexact=ident).first()
-            if not user:
-                raise forms.ValidationError(_("Usuário não encontrado para este e-mail."), code="user_not_found")
-
-        
-        elif _only_digits(ident).isdigit():
-            if not cpf_valido(ident):
-                raise forms.ValidationError(_("CPF inválido."), code="invalid_cpf")
-            
-            perfil = PerfilUsuario.objects.select_related("user").filter(cpf_cnpj=_only_digits(ident)).first()
-            if not perfil:
-                raise forms.ValidationError(_("CPF não vinculado a nenhuma conta."), code="user_not_found")
-            user = perfil.user
-
-        
+        elif ident.isdigit():
+            perfil = PerfilUsuario.objects.select_related("user").filter(cpf_cnpj=ident).first()
+            if perfil:
+                user = perfil.user
         else:
             user = User.objects.filter(username__iexact=ident).first()
-            if not user:
-                raise forms.ValidationError(_("Usuário não encontrado."), code="user_not_found")
 
-        
+        if not user:
+            self.add_error('identificador', "Nenhuma conta encontrada com este identificador.")
+            # ✨ CORREÇÃO: Adicionado 'return' para parar a execução aqui e evitar o crash.
+            return
+
+        # A partir daqui, o código só executa se 'user' for encontrado.
         if not user.is_active:
-            raise forms.ValidationError(_("Conta inativa. Entre em contato com o suporte."), code="inactive")
+            raise ValidationError("Esta conta está inativa. Entre em contato com o suporte.")
 
-        
-        authd = authenticate(username=user.username, password=pwd)
-        if not authd:
-            raise forms.ValidationError(_("Senha incorreta."), code="bad_password")
+        authenticated_user = authenticate(username=user.username, password=pwd)
+        if not authenticated_user:
+            self.add_error('password', "A senha está incorreta. Tente novamente.")
+            return
 
-        
-        self.user = authd
-        return cleaned
-    
+        self.user = authenticated_user
+        return cleaned_data
+            
 class EmpresaForm(forms.ModelForm):
     tags = forms.ModelMultipleChoiceField(
         queryset=Tag.objects.all().order_by('nome'),

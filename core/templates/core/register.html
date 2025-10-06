@@ -41,16 +41,16 @@
                     <div class="input-with-icon">
                         <i class="bi bi-person-badge"></i>
                         {{ form.full_name|add_class:"form-control form-control-lg"|attr:"aria-describedby:err-full_name" }}
+                        <div id="err-full_name" class="invalid-feedback"></div>
                     </div>
-                    <div id="err-full_name" class="invalid-feedback"></div>
                 </div>
                 <div class="form-group">
                     <label for="{{ form.username.id_for_label }}" class="form-label">Usuário</label>
                     <div class="input-with-icon">
                         <i class="bi bi-at"></i>
                         {{ form.username|add_class:"form-control form-control-lg"|attr:"aria-describedby:err-username" }}
+                        <div id="err-username" class="invalid-feedback"></div>
                     </div>
-                    <div id="err-username" class="invalid-feedback"></div>
                 </div>
             </div>
 
@@ -59,8 +59,8 @@
                 <div class="input-with-icon">
                     <i class="bi bi-envelope-fill"></i>
                     {{ form.email|add_class:"form-control form-control-lg"|attr:"aria-describedby:err-email" }}
+                    <div id="err-email" class="invalid-feedback"></div>
                 </div>
-                <div id="err-email" class="invalid-feedback"></div>
             </div>
 
             <div class="document-type-selector">
@@ -82,8 +82,8 @@
                 <div class="input-with-icon">
                     <i class="bi bi-file-earmark-text-fill"></i>
                     {{ form.cpf_cnpj|add_class:"form-control form-control-lg"|attr:"aria-describedby:err-cpf_cnpj" }}
+                    <div id="err-cpf_cnpj" class="invalid-feedback"></div>
                 </div>
-                <div id="err-cpf_cnpj" class="invalid-feedback"></div>
             </div>
 
             <div class="form-row">
@@ -92,16 +92,16 @@
                     <div class="input-with-icon">
                         <i class="bi bi-lock-fill"></i>
                         {{ form.password1|add_class:"form-control form-control-lg"|attr:"aria-describedby:err-password1" }}
+                        <div id="err-password1" class="invalid-feedback"></div>
                     </div>
-                    <div id="err-password1" class="invalid-feedback"></div>
                 </div>
                 <div class="form-group">
                     <label for="{{ form.password2.id_for_label }}" class="form-label">Confirme a Senha</label>
                     <div class="input-with-icon">
                         <i class="bi bi-check-circle-fill"></i>
                         {{ form.password2|add_class:"form-control form-control-lg"|attr:"aria-describedby:err-password2" }}
+                        <div id="err-password2" class="invalid-feedback"></div>
                     </div>
-                    <div id="err-password2" class="invalid-feedback"></div>
                 </div>
             </div>
 

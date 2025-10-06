@@ -92,8 +92,9 @@
                 window.location.href = data.redirect;
             } else if (data.errors) {
                 Object.entries(data.errors).forEach(([fieldName, messages]) => {
-                    // Mapeamento robusto para encontrar o campo correto no objeto `fields`
-                    const fieldKey = Object.keys(fields).find(key => fields[key].input.name === fieldName);
+                    const fieldKey = fieldName === 'password2' ? 'password2' :
+                        Object.keys(fields).find(key => fields[key].input.name === fieldName);
+
                     const field = fields[fieldKey];
 
                     if (field) {
@@ -104,8 +105,6 @@
                 });
                 const firstInvalidField = form.querySelector('.is-invalid');
                 if (firstInvalidField) firstInvalidField.focus();
-            } else {
-                globalError.textContent = data.detail || 'Ocorreu um erro desconhecido. Tente novamente.';
             }
         } catch (error) {
             console.error('Register request failed:', error);
