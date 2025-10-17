@@ -94,9 +94,31 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     const form = document.getElementById('delete-form');
-    const checkboxes = form.querySelectorAll('input[type="checkbox"]');
-    const toolbar = document.getElementById('actions-toolbar');
-    const countSpan = document.getElementById('selection-count');
+    // ✨ ADICIONE ESTA VERIFICAÇÃO ✨
+    if (form) {
+        const checkboxes = form.querySelectorAll('input[type="checkbox"]');
+        const toolbar = document.getElementById('actions-toolbar');
+        const countSpan = document.getElementById('selection-count');
+
+        function updateToolbar() {
+            const selectedCount = form.querySelectorAll('input[type="checkbox"]:checked').length;
+            if (selectedCount > 0) {
+                toolbar.classList.remove('d-none');
+                countSpan.textContent = selectedCount;
+            } else {
+                toolbar.classList.add('d-none');
+            }
+        }
+
+        checkboxes.forEach(cb => cb.addEventListener('change', updateToolbar));
+
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            if (confirm('Tem certeza que deseja deletar as empresas selecionadas? Esta ação não pode ser desfeita.')) {
+                this.submit();
+            }
+        });
+    }
 
     function updateToolbar() {
         const selectedCount = form.querySelectorAll('input[type="checkbox"]:checked').length;
@@ -113,9 +135,7 @@ document.addEventListener('DOMContentLoaded', function () {
     form.addEventListener('submit', function (e) {
         e.preventDefault();
         if (confirm('Tem certeza que deseja deletar as empresas selecionadas? Esta ação não pode ser desfeita.')) {
-            // Lógica AJAX para enviar o formulário sem recarregar a página
-            // (Pode ser implementada com fetch, similar aos outros formulários)
-            this.submit(); // Versão simples: recarrega a página
+            this.submit();
         }
     });
 });

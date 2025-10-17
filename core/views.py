@@ -707,6 +707,7 @@ def empresa_detalhe(request, slug):
 
 
 def listar_empresas(request):
+    # --- 1. Filtros e Paginação (Tudo como antes) ---
     empresas = get_base_empresas_queryset()
 
     q = (request.GET.get('q') or '').strip()
@@ -722,12 +723,8 @@ def listar_empresas(request):
             Q(tags__nome__icontains=q)
         ).distinct()
 
-    tag_labels = []
     if tag_ids:
         empresas = empresas.filter(tags__id__in=tag_ids).distinct()
-        
-        selected_tags = Tag.objects.filter(id__in=tag_ids)
-        tag_labels = [tag.nome for tag in selected_tags]
     
     if cidade:
         empresas = empresas.filter(cidade__iexact=cidade)
@@ -738,23 +735,38 @@ def listar_empresas(request):
     page_obj = paginator.get_page(request.GET.get('page') or 1)
 
     if _wants_json(request):
-        html = render_to_string('core/partials/empresas_cards.html', {'page_obj': page_obj}, request=request)
-        return JsonResponse({'html': html, 'has_next': page_obj.has_next(), 'next_page_number': page_obj.next_page_number() if page_obj.has_next() else None})
+        html = render_to_string(
+            'core/partials/empresas_cards.html', 
+            {'page_obj': page_obj, 'request': request}
+        )
+        return JsonResponse({
+            'html': html,
+            'has_next': page_obj.has_next(),
+            'next_page_number': page_obj.next_page_number() if page_obj.has_next() else None
+        })
+
+    tag_labels = []
+    if tag_ids:
+        selected_tags = Tag.objects.filter(id__in=tag_ids)
+        tag_labels = [tag.nome for tag in selected_tags]
 
     filtros_aplicados = { 'q': q, 'tag': tag_ids, 'cidade': cidade }
-    filtros_legiveis = { 'q': q or None, 'tag': ", ".join(tag_labels), 'cidade': cidade or None }
+    filtros_legiveis = { 'q': q or None, 'tag': ", ".join(tag_labels) or None, 'cidade': cidade or None }
 
     favorito_ids = []
     if request.user.is_authenticated:
-        perfil, created = PerfilUsuario.objects.get_or_create(user=request.user)
-        favorito_ids = perfil.favoritos.values_list('id', flat=True)
+        perfil = PerfilUsuario.objects.filter(user=request.user).first()
+        if perfil:
+            favorito_ids = list(perfil.favoritos.values_list('id', flat=True))
 
-    return render(request, 'core/listar_empresas.html', {
+    context = {
         'page_obj': page_obj,
         'filtros_aplicados': filtros_aplicados,
         'filtros_legiveis': filtros_legiveis,
-        'favorito_ids': list(favorito_ids),
-    })
+        'favorito_ids': favorito_ids, # Passando os favoritos para o template
+    }
+    
+    return render(request, 'core/listar_empresas.html', context)
 
 def buscar_empresas(request):
     """Rota legada: redireciona para a listagem com os mesmos GETs."""
