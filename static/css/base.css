@@ -614,7 +614,7 @@ body.high-contrast .dropdown-item:focus {
 
 /* Define a cor padrão para todos os links de navegação no header */
 header .navbar-nav .nav-link {
-    color: var(--cor-texto-custom);
+    color: #fff;
     opacity: 0.85; /* Deixa um pouco mais sutil que o texto branco puro */
     transition: opacity 0.2s ease;
 }

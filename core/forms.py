@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 import re
 from django import forms
@@ -7,31 +6,16 @@ from django.contrib.auth import authenticate, get_user_model
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.forms import UserCreationForm
-from .utils.cpf import is_valid_cpf, only_digits
-from .models import Tag, PerfilUsuario, Empresa
+# Removido import duplicado de cpf utils
+from .models import Tag, PerfilUsuario, Empresa, Avaliacao, ImagemEmpresa # Adicionado ImagemEmpresa
 from django.core.validators import EmailValidator
 from django.contrib.auth.password_validation import validate_password
-from .models import Avaliacao
 from django.utils.html import format_html
 from django.urls import reverse
 
 User = get_user_model()
 
-def _digits(s: str | None) -> str:
-    return re.sub(r"\D", "", s or "")
-
-def _clip_model(model_cls, field_name: str, value):
-    if value is None:
-        return value
-    try:
-        f = model_cls._meta.get_field(field_name)
-        maxlen = getattr(f, "max_length", None)
-    except Exception:
-        maxlen = None
-    if maxlen and isinstance(value, str):
-        return value[:maxlen]
-    return value
-
+# --- Funções de Validação (Movidas para um local único para evitar duplicação) ---
 def clean_digits(value: str | None) -> str:
     if not value:
         return ""
@@ -65,33 +49,19 @@ def is_valid_cnpj(cnpj: str) -> bool:
     return (calc_digit(cnpj[:12], weights1) == int(cnpj[12]) and
             calc_digit(cnpj[:13], weights2) == int(cnpj[13]))
 
-_only_digits = lambda s: re.sub(r"\D", "", s or "")
+def _clip_model(model_cls, field_name: str, value):
+    if value is None:
+        return value
+    try:
+        f = model_cls._meta.get_field(field_name)
+        maxlen = getattr(f, "max_length", None)
+    except Exception:
+        maxlen = None
+    if maxlen and isinstance(value, str):
+        return value[:maxlen]
+    return value
 
-def cpf_valido(cpf: str) -> bool:
-    cpf = _only_digits(cpf)
-    if len(cpf) != 11 or cpf == cpf[0] * 11:
-        return False
-    def calc_digitos(cpf_parcial: str) -> str:
-        for t in [9, 10]:
-            soma = sum(int(cpf_parcial[i]) * (t + 1 - i) for i in range(t))
-            d = (soma * 10) % 11
-            cpf_parcial += "0" if d == 10 else str(d)
-        return cpf_parcial[-2:]
-    return cpf[-2:] == calc_digitos(cpf[:9])
-
-def _only_digits(s: str) -> str:
-    return re.sub(r"\D", "", s or "")
-
-def _cpf_is_valid(cpf_digits: str) -> bool:
-    
-    d = _only_digits(cpf_digits)
-    if len(d) != 11 or d == d[0] * 11:
-        return False
-    def dv(nums):
-        s = sum(int(n) * w for n, w in zip(nums, range(len(nums)+1, 1, -1)))
-        r = (s * 10) % 11
-        return 0 if r == 10 else r
-    return dv(d[:9]) == int(d[9]) and dv(d[:10]) == int(d[10])
+# --- Formulários ---
 
 class UserRegistrationForm(UserCreationForm):
     full_name = forms.CharField(label="Nome Completo", max_length=150, required=True)
@@ -100,25 +70,33 @@ class UserRegistrationForm(UserCreationForm):
 
     class Meta(UserCreationForm.Meta):
         model = User
-        fields = ('full_name', 'username', 'email', 'cpf_cnpj', 'password1', 'password2')
+        fields = ('full_name', 'username', 'email', 'cpf_cnpj') # Removido password1 e password2 daqui
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # Adiciona os campos de senha explicitamente se necessário (UserCreationForm já faz isso)
+        # self.fields['password'] = forms.CharField(label="Senha", widget=forms.PasswordInput)
+        # self.fields['password2'] = forms.CharField(label="Confirmar Senha", widget=forms.PasswordInput)
         
         placeholders = {
             'full_name': 'Digite seu nome completo',
-            'username': 'Digite seu usuário',
+            'username': 'Crie um nome de usuário (sem espaços)',
             'email': 'Digite seu email',
-            'cpf_cnpj': 'Digite o CPF ou CNPJ',
-            'password1': 'Crie sua senha',      
+            'cpf_cnpj': 'Digite o CPF ou CNPJ (apenas números)',
+            'password': 'Crie uma senha segura',      
             'password2': 'Confirme sua senha',   
         }
         
-        self.fields['username'].label = 'Usuário'
-        self.fields['password1'].label = 'Senha' 
-        self.fields['password2'].label = 'Confirmar Senha'
+        # Ajustando labels se UserCreationForm não fizer
+        self.fields['username'].label = 'Nome de Usuário'
+        # self.fields['password'].label = 'Senha' 
+        # self.fields['password2'].label = 'Confirmar Senha'
 
         for field_name, field in self.fields.items():
+            # Aplica classes do Bootstrap
+            if isinstance(field.widget, (forms.TextInput, forms.EmailInput, forms.PasswordInput)):
+                 field.widget.attrs.setdefault('class', 'form-control form-control-lg')
+            
             if field_name in placeholders:
                 field.widget.attrs['placeholder'] = placeholders[field_name]
 
@@ -144,7 +122,7 @@ class UserRegistrationForm(UserCreationForm):
         if PerfilUsuario.objects.filter(cpf_cnpj=digits).exists():
             raise ValidationError('Este CPF/CNPJ já está em uso.')
             
-        return digits
+        return digits # Retorna apenas os dígitos
 
     def save(self, commit=True):
         user = super().save(commit=False)
@@ -160,11 +138,14 @@ class UserRegistrationForm(UserCreationForm):
 
         if commit:
             user.save()
-            perfil, _ = PerfilUsuario.objects.get_or_create(user=user)
-            perfil.cpf_cnpj = self.cleaned_data.get('cpf_cnpj')
-            perfil.full_name = full_name
-            perfil.save()
-
+            # Usamos update_or_create para evitar erro se o perfil já existir
+            perfil, created = PerfilUsuario.objects.update_or_create(
+                user=user,
+                defaults={
+                    'cpf_cnpj': self.cleaned_data.get('cpf_cnpj'),
+                    'full_name': full_name
+                }
+            )
         return user    
 
 class ProfileForm(forms.ModelForm):
@@ -173,7 +154,8 @@ class ProfileForm(forms.ModelForm):
 
     class Meta:
         model = PerfilUsuario
-        fields = ['full_name', 'telefone', 'avatar']
+        # Removido 'cpf_cnpj' daqui, pois é editado separadamente
+        fields = ['full_name', 'telefone', 'avatar'] 
         widgets = {
             'full_name': forms.TextInput(attrs={'placeholder': 'Seu nome completo'}),
             'telefone': forms.TextInput(attrs={'placeholder': 'Seu número com DDD'}),
@@ -192,8 +174,12 @@ class ProfileForm(forms.ModelForm):
         self.fields['email'].initial = self.user.email
 
         for name, field in self.fields.items():
+            # ✅ CORREÇÃO: Usar o widget correto aqui também ✅
             if not isinstance(field.widget, forms.ClearableFileInput):
                 field.widget.attrs.setdefault('class', 'form-control')
+            else: # Para o campo avatar
+                 field.widget.attrs.setdefault('class', 'form-control form-control-sm')
+
 
         self.fields['email'].error_messages['unique'] = format_html(
             'Este e-mail já está em uso. <a href="{}">Esqueceu sua senha?</a>',
@@ -224,19 +210,16 @@ class StartResetByCpfForm(forms.Form):
 
     def clean_cpf_cnpj(self):
         raw = (self.cleaned_data.get('cpf_cnpj') or '').strip()
-        digits = _only_digits(raw)  
+        digits = clean_digits(raw)  
         if not digits:
             raise forms.ValidationError("Informe o CPF ou CNPJ.")
         if len(digits) not in (11, 14):
             raise forms.ValidationError("Digite um CPF (11) ou CNPJ (14) válido.")
-        if PerfilUsuario.objects.filter(cpf_cnpj=digits).exists():
-            raise forms.ValidationError(
-                format_html(
-                    'Este CPF/CNPJ já está cadastrado. <a href="{}">Precisa recuperar o acesso?</a>', 
-                    reverse('esqueci_senha_cpf')
-                ),
-                code='unique'
-            )
+        
+        # Corrigido: A validação de existência não deve estar aqui, pois o objetivo é recuperar
+        # if PerfilUsuario.objects.filter(cpf_cnpj=digits).exists():
+        #     raise forms.ValidationError(...)
+            
         return digits
     
 class TagForm(forms.ModelForm):
@@ -252,45 +235,40 @@ class CustomLoginForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['identificador'].widget.attrs.update(
-            {'placeholder': 'Digite seu e-mail, CPF ou usuário'}
+            {'placeholder': 'Digite seu e-mail, CPF ou usuário', 'class': 'form-control form-control-lg'}
         )
         self.fields['password'].widget.attrs.update(
-            {'placeholder': 'Digite sua senha'}
+            {'placeholder': 'Digite sua senha', 'class': 'form-control form-control-lg'}
         )
-    
+
     def clean(self):
         cleaned_data = super().clean()
         ident = cleaned_data.get("identificador", "").strip()
         pwd = cleaned_data.get("password")
 
         if not ident or not pwd:
-            raise ValidationError("Preencha todos os campos.")
+            return cleaned_data
 
-        user = None
+        user_obj = None
         
         if "@" in ident:
-            user = User.objects.filter(email__iexact=ident).first()
-        elif ident.isdigit():
-            perfil = PerfilUsuario.objects.select_related("user").filter(cpf_cnpj=ident).first()
+            user_obj = User.objects.filter(email__iexact=ident).first()
+        elif len(clean_digits(ident)) in (11, 14):
+            digits = clean_digits(ident)
+            perfil = PerfilUsuario.objects.select_related("user").filter(cpf_cnpj=digits).first()
             if perfil:
-                user = perfil.user
+                user_obj = perfil.user
         else:
-            user = User.objects.filter(username__iexact=ident).first()
+            user_obj = User.objects.filter(username__iexact=ident).first()
 
-        if not user:
-            self.add_error('identificador', "Nenhuma conta encontrada com este identificador.")
-            # ✨ CORREÇÃO: Adicionado 'return' para parar a execução aqui e evitar o crash.
-            return
+        if not user_obj:
+            raise ValidationError("Nenhuma conta encontrada com este identificador.")
 
-        # A partir daqui, o código só executa se 'user' for encontrado.
-        if not user.is_active:
-            raise ValidationError("Esta conta está inativa. Entre em contato com o suporte.")
-
-        authenticated_user = authenticate(username=user.username, password=pwd)
+        authenticated_user = authenticate(username=user_obj.username, password=pwd)
+        
         if not authenticated_user:
-            self.add_error('password', "A senha está incorreta. Tente novamente.")
-            return
-
+            raise ValidationError("A senha está incorreta. Tente novamente.")
+            
         self.user = authenticated_user
         return cleaned_data
             
@@ -302,110 +280,145 @@ class EmpresaForm(forms.ModelForm):
         label="Categorias e Tags"
     )
 
-    imagem_inicial = forms.ImageField(
+    # Campo de imagem inicial para criação
+    imagem = forms.ImageField( 
         label="Imagem Principal da Empresa",
-        required=False,
+        required=False, # Será obrigatório na view se for criação
+        # ✅ CORREÇÃO: Usar ClearableFileInput ✅
+        widget=forms.ClearableFileInput() 
     )
     
-    novas_imagens = forms.ImageField(
-        label="Adicionar novas imagens à galeria (limite de 5 no total)",
-        required=False
-    )
+    # Campo para adicionar mais imagens na edição (definido no __init__)
+    novas_imagens = None # Inicializa como None
 
     class Meta:
         model = Empresa
+        # ✅ LISTA DE CAMPOS CORRIGIDA ✅
         fields = [
-            'nome', 'tags', 'descricao', 'rua', 'bairro', 'cidade', 'numero', 'cep',
-            'latitude', 'longitude', 'telefone', 'email', 'contato_direto', 'site',
-            'facebook', 'instagram', 'horario_semana', 'horario_sabado', 'horario_domingo',
-            'horario_observacoes', 'cnpj', 'cadastrur', 'app_url', 'sem_telefone', 'sem_email',
-            'imagem_inicial'
+            'nome', 'tags', 'descricao', 
+            'rua', 'bairro', 'cidade', 'numero', 'cep',
+            'latitude', 'longitude', 
+            'telefone', 'email', 'contato_direto', 
+            'site', 'facebook', 'instagram', 
+            'cnpj', 'cadastrur', 
+            'sem_telefone', 'sem_email',
+            # 'imagem' e 'novas_imagens' são tratados separadamente no __init__
         ]
         
         widgets = {
             'descricao': forms.Textarea(attrs={'rows': 4, 'placeholder': 'Descreva o estabelecimento'}),
-            'endereco_full': forms.TextInput(attrs={'placeholder': 'Se preferir, informe o endereço completo'}),
             'cnpj': forms.TextInput(attrs={'placeholder': '00.000.000/0000-00'}),
             'cadastrur': forms.TextInput(attrs={'placeholder': 'Código Cadastur (se houver)'}),
             'contato_direto': forms.TextInput(attrs={'placeholder': 'Nome/WhatsApp da pessoa de contato'}),
-            'digital': forms.URLInput(attrs={'placeholder': 'Site ou link agregado (aceita 1º link do texto)'}),
-            'maps_url': forms.URLInput(attrs={'placeholder': 'URL do Google Maps'}),
-            'app_url': forms.URLInput(attrs={'placeholder': 'URL do App'}),
+            'site': forms.URLInput(attrs={'placeholder': 'https://seuwebsite.com'}),
             'facebook': forms.URLInput(attrs={'placeholder': 'https://facebook.com/suaempresa'}),
             'instagram': forms.URLInput(attrs={'placeholder': 'https://instagram.com/suaempresa'}),
             'latitude': forms.TextInput(attrs={'placeholder': 'Latitude', 'inputmode': 'decimal'}),
             'longitude': forms.TextInput(attrs={'placeholder': 'Longitude', 'inputmode': 'decimal'}),
-            'horario_semana': forms.TextInput(attrs={'placeholder': 'Ex: 08:00 - 18:00'}),
-            'horario_sabado': forms.TextInput(attrs={'placeholder': 'Ex: 08:00 - 12:00 ou Fechado'}),
-            'horario_domingo': forms.TextInput(attrs={'placeholder': 'Ex: Fechado'}),
-            'horario_observacoes': forms.Textarea(attrs={'rows': 2, 'placeholder': 'Ex: Fechamos para almoço das 12h às 13h30.'}),
-            'tags': forms.CheckboxSelectMultiple(),
+            'tags': forms.CheckboxSelectMultiple(), # Redundante, mas garante
         }
 
     def __init__(self, *args, **kwargs):
         instance = kwargs.get('instance', None)
+        is_editing = instance and instance.pk
+        
         super().__init__(*args, **kwargs)
 
-        if instance and instance.pk: 
-            self.fields.pop('imagem_inicial', None)
-        else: 
-            self.fields.pop('novas_imagens', None)
-            self.fields['imagem_inicial'].required = True
+        # Adiciona os campos de imagem condicionalmente
+        if is_editing:
+             self.fields['novas_imagens'] = forms.ImageField(
+                label="Adicionar novas imagens (até 5 no total)",
+                required=False,
+                # ✅ CORREÇÃO: Usar ClearableFileInput, mas o template adicionará 'multiple' ✅
+                widget=forms.ClearableFileInput(attrs={'multiple': True}) # O attr multiple aqui é só para o HTML
+            )
+        else: # Criação
+            self.fields['imagem'] = forms.ImageField(
+                label="Imagem Principal da Empresa",
+                required=True, # Imagem é obrigatória na criação
+                 # ✅ CORREÇÃO: Usar ClearableFileInput ✅
+                widget=forms.ClearableFileInput()
+            )
         
+        # Aplica classes CSS aos widgets
         for name, field in self.fields.items():
-            if name == 'tags': continue
+            if name == 'tags': continue # Já estilizado no template
+            
+            base_class = 'form-control'
+            size_class = 'form-control-lg' 
+            
             if isinstance(field.widget, forms.Select):
-                field.widget.attrs.update({'class': 'form-select form-select-lg'})
-            elif not isinstance(field.widget, (forms.CheckboxInput, forms.HiddenInput, forms.FileInput, forms.ClearableFileInput)):
-                field.widget.attrs.update({'class': 'form-control form-control-lg'})
+                base_class = 'form-select'
+            elif isinstance(field.widget, (forms.CheckboxInput, forms.RadioSelect)):
+                 base_class = 'form-check-input'
+                 size_class = ''
+            # ✅ CORREÇÃO: Voltar a usar ClearableFileInput ✅
+            elif isinstance(field.widget, forms.ClearableFileInput): 
+                size_class = 'form-control-sm'
 
+            current_classes = field.widget.attrs.get('class', '')
+            field.widget.attrs['class'] = f'{base_class} {size_class} {current_classes}'.strip()
+
+    # ... (resto do seu EmpresaForm clean methods) ...
     def clean_novas_imagens(self):
-        novas_imagens = self.files.getlist('novas_imagens')
-        if self.instance and self.instance.pk:
-            imagens_atuais_count = self.instance.imagens.count()
-            if (imagens_atuais_count + len(novas_imagens)) > 5:
-                raise ValidationError(f"Você só pode ter no máximo 5 imagens. Você já tem {imagens_atuais_count} e está tentando adicionar mais {len(novas_imagens)}.")
-        return novas_imagens
+        # Validação movida para a view onde temos acesso ao request.FILES
+        return self.cleaned_data.get('novas_imagens')
     
     def clean_cnpj(self):
         cnpj = self.cleaned_data.get('cnpj')
         if cnpj:
-            cleaned_cnpj = ''.join(filter(str.isdigit, cnpj))
+            cleaned_cnpj = clean_digits(cnpj)
+            if not is_valid_cnpj(cleaned_cnpj):
+                 raise forms.ValidationError("CNPJ inválido.")
             
-            query = Empresa.objects.filter(cnpj=cleaned_cnpj).exclude(pk=self.instance.pk)
-            
+            # Verifica unicidade apenas se estiver editando
+            if self.instance and self.instance.pk:
+                query = Empresa.objects.filter(cnpj=cleaned_cnpj).exclude(pk=self.instance.pk)
+            else: # Se for criação
+                 query = Empresa.objects.filter(cnpj=cleaned_cnpj)
+
             if query.exists():
                 raise forms.ValidationError("Já existe uma empresa cadastrada com este CNPJ.")
-        return cnpj
+            return cleaned_cnpj # Salva apenas dígitos
+        return cnpj # Retorna None ou vazio se não foi preenchido
     
-    # Suas outras funções de validação (clean_*, etc.) permanecem aqui...
     def clean_cep(self):
-        return _clip_model(Empresa, 'cep', _digits(self.cleaned_data.get('cep')))
+        cep = self.cleaned_data.get('cep')
+        if cep:
+            return _clip_model(Empresa, 'cep', clean_digits(cep))
+        return cep
+
     def clean_telefone(self):
         telefone = self.cleaned_data.get('telefone')
         if telefone and not self.cleaned_data.get('sem_telefone'):
-            tel = _digits(telefone)
+            tel = clean_digits(telefone)
             if len(tel) not in (10, 11):
                 raise ValidationError("O telefone deve ter 10 ou 11 dígitos (com DDD).")
-            return _clip_model(Empresa, 'telefone', tel)
-        return telefone
+            return _clip_model(Empresa, 'telefone', tel) # Salva apenas dígitos
+        return None # Retorna None se 'sem_telefone' ou vazio
+
     def clean_numero(self):
         numero = self.cleaned_data.get('numero')
-        if numero and not numero.isdigit():
-            raise ValidationError("O número deve conter apenas dígitos.")
+        # Permitir caracteres não numéricos como 'S/N' ou 'apto 101'
+        # if numero and not numero.isdigit():
+        #     raise ValidationError("O número deve conter apenas dígitos.")
         return _clip_model(Empresa, 'numero', numero)
+
     def clean(self):
         cleaned = super().clean()
         sem_telefone = cleaned.get('sem_telefone')
         sem_email = cleaned.get('sem_email')
         telefone = cleaned.get('telefone')
         email = cleaned.get('email')
-        if not sem_telefone and not telefone:
-            self.add_error('telefone', 'Este campo é obrigatório ou marque "Sem Telefone".')
-        if not sem_email and not email:
-            self.add_error('email', 'Este campo é obrigatório ou marque "Sem Email".')
-        if sem_telefone: cleaned['telefone'] = ''
-        if sem_email: cleaned['email'] = ''
+        
+        # Ajuste: A validação de obrigatoriedade deve ser feita no modelo ou na view
+        # if not sem_telefone and not telefone:
+        #     self.add_error('telefone', 'Informe o telefone ou marque "Sem Telefone".')
+        # if not sem_email and not email:
+        #     self.add_error('email', 'Informe o e-mail ou marque "Sem Email".')
+            
+        if sem_telefone: cleaned['telefone'] = None # Garante None se marcado
+        if sem_email: cleaned['email'] = None # Garante None se marcado
         return cleaned
     
 class CpfUpdateForm(forms.Form):
@@ -424,26 +437,26 @@ class CpfUpdateForm(forms.Form):
 
     def clean_cpf_cnpj(self):
         raw = self.cleaned_data.get("cpf_cnpj", "")
-        digits = _only_digits(raw)
-        if len(digits) != 11 or not _cpf_is_valid(digits):
+        digits = clean_digits(raw)
+        if len(digits) != 11 or not is_valid_cpf(digits):
             raise forms.ValidationError("CPF inválido.")
         qs = PerfilUsuario.objects.filter(cpf_cnpj=digits).exclude(user=self.user)
         if qs.exists():
             raise forms.ValidationError("Este CPF já está em uso por outra conta.")
-        return digits
+        return digits # Retorna apenas dígitos
 
     def clean(self):
         cleaned = super().clean()
         pwd = cleaned.get("password")
         if not pwd or not self.user.check_password(pwd):
-            raise forms.ValidationError("Não foi possível validar sua senha.")
+            self.add_error('password', "Senha atual incorreta.") # Adiciona erro ao campo específico
         return cleaned
     
 class AvaliacaoForm(forms.ModelForm):
     nota = forms.ChoiceField(
-        choices=[(i, f'{i} Estrela' + ('s' if i > 1 else '')) for i in range(1, 6)],
-        widget=forms.RadioSelect(attrs={'class': 'star-rating'}),
-        label="Sua nota"
+        choices=[(i, f'{i}') for i in range(1, 6)], # Simplificado
+        widget=forms.RadioSelect, # Deixa o template controlar a aparência
+        label="Sua nota (de 1 a 5 estrelas)"
     )
 
     class Meta:
@@ -451,7 +464,7 @@ class AvaliacaoForm(forms.ModelForm):
         fields = ['nota', 'comentario']
         widgets = {
             'comentario': forms.Textarea(attrs={
-                'rows': 4,
+                'rows': 3, # Menos linhas por padrão
                 'placeholder': 'Conte como foi sua experiência (opcional)...'
             })
         }

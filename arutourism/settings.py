@@ -114,11 +114,10 @@ WSGI_APPLICATION = "arutourism.wsgi.application"
 # Database (SQLite dev / PG prod)
 # ===========================
 DATABASES = {
-    "default": dj_database_url.config(
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
-        conn_max_age=600,
-        ssl_require=not DEBUG,
-    )
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
 }
 
 # ===========================
@@ -182,7 +181,7 @@ else:
 # ===========================
 # E-mail (SMTP real em prod; console em dev)
 # ===========================
-EMAIL_ENABLED = env.bool("EMAIL_ENABLED", default=IS_PROD)
+EMAIL_ENABLED = env.bool("EMAIL_ENABLED", default=False) 
 
 if EMAIL_ENABLED:
     EMAIL_BACKEND   = env("EMAIL_BACKEND", default="django.core.mail.backends.smtp.EmailBackend")

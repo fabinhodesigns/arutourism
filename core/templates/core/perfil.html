@@ -4,20 +4,18 @@
 {% block title %}Meu Perfil{% endblock %}
 
 {% block extra_css %}
-  <link rel="stylesheet" href="{% static 'css/pages/perfil.css' %}">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-{% endblock %} 
+<link rel="stylesheet" href="{% static 'css/pages/perfil.css' %}">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+{% endblock %}
 
 {% block content %}
 <div class="container py-5 mt-5">
   <div class="profile-hero p-4 p-md-5 mb-4 d-flex align-items-center gap-3">
-    <img id="avatar-preview" class="avatar-lg"
-     src="{% if request.user.perfil and request.user.perfil.avatar and request.user.perfil.avatar.name %}
+    <img id="avatar-preview" class="avatar-lg" src="{% if request.user.perfil and request.user.perfil.avatar and request.user.perfil.avatar.name %}
               {{ request.user.perfil.avatar.url }}
           {% else %}
               {% static 'core/images/user-placeholder.png' %}
-          {% endif %}"
-     alt="Avatar do usuário">
+          {% endif %}" alt="Avatar do usuário">
 
     <div>
       <h3 class="mb-1 text-light">Olá, {{ request.user.first_name|default:request.user.username }}!</h3>
@@ -27,19 +25,19 @@
 
   <div class="row g-4">
     <div class="col-md-4">
-            {% if request.user.is_superuser %}
-        <div class="metric-card p-4 bg-white mb-4">
-          <div class="d-flex align-items-center gap-3">
-            <i class="bi bi-gear-fill fs-3 text-secondary" aria-hidden="true"></i>
-            <div>
-              <div class="fw-semibold">Administração</div>
-              <div class="fs-5 fw-bold">Painel de Controle</div>
-            </div>
+      {% if request.user.is_superuser %}
+      <div class="metric-card p-4 bg-white mb-4">
+        <div class="d-flex align-items-center gap-3">
+          <i class="bi bi-gear-fill fs-3 text-secondary" aria-hidden="true"></i>
+          <div>
+            <div class="fw-semibold">Administração</div>
+            <div class="fs-5 fw-bold">Painel de Controle</div>
           </div>
-          <a class="btn btn-secondary w-100 mt-3" href="{% url 'gerenciar_tags' %}">
-            Gerenciar Tags
-          </a>
         </div>
+        <a class="btn btn-secondary w-100 mt-3" href="{% url 'gerenciar_tags' %}">
+          Gerenciar Tags
+        </a>
+      </div>
       {% endif %}
 
       <div class="metric-card p-4 bg-white mb-4">
@@ -73,8 +71,8 @@
           <dt class="col-5 text-muted">Telefone</dt>
           <dd class="col-7">{{ request.user.perfil.telefone|default:"—" }}</dd>
 
-          <dt class="col-5 text-muted">CPF</dt>
-          <dd class="col-7"><span data-cpf="{{ request.user.perfil.cpf_cnpj|default:'' }}"></span></dd>
+          <dt class="col-5 text-muted">CPF/CNPJ</dt>
+          <dd class="col-7"><span data-documento="{{ request.user.perfil.cpf_cnpj|default:'' }}"></span></dd>
 
           <dt class="col-5 text-muted">Entrou em</dt>
           <dd class="col-7">{{ entrou_fmt }}</dd>
@@ -88,7 +86,8 @@
         <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
           <i class="bi bi-tools text-primary"></i> Ferramentas de Marketing
         </h5>
-        <p class="text-muted">Gere links personalizados e QR Codes para suas campanhas de divulgação e materiais impressos.</p>
+        <p class="text-muted">Gere links personalizados e QR Codes para suas campanhas de divulgação e materiais
+          impressos.</p>
         <a href="{% url 'gerador_qrcode' %}" class="btn btn-primary">
           <i class="bi bi-qr-code-scan me-1"></i> Acessar Gerador de QR Code
         </a>
@@ -99,9 +98,9 @@
       <div class="metric-card p-4 bg-white mb-4">
         <h5 class="fw-bold mb-3">Editar Informações</h5>
         {% if messages %}
-          {% for m in messages %}
-            <div class="alert alert-{{ m.tags }} mb-3" role="alert">{{ m }}</div>
-          {% endfor %}
+        {% for m in messages %}
+        <div class="alert alert-{{ m.tags }} mb-3" role="alert">{{ m }}</div>
+        {% endfor %}
         {% endif %}
 
         <form method="post" enctype="multipart/form-data" class="row g-3" novalidate>
@@ -128,8 +127,9 @@
           </div>
 
           <div class="col-md-6">
-            <label class="form-label" for="cpf_ro">CPF</label>
-            <input type="text" id="cpf_ro" class="form-control" value="{{ request.user.perfil.cpf_cnpj|default:'' }}" disabled aria-describedby="cpfReadHelp">
+            <label class="form-label" for="cpf_ro">CPF/CNPJ</label>
+            <input type="text" id="cpf_ro" class="form-control" value="{{ request.user.perfil.cpf_cnpj|default:'' }}"
+              disabled aria-describedby="cpfReadHelp">
             <div id="cpfReadHelp" class="form-text">Para alterar, use a seção “Dados sensíveis” abaixo.</div>
           </div>
 
@@ -148,53 +148,57 @@
 
       <div class="metric-card p-4 bg-white">
         <h5 class="fw-bold mb-3">Dados sensíveis</h5>
-        <p class="text-muted mb-3" id="cpfHelp">Para alterar o CPF, confirme sua senha.</p>
+        <p class="text-muted mb-3" id="cpfHelp">Para alterar o CPF/CNPJ, confirme sua senha.</p>
 
-        <form method="post" action="{% url 'perfil_alterar_cpf' %}" class="row g-3" novalidate aria-describedby="cpfHelp">
+        <form method="post" action="{% url 'perfil_alterar_cpf' %}" class="row g-3" novalidate
+          aria-describedby="cpfHelp">
           {% csrf_token %}
 
           <div class="col-md-6">
-            <label class="form-label" for="id_cpf_cnpj">Novo CPF</label>
+            <label class="form-label" for="id_cpf_cnpj">Novo CPF/CNPJ</label>
             {% if cpf_form %}
-              {{ cpf_form.cpf_cnpj }}
-              {% if cpf_form.cpf_cnpj.errors %}
-                <div class="invalid-feedback d-block">{{ cpf_form.cpf_cnpj.errors|join:", " }}</div>
-              {% endif %}
-            {% else %}
-              <input type="text" name="cpf_cnpj" id="id_cpf_cnpj" maxlength="14" class="form-control" placeholder="000.000.000-00" inputmode="numeric">
+            {{ cpf_form.cpf_cnpj }}
+            {% if cpf_form.cpf_cnpj.errors %}
+            <div class="invalid-feedback d-block">{{ cpf_form.cpf_cnpj.errors|join:", " }}</div>
             {% endif %}
-            <div class="form-text">Use apenas o seu CPF.</div>
+            {% else %}
+            <input type="text" name="cpf_cnpj" id="id_cpf_cnpj" maxlength="14" class="form-control"
+              placeholder="000.000.000-00" inputmode="numeric">
+            {% endif %}
+            <div class="form-text">Use apenas o seu CPF/CNPJ.</div>
           </div>
 
           <div class="col-md-6">
             <label class="form-label" for="id_password">Senha atual</label>
             <div class="input-group">
               {% if cpf_form %}
-                {{ cpf_form.password }}
+              {{ cpf_form.password }}
               {% else %}
-                <input type="password" name="password" id="id_password" class="form-control" placeholder="Digite sua senha atual" autocomplete="current-password">
+              <input type="password" name="password" id="id_password" class="form-control"
+                placeholder="Digite sua senha atual" autocomplete="current-password">
               {% endif %}
-              <button class="btn btn-outline-secondary" type="button" data-toggle="pw" aria-label="Mostrar/ocultar senha">
+              <button class="btn btn-outline-secondary" type="button" data-toggle="pw"
+                aria-label="Mostrar/ocultar senha">
                 <i class="bi bi-eye" aria-hidden="true"></i>
               </button>
             </div>
             {% if cpf_form and cpf_form.password.errors %}
-              <div class="invalid-feedback d-block">{{ cpf_form.password.errors|join:", " }}</div>
+            <div class="invalid-feedback d-block">{{ cpf_form.password.errors|join:", " }}</div>
             {% endif %}
             <div id="cpf-pass-help" class="form-text">
               Esqueceu? <a href="{% url 'esqueci_senha_email' %}">Recuperar por e-mail</a> ou
-              <a href="{% url 'esqueci_senha_cpf' %}">pelo CPF</a>.
+              <a href="{% url 'esqueci_senha_cpf' %}">pelo CPF/CNPJ</a>.
             </div>
           </div>
 
           {% if cpf_form and cpf_form.non_field_errors %}
-            <div class="col-12">
-              <div class="alert alert-danger" role="alert">{{ cpf_form.non_field_errors }}</div>
-            </div>
+          <div class="col-12">
+            <div class="alert alert-danger" role="alert">{{ cpf_form.non_field_errors }}</div>
+          </div>
           {% endif %}
 
           <div class="d-flex gap-2">
-            <button class="btn btn-primary" type="submit">Atualizar CPF</button>
+            <button class="btn btn-primary" type="submit">Atualizar CPF/CNPJ</button>
             <a class="btn btn-outline-secondary" href="{% url 'perfil' %}">Cancelar</a>
           </div>
         </form>

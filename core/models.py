@@ -1,4 +1,3 @@
-# core/models.py
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils.text import slugify
@@ -7,11 +6,17 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 
 class PerfilUsuario(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='perfil')
-    cpf_cnpj = models.CharField(max_length=18, unique=True)
+    cpf_cnpj = models.CharField(max_length=14, unique=True, db_index=True) 
     full_name = models.CharField(max_length=255, blank=True, null=True)
     telefone = models.CharField(max_length=20, blank=True, null=True)
     avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
-    favoritos = models.ManyToManyField('Empresa', blank=True, related_name='favoritado_por')
+    
+    favoritos = models.ManyToManyField(
+        'Empresa', 
+        blank=True, 
+        related_name='favoritado_por',
+        verbose_name="Empresas Favoritas"
+    )
 
     TEMA_ESCOLHAS = [
         ('light', 'Claro'),
@@ -25,6 +30,10 @@ class PerfilUsuario(models.Model):
         verbose_name="Tema de preferência"
     )
     
+    class Meta:
+        verbose_name = "Perfil de Usuário"
+        verbose_name_plural = "Detalhes dos Usuários"
+    
     def __str__(self):
         return self.user.username
     
@@ -37,21 +46,21 @@ class PerfilUsuario(models.Model):
     
 class Tag(models.Model):
     nome = models.CharField(max_length=100, unique=True, db_index=True)
-    
-    # --- NOVO CAMPO DE HIERARQUIA ---
     parent = models.ForeignKey(
-        'self',                          # Aponta para o próprio modelo (Tag)
-        on_delete=models.CASCADE,        # Se um pai for excluído, os filhos também são
-        null=True,                       # Permite que seja uma categoria pai (não tem pai)
-        blank=True,                      # Permite que o campo fique vazio no admin/formulários
-        related_name='children'          # Como acessar os filhos: ex: tag_pai.children.all()
+        'self',                          
+        on_delete=models.CASCADE,        
+        null=True,                       
+        blank=True,                      
+        related_name='children',
+        verbose_name="Categoria Pai"
     )
 
     class Meta:
         ordering = ['nome']
+        verbose_name = "Categoria / Tag"
+        verbose_name_plural = "Categorias / Tags"
 
     def __str__(self):
-        # Mostra a hierarquia no admin para fácil identificação
         if self.parent:
             return f"— {self.nome}"
         return self.nome
@@ -61,8 +70,8 @@ class Empresa(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='empresas', db_index=True)
     nome = models.CharField(max_length=255, db_index=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True, null=True, help_text="Usado na URL da empresa. Deixe em branco para gerar automaticamente.")
-    tags = models.ManyToManyField(Tag, blank=True, related_name='empresas')
-    cnpj = models.CharField(max_length=18, unique=True, blank=True, null=True, db_index=True)
+    tags = models.ManyToManyField(Tag, blank=True, related_name='empresas', verbose_name="Tags")
+    cnpj = models.CharField(max_length=18, blank=True, null=True, db_index=True) 
     cadastrur = models.CharField(max_length=80, blank=True, null=True)
     descricao = models.TextField(blank=True, default='')
     rua = models.CharField(max_length=255, blank=True, default='')
@@ -71,48 +80,22 @@ class Empresa(models.Model):
     numero = models.CharField(max_length=20, blank=True, default='')
     cep = models.CharField(max_length=10, blank=True, default='')
     endereco_full = models.CharField(max_length=300, blank=True, default='')
-
-    latitude = models.CharField(max_length=50, null=True, blank=True, default='-28.937100')
-    longitude = models.CharField(max_length=50, null=True, blank=True, default='-49.484000')
-
+    latitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True) 
+    longitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
     telefone = models.CharField(max_length=60, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
     contato_direto = models.CharField(max_length=255, blank=True, null=True)
-
-    site = models.URLField(blank=True, null=True)
-    digital = models.TextField(blank=True, null=True)
-    maps_url = models.TextField(blank=True, null=True)
-    app_url = models.TextField(blank=True, null=True)
-    facebook = models.URLField(blank=True, null=True)
-    instagram = models.URLField(blank=True, null=True)
-
+    site = models.URLField(max_length=500, blank=True, null=True) 
+    facebook = models.URLField(max_length=500, blank=True, null=True)
+    instagram = models.URLField(max_length=500, blank=True, null=True)
     sem_telefone = models.BooleanField(default=False)
     sem_email = models.BooleanField(default=False)
-
-    horario_semana = models.CharField(
-        max_length=100, blank=True, null=True, 
-        help_text="Ex: 09:00 - 18:00"
-    )
-    horario_sabado = models.CharField(
-        max_length=100, blank=True, null=True, 
-        help_text="Ex: 09:00 - 12:00 ou Fechado"
-    )
-    horario_domingo = models.CharField(
-        max_length=100, blank=True, null=True, 
-        help_text="Ex: Fechado"
-    )
-    horario_observacoes = models.TextField(
-        blank=True, null=True, 
-        help_text="Informações adicionais, como 'Fechado para almoço das 12h às 13h'."
-    )
-
     data_cadastro = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:
-        indexes = [
-            models.Index(fields=['cidade', 'bairro']),
-            models.Index(fields=['cnpj']),
-        ]
+        indexes = [ models.Index(fields=['cidade', 'bairro']), ]
+        verbose_name = "Ponto Turístico"
+        verbose_name_plural = "Pontos Turísticos"
 
     def __str__(self):
         return self.nome
@@ -126,12 +109,11 @@ class Empresa(models.Model):
         queryset = Empresa.objects.filter(slug=self.slug)
         if self.pk:
             queryset = queryset.exclude(pk=self.pk)
-
-        while Empresa.objects.filter(slug=self.slug).exclude(pk=self.pk).exists():
+        
+        while queryset.exists():
             self.slug = f'{original_slug}-{counter}'
             counter += 1
             queryset = Empresa.objects.filter(slug=self.slug)
-            
             if self.pk:
                 queryset = queryset.exclude(pk=self.pk)
             
@@ -139,21 +121,13 @@ class Empresa(models.Model):
 
     @property
     def imagem_principal(self):
+        if hasattr(self, 'imagem_principal_list') and self.imagem_principal_list:
+            return self.imagem_principal_list[0]
         img = self.imagens.filter(principal=True).first()
         if img:
             return img
         return self.imagens.order_by('data_upload').first()
     
-    @property
-    def nota_media(self):
-        media = self.avaliacoes.aggregate(Avg('nota')).get('nota__avg') or 0.0
-        return round(media, 1)
-
-    @property
-    def total_avaliacoes(self):
-        return self.avaliacoes.count()
-    
-
 class ImagemEmpresa(models.Model):
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='imagens')
     imagem = models.ImageField(upload_to='empresas/galeria/')
@@ -161,7 +135,9 @@ class ImagemEmpresa(models.Model):
     data_upload = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = [F('principal').desc(), '-data_upload'] # Principal sempre primeiro
+        ordering = [F('principal').desc(), '-data_upload'] 
+        verbose_name = "Imagem da Empresa"
+        verbose_name_plural = "Imagens dos Pontos Turísticos / Empresas"
 
     def __str__(self):
         return f"Imagem para {self.empresa.nome}"
@@ -178,7 +154,9 @@ class Avaliacao(models.Model):
 
     class Meta:
         unique_together = ['empresa', 'user']
-        ordering = ['-data_criacao']
+        ordering = ('-data_criacao',)
+        verbose_name = "Avaliação"
+        verbose_name_plural = "Avaliações"
 
     def __str__(self):
         return f'Avaliação de {self.user.username} para {self.empresa.nome}: {self.nota} estrelas'
