@@ -160,6 +160,11 @@ header, footer {
   box-shadow: 0 2px 5px var(--cor-sombra);
 }
 
+body.modal-open {
+  overflow: hidden;
+  padding-right: 0 !important;
+}
+
 /* Páginas de Autenticação */
 .auth-page-container {
     background: var(--gradiente-fundo);
