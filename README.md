@@ -179,4 +179,4 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 
 -   **Fabiano Daros Freitas**
 -   **Email:** freitasfabiano08@gmail.com
--   **LinkedIn:** [https://www.linkedin.com/in/fabianodaross/]([https://www.linkedin.com/in/fabianodaross/])
+-   **LinkedIn:** [https://www.linkedin.com/in/fabinhofreitas/])
